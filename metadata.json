@@ -1,0 +1,6 @@
+{
+  "name": "ZenMind",
+  "description": "A high-performance, keyboard-first mind mapping tool with undo, export, and drag-and-drop hierarchy.",
+  "requestFramePermissions": ["clipboard-read", "clipboard-write"],
+  "majorCapabilities": []
+}
