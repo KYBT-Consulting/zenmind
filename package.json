@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "zenmind",
+  "version": "0.1.0",
+  "description": "Open-source EdrawMind alternative for cross-platform mind mapping",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
