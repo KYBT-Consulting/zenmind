@@ -13,7 +13,7 @@ export default defineConfig(({mode}) => {
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(__dirname, '.') },
-        { find: /^simple-mind-map$/, replacement: path.resolve(__dirname, 'node_modules/simple-mind-map/dist/simpleMindMap.esm.js') },
+        { find: /^simple-mind-map$/, replacement: path.resolve(__dirname, 'src/vendor/simple-mind-map/full.js') },
       ],
     },
     server: {
