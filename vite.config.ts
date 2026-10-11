@@ -11,9 +11,10 @@ export default defineConfig(({mode}) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
     resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, '.') },
+        { find: /^simple-mind-map$/, replacement: path.resolve(__dirname, 'node_modules/simple-mind-map/dist/simpleMindMap.esm.js') },
+      ],
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
