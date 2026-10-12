@@ -2,7 +2,7 @@
 
 > An open-source, modern EdrawMind alternative built for cross-platform productivity (Linux, Windows, macOS, and Mobile).
 > 
-> **[🌐 Try Live Demo](https://kybt-consulting.github.io/zenmind/)** · **[Contributing Guidelines](./CONTRIBUTING.md)** · **[Architecture Roadmap](./NEXT_STEPS.md)**
+> **[🌐 Try Live Demo](https://kybt-consulting.github.io/zenmind/)** · **[🗺️ Product Roadmap](./ROADMAP.md)** · **[Contributing Guidelines](./CONTRIBUTING.md)** · **[Architecture Spec](./NEXT_STEPS.md)**
 >
 > Maintained with ❤️ by **[KYBT Consulting](https://kybtconsulting.com)** — makers of **[Vertaxa EA](https://vertaxa.online)**.
 
@@ -120,9 +120,11 @@ npm run build
 
 ---
 
-## 📄 Architecture & Roadmap
+## 🗺️ Product Roadmap & Specifications
 
-For full technical specifications, architecture decisions, and roadmap, see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
+- **[Product & Feature Roadmap](./ROADMAP.md)**: Explore the milestone horizons (v0.2.0 starter templates & keyboard shortcuts, v0.3.0 P2P sync & Obsidian integration, v1.0.0 mobile apps & plugin ecosystem).
+- **[Technical Architecture & Specs](./NEXT_STEPS.md)**: Comprehensive architectural decisions, data models, and component documentation.
+- **[Contributing Guide](./CONTRIBUTING.md)**: Guidelines on how to propose features, report issues, and submit PRs.
 
 ---
 
