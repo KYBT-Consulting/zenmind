@@ -134,18 +134,19 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
     }
   }, [isFormatPainterActive]);
 
-  // Double click on empty canvas area spawns a floating idea / topic
+  // Double click on empty canvas area spawns an independent floating topic at mouse coordinates
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     // Check if clicked directly on canvas background (svg container or root element)
     const isBackground =
       target === containerRef.current ||
       target.tagName.toLowerCase() === 'svg' ||
-      target.classList.contains('mindMapContainer');
+      target.classList.contains('mindMapContainer') ||
+      target.id === 'zenmind-canvas-container';
 
     if (isBackground && engineRef.current) {
-      // Create sibling or child idea
-      engineRef.current.insertSiblingNode();
+      const pos = engineRef.current.screenToCanvasPos(e.clientX, e.clientY);
+      engineRef.current.insertFloatingNode('Floating Idea', pos);
     }
   }, []);
 

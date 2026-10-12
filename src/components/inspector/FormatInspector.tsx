@@ -13,6 +13,9 @@ import {
   Clock,
   AlertCircle,
   Plus,
+  Image as ImageIcon,
+  Sigma,
+  Trash2,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -33,6 +36,8 @@ interface FormatInspectorProps {
   activeNode: ActiveNodeInfo | null;
   initialTab?: InspectorTab;
   onClose: () => void;
+  onOpenImageDialog?: () => void;
+  onOpenFormulaDialog?: () => void;
 }
 
 export const FormatInspector: React.FC<FormatInspectorProps> = ({
@@ -40,6 +45,8 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
   activeNode,
   initialTab = 'node',
   onClose,
+  onOpenImageDialog,
+  onOpenFormulaDialog,
 }) => {
   const [activeTab, setActiveTab] = useState<InspectorTab>(initialTab);
   const [noteContent, setNoteContent] = useState<string>('');
@@ -273,6 +280,69 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                       <Bold size={14} />
                     </button>
                   </div>
+                </div>
+
+                {/* Media Attachments & Math */}
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Media & Formulas
+                  </label>
+
+                  {activeNode.image ? (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                          <ImageIcon size={13} className="text-blue-600" />
+                          Image Attached
+                        </span>
+                        <button
+                          onClick={() => engine?.setNodeImage(null)}
+                          className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
+                          title="Remove Image"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={activeNode.image.url}
+                          alt="Node Attachment"
+                          className="w-12 h-12 object-cover rounded-md border border-slate-200 shadow-xs"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium text-slate-600 truncate">
+                            {activeNode.image.title || 'Attached Image'}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {activeNode.image.width || 180} × {activeNode.image.height || 120} px
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onOpenImageDialog?.()}
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-slate-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => onOpenImageDialog?.()}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700 text-xs font-semibold transition-all shadow-xs"
+                      >
+                        <ImageIcon size={14} className="text-indigo-600" />
+                        <span>Attach Image</span>
+                      </button>
+                      <button
+                        onClick={() => onOpenFormulaDialog?.()}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:border-fuchsia-300 hover:bg-fuchsia-50/50 text-slate-700 text-xs font-semibold transition-all shadow-xs"
+                      >
+                        <Sigma size={14} className="text-fuchsia-600" />
+                        <span>Insert Math</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

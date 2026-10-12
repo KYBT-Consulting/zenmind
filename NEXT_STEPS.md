@@ -35,9 +35,9 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 - [x] **Dedicated Topic Notes Drawer / Split-Screen Editor**:
   - Dedicated docked Notes tab in Format Inspector to view and write comprehensive Markdown notes for the active node with auto-save.
   - Keeps complex thoughts and meeting notes docked cleanly without modal dialogs cluttering the canvas.
-- [ ] **Rich Node Content & Attachments**:
-  - Image attachments with inline resizing handle.
-  - LaTeX mathematical formulas rendering.
+- [x] **Rich Node Content & Attachments**:
+  - Image attachments with inline resizing handle via `ImageDialog` and `NodeImgAdjust`.
+  - LaTeX mathematical formulas rendering via `FormulaDialog` and `katex`.
 
 ### 3.2 Canvas Navigation & Ergonomics (EdrawMind v8.0, v9.0, v10.0)
 - [x] **Format Painter (Style Cloner)**:
@@ -48,8 +48,8 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 - [x] **Canvas Mini-Map (Bird's Eye Navigator)**:
   - Collapsible thumbnail preview overlay in bottom-right corner showing current viewport bounds over the entire diagram.
   - Powered by the built-in `MiniMap` engine plugin with interactive draggable viewport rectangle.
-- [ ] **Floating Topics**:
-  - Double-click on empty canvas area to spawn an independent "Floating Idea" node with its own branching hierarchy.
+- [x] **Floating Topics**:
+  - Double-click on empty canvas area or click Floating Topic in Ribbon/Insert to spawn an independent "Floating Idea" node with its own branching hierarchy.
 
 ### 3.3 Structural Annotations & Branch Grouping (EdrawMind v10.0, v11.0)
 - [ ] **Interactive Relationship Lines**:

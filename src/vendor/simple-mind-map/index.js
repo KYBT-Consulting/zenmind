@@ -38,8 +38,14 @@ class MindMap {
    */
   constructor(opt = {}) {
     MindMap.instanceCount++
+    // 容器元素不参与深度合并以避免DOM节点循环引用导致栈溢出
+    const el = opt.el || defaultOpt.el
+    const cleanOpt = { ...opt }
+    delete cleanOpt.el
+    const cleanDefaultOpt = { ...defaultOpt }
+    delete cleanDefaultOpt.el
     // 合并选项
-    this.opt = this.handleOpt(merge(defaultOpt, opt))
+    this.opt = this.handleOpt({ ...merge(cleanDefaultOpt, cleanOpt), el })
     // 预处理节点数据
     this.opt.data = this.handleData(this.opt.data)
 
@@ -423,7 +429,17 @@ class MindMap {
     const lastOpt = {
       ...this.opt
     }
-    this.opt = this.handleOpt(merge.all([defaultOpt, this.opt, opt]))
+    const el = opt.el || this.opt.el || defaultOpt.el
+    const cleanOpt = { ...opt }
+    delete cleanOpt.el
+    const cleanThisOpt = { ...this.opt }
+    delete cleanThisOpt.el
+    const cleanDefaultOpt = { ...defaultOpt }
+    delete cleanDefaultOpt.el
+    this.opt = this.handleOpt({
+      ...merge.all([cleanDefaultOpt, cleanThisOpt, cleanOpt]),
+      el
+    })
     this.emit('after_update_config', this.opt, lastOpt)
   }
 

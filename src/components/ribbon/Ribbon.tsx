@@ -35,6 +35,9 @@ import {
   Eye,
   FolderTree,
   ListOrdered,
+  Image as ImageIcon,
+  Sigma,
+  Layers,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -70,6 +73,8 @@ interface RibbonProps {
   onOpenNotes?: () => void;
   onOpenTasks?: () => void;
   onImportFolder?: () => void;
+  onOpenImageDialog?: () => void;
+  onOpenFormulaDialog?: () => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -93,6 +98,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenNotes,
   onOpenTasks,
   onImportFolder,
+  onOpenImageDialog,
+  onOpenFormulaDialog,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -260,6 +267,16 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <GitFork size={18} className="text-sky-600" />
                 <span className="text-[10px] font-semibold mt-0.5">Subtopic</span>
                 <span className="text-[9px] text-slate-400 font-mono">Tab</span>
+              </button>
+
+              <button
+                onClick={() => engine?.insertFloatingNode()}
+                title="Spawn Independent Floating Topic"
+                className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+              >
+                <Layers size={18} className="text-teal-600" />
+                <span className="text-[10px] font-semibold mt-0.5">Floating</span>
+                <span className="text-[9px] text-slate-400 font-mono">Idea</span>
               </button>
 
               <button
@@ -494,6 +511,35 @@ export const Ribbon: React.FC<RibbonProps> = ({
             >
               <ArrowRightCircle size={18} className="text-sky-600" />
               <span className="text-[10px] font-semibold mt-1">Relationship Line</span>
+            </button>
+
+            <button
+              onClick={() => engine?.insertFloatingNode()}
+              title="Spawn an independent floating topic"
+              className="flex flex-col items-center justify-center px-4 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <Layers size={18} className="text-teal-600" />
+              <span className="text-[10px] font-semibold mt-1">Floating Topic</span>
+            </button>
+
+            <div className="h-8 w-px bg-slate-200 mx-1" />
+
+            <button
+              onClick={() => onOpenImageDialog?.()}
+              title="Attach and resize image on selected topic"
+              className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <ImageIcon size={18} className="text-blue-600" />
+              <span className="text-[10px] font-semibold mt-1">Image</span>
+            </button>
+
+            <button
+              onClick={() => onOpenFormulaDialog?.()}
+              title="Insert LaTeX mathematical equation"
+              className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <Sigma size={18} className="text-fuchsia-600" />
+              <span className="text-[10px] font-semibold mt-1">Math Formula</span>
             </button>
 
             <div className="h-8 w-px bg-slate-200 mx-1" />

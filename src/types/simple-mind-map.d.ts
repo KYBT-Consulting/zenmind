@@ -162,5 +162,7 @@ declare module 'simple-mind-map' {
 
     destroy(): void;
     resize(): void;
+    render(callback?: () => void): void;
+    toPos(x: number, y: number): { x: number; y: number };
   }
 }

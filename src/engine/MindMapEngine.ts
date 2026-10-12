@@ -205,6 +205,15 @@ export class MindMapEngine {
       icon: data.icon || [],
       customLeft: data.customLeft,
       customTop: data.customTop,
+      image: data.image
+        ? {
+            url: data.image,
+            title: data.imageTitle || '',
+            width: data.imageSize?.width,
+            height: data.imageSize?.height,
+          }
+        : undefined,
+      isFloating: !!data.isFloating,
       rect,
     };
   }
@@ -323,6 +332,84 @@ export class MindMapEngine {
     if (!node) return;
     node.setIcon(icons);
     this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  // --- Image Attachments & Inline Resizing ---
+
+  setNodeImage(imgData: { url: string; title?: string; width?: number; height?: number } | null) {
+    const node = this.getActiveNode();
+    if (!node) return;
+    if (imgData && imgData.url) {
+      this.mindMap?.execCommand('SET_NODE_IMAGE', node, {
+        url: imgData.url,
+        title: imgData.title || '',
+        width: imgData.width || 180,
+        height: imgData.height || 120,
+        custom: true,
+      });
+    } else {
+      this.mindMap?.execCommand('SET_NODE_IMAGE', node, { url: '' });
+    }
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  // --- Mathematical Formulas (KaTeX) ---
+
+  insertFormula(formula: string) {
+    const node = this.getActiveNode();
+    if (!node) return;
+    this.mindMap?.execCommand('INSERT_FORMULA', formula, [node]);
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  // --- Floating Independent Topics ---
+
+  insertFloatingNode(text: string = 'Floating Idea', pos?: { x: number; y: number }) {
+    if (!this.mindMap) return;
+    const rootNode = this.mindMap.renderer?.root;
+    if (!rootNode) return;
+
+    let x = pos?.x;
+    let y = pos?.y;
+
+    if (x === undefined || y === undefined) {
+      const rect = rootNode.getRect?.() || { left: 0, top: 0, width: 100, height: 40 };
+      x = (rootNode.left || rect.left) + 260;
+      y = (rootNode.top || rect.top) - 160;
+    }
+
+    const newNodeData = {
+      data: {
+        text,
+        isFloating: true,
+        customLeft: x,
+        customTop: y,
+        shape: 'roundedRectangle',
+        fillColor: '#f8fafc',
+        color: '#1e293b',
+        borderColor: '#94a3b8',
+        borderWidth: 2,
+      },
+      children: [],
+    };
+
+    if (!rootNode.nodeData.children) {
+      rootNode.nodeData.children = [];
+    }
+    rootNode.nodeData.children.push(newNodeData);
+    this.mindMap.render(() => {
+      // Find the created node and activate it
+      const allNodes = this.mindMap?.renderer?.nodeList || [];
+      const added = allNodes.find((n: any) => n.getData('customLeft') === x && n.getData('customTop') === y);
+      if (added) {
+        this.mindMap?.renderer?.setNodeActive(added, true);
+      }
+    });
+  }
+
+  screenToCanvasPos(clientX: number, clientY: number): { x: number; y: number } {
+    if (!this.mindMap) return { x: clientX, y: clientY };
+    return this.mindMap.toPos(clientX, clientY);
   }
 
   // --- Format Painter (Style Cloner) ---

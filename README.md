@@ -14,13 +14,25 @@
   - Catalog Trees
   - Horizontal & Vertical Timelines
   - Ishikawa Fishbone Diagrams (Cause & Effect)
-- **Rich Mind Map Primitives**: Summaries (curly braces), Boundaries (outer frames), Relationship lines, Floating topics, Notes, and Hyperlinks.
+- **Rich Media & Attachments**:
+  - Image attachments with inline resizing handles.
+  - LaTeX mathematical equation rendering via KaTeX.
+- **Canvas Ergonomics & Navigation**:
+  - Format Painter style cloner for 1-click styling transfer.
+  - Spacebar quick-pan (`Space + Drag`) across the infinite canvas.
+  - Bird's-eye canvas Mini-Map overlay navigator.
+  - Double-click empty canvas to spawn independent **Floating Topics**.
+- **Task & Progress Tracking**: Interactive todo checkboxes (0%-100%) and P1-P5 priority badges.
+- **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
+- **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
+- **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
+- **Rich Mind Map Primitives**: Summaries (curly braces), Boundaries (outer frames), Relationship lines, and Hyperlinks.
 - **Bi-Directional Outline Sync**: Split-screen Notion-style hierarchical outline synchronized with the canvas.
 - **Context Floating Bubble Toolbar**: Rapidly add subtopics (`Tab`), siblings (`Enter`), colors, and shapes directly over selected nodes.
 - **Format Inspector Sidebar**: Fine-grained styling for shapes, branch bezier curves, rainbow branch palettes, and harmonious theme presets.
 - **AI-Powered Brainstorming**: Powered by Google Gemini 2.5 Flash to generate full mind maps from prompts or expand subtopics automatically.
 - **Multi-Format Export**: PNG, SVG (vector), PDF, Markdown, and JSON.
-- **Cross-Platform Ready**: Designed for native desktop packaging via **Tauri v2** (Linux, Windows, macOS) and mobile/PWA deployment.
+- **Cross-Platform Ready**: Designed for native desktop packaging via **Tauri v3 Alpha** (Linux, Windows, macOS) and mobile/PWA deployment.
 
 ---
 
@@ -52,17 +64,19 @@ npm run build
 | `Tab` | Add Subtopic (Child) |
 | `Enter` | Add Topic (Sibling) |
 | `Delete` / `Backspace` | Remove Selected Topic |
+| `Space + Drag` | Pan Infinite Canvas |
+| `Double Click (Canvas)` | Spawn Floating Topic |
+| `Double Click (Topic)` | Edit Topic Text |
 | `Ctrl + Z` / `Cmd + Z` | Undo |
 | `Ctrl + Y` / `Cmd + Y` | Redo |
 | `Ctrl + S` / `Cmd + S` | Save File (`.zenmind`) |
 | `Ctrl + O` / `Cmd + O` | Open File |
-| `Double Click` / `Space` | Edit Topic Text |
 
 ---
 
 ## 📄 Architecture & Roadmap
 
-For full technical specifications, architecture decisions, and roadmap, see [`zenmind-architecture-plan.md`](./zenmind-architecture-plan.md).
+For full technical specifications, architecture decisions, and roadmap, see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
 
 ---
 

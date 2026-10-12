@@ -310,6 +310,8 @@ export interface ActiveNodeInfo {
   icon?: string[];
   customLeft?: number;
   customTop?: number;
+  image?: { url: string; title?: string; width?: number; height?: number };
+  isFloating?: boolean;
   rect?: { left: number; top: number; width: number; height: number };
 }
 

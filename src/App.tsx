@@ -10,8 +10,11 @@ import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { AIDialog } from './components/dialogs/AIDialog';
 import { ExportDialog } from './components/dialogs/ExportDialog';
+import { ImageDialog } from './components/dialogs/ImageDialog';
+import { FormulaDialog } from './components/dialogs/FormulaDialog';
 import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export default function App() {
   const [engine, setEngine] = useState<MindMapEngine | null>(null);
@@ -26,6 +29,8 @@ export default function App() {
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('node');
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [isFormatPainterActive, setIsFormatPainterActive] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showFormulaDialog, setShowFormulaDialog] = useState(false);
 
   const [aiDialogState, setAiDialogState] = useState<{ isOpen: boolean; mode: 'generate' | 'expand' }>({
     isOpen: false,
@@ -191,6 +196,8 @@ export default function App() {
         onOpenNotes={handleOpenNotes}
         onOpenTasks={handleOpenTasks}
         onImportFolder={handleImportFolder}
+        onOpenImageDialog={() => setShowImageDialog(true)}
+        onOpenFormulaDialog={() => setShowFormulaDialog(true)}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
@@ -213,21 +220,25 @@ export default function App() {
             activeNode={activeNode}
             isFormatPainterActive={isFormatPainterActive}
             onOpenNotes={handleOpenNotes}
+            onOpenImage={() => setShowImageDialog(true)}
+            onOpenFormula={() => setShowFormulaDialog(true)}
           />
 
-          <MindMapCanvas
-            onEngineReady={setEngine}
-            onActiveNodeChange={setActiveNode}
-            onDataChange={setMindMapData}
-            onScaleChange={setScale}
-            onHistoryChange={({ canUndo, canRedo }) => {
-              setCanUndo(canUndo);
-              setCanRedo(canRedo);
-            }}
-            onFormatPainterChange={setIsFormatPainterActive}
-            isFormatPainterActive={isFormatPainterActive}
-            initialData={DEFAULT_INITIAL_DATA}
-          />
+          <ErrorBoundary fallbackTitle="Mind Map Canvas encountered an error">
+            <MindMapCanvas
+              onEngineReady={setEngine}
+              onActiveNodeChange={setActiveNode}
+              onDataChange={setMindMapData}
+              onScaleChange={setScale}
+              onHistoryChange={({ canUndo, canRedo }) => {
+                setCanUndo(canUndo);
+                setCanRedo(canRedo);
+              }}
+              onFormatPainterChange={setIsFormatPainterActive}
+              isFormatPainterActive={isFormatPainterActive}
+              initialData={DEFAULT_INITIAL_DATA}
+            />
+          </ErrorBoundary>
 
           {/* Navigator Mini-Map Overlay */}
           <MiniMapOverlay
@@ -244,6 +255,8 @@ export default function App() {
             activeNode={activeNode}
             initialTab={inspectorTab}
             onClose={() => setShowInspector(false)}
+            onOpenImageDialog={() => setShowImageDialog(true)}
+            onOpenFormulaDialog={() => setShowFormulaDialog(true)}
           />
         )}
       </div>
@@ -273,6 +286,20 @@ export default function App() {
         engine={engine}
         docTitle={docTitle}
         onClose={() => setShowExportDialog(false)}
+      />
+
+      <ImageDialog
+        isOpen={showImageDialog}
+        engine={engine}
+        activeNode={activeNode}
+        onClose={() => setShowImageDialog(false)}
+      />
+
+      <FormulaDialog
+        isOpen={showFormulaDialog}
+        engine={engine}
+        activeNode={activeNode}
+        onClose={() => setShowFormulaDialog(false)}
       />
     </div>
   );

@@ -897,6 +897,12 @@ class MindMapNode {
 
   //  设置连线样式
   styleLine(line, childNode, enableMarker) {
+    if (childNode.getData('isFloating')) {
+      line.hide()
+      return
+    } else {
+      line.show()
+    }
     const { enableInheritAncestorLineStyle } = this.mindMap.opt
     const getName = enableInheritAncestorLineStyle
       ? 'getSelfInhertStyle'

@@ -14,6 +14,8 @@ export default defineConfig(({mode}) => {
       alias: [
         { find: '@', replacement: path.resolve(__dirname, '.') },
         { find: /^simple-mind-map$/, replacement: path.resolve(__dirname, 'src/vendor/simple-mind-map/full.js') },
+        { find: /^deepmerge$/, replacement: path.resolve(__dirname, 'src/shims/deepmerge.js') },
+        { find: /^(node:)?stream$/, replacement: path.resolve(__dirname, 'src/shims/stream.js') },
       ],
     },
     server: {

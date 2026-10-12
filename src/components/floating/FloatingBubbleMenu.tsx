@@ -8,6 +8,8 @@ import {
   CheckSquare,
   Paintbrush,
   Sparkles,
+  Image as ImageIcon,
+  Sigma,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
@@ -18,6 +20,8 @@ interface FloatingBubbleMenuProps {
   activeNode: ActiveNodeInfo | null;
   isFormatPainterActive?: boolean;
   onOpenNotes?: () => void;
+  onOpenImage?: () => void;
+  onOpenFormula?: () => void;
 }
 
 export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
@@ -25,6 +29,8 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
   activeNode,
   isFormatPainterActive = false,
   onOpenNotes,
+  onOpenImage,
+  onOpenFormula,
 }) => {
   if (!activeNode) return null;
 
@@ -143,6 +149,27 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         )}
       >
         <Link2 size={13} />
+      </button>
+
+      <button
+        onClick={() => onOpenImage?.()}
+        title="Attach Image"
+        className={cn(
+          'p-1.5 rounded-lg transition-colors',
+          activeNode.image
+            ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+            : 'text-slate-600 hover:bg-slate-100'
+        )}
+      >
+        <ImageIcon size={13} />
+      </button>
+
+      <button
+        onClick={() => onOpenFormula?.()}
+        title="Insert LaTeX Formula"
+        className="p-1.5 rounded-lg text-slate-600 hover:text-fuchsia-600 hover:bg-slate-100 transition-colors"
+      >
+        <Sigma size={13} />
       </button>
 
       <button
