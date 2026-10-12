@@ -3,17 +3,24 @@ import {
   Maximize2,
   ZoomIn,
   ZoomOut,
-  Keyboard,
   Layers,
   Sparkles,
+  Paintbrush,
+  Eye,
+  Play,
+  X,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { LAYOUT_OPTIONS } from '../../types/mindmap';
+import { cn } from '../../lib/utils';
 
 interface StatusBarProps {
   engine: MindMapEngine | null;
   scale: number;
   nodeCount: number;
+  isFormatPainterActive?: boolean;
+  showMiniMap?: boolean;
+  onToggleMiniMap?: () => void;
   onOpenAIDialog: () => void;
 }
 
@@ -21,6 +28,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   engine,
   scale,
   nodeCount,
+  isFormatPainterActive = false,
+  showMiniMap = false,
+  onToggleMiniMap,
   onOpenAIDialog,
 }) => {
   const currentLayoutId = engine?.getLayout() || 'mindMap';
@@ -29,7 +39,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   return (
     <footer className="h-7 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-[11px] text-slate-500 font-medium select-none z-20">
       {/* Left Info Badges */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <span className="flex items-center gap-1.5 text-slate-600">
           <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" />
           <span>{nodeCount} Topics</span>
@@ -51,10 +61,57 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <Sparkles size={11} />
           <span>AI Assisted</span>
         </button>
+
+        {/* Format Painter Active Pill */}
+        {isFormatPainterActive && (
+          <>
+            <span className="h-3 w-px bg-slate-200" />
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse text-[10px] font-bold">
+              <Paintbrush size={10} />
+              <span>Painter Active - Click Topic</span>
+              <button
+                onClick={() => engine?.endFormatPainter()}
+                className="hover:text-amber-950 ml-0.5"
+                title="Cancel Format Painter"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Right Controls: Zoom & Fit */}
+      {/* Right Controls: Mini-Map, Pitch, Zoom & Shortcuts */}
       <div className="flex items-center gap-3">
+        {/* Pitch Mode Button */}
+        <button
+          onClick={() => engine?.enterPresentationMode()}
+          title="Start Presentation Mode"
+          className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors px-1 py-0.5 rounded hover:bg-indigo-50 font-semibold"
+        >
+          <Play size={11} className="fill-indigo-600" />
+          <span>Pitch</span>
+        </button>
+
+        <span className="h-3 w-px bg-slate-200" />
+
+        {/* Mini-Map Toggle */}
+        <button
+          onClick={onToggleMiniMap}
+          title="Toggle Navigator Mini-Map"
+          className={cn(
+            'flex items-center gap-1 px-1 py-0.5 rounded transition-colors',
+            showMiniMap
+              ? 'bg-indigo-50 text-indigo-700 font-semibold'
+              : 'hover:text-slate-800 text-slate-600 hover:bg-slate-100'
+          )}
+        >
+          <Eye size={12} className={showMiniMap ? 'text-indigo-600' : ''} />
+          <span>Map</span>
+        </button>
+
+        <span className="h-3 w-px bg-slate-200" />
+
         <button
           onClick={() => engine?.fitView()}
           title="Fit Mind Map to Window"
@@ -90,8 +147,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <span className="h-3 w-px bg-slate-200" />
 
+        {/* Shortcuts Hints */}
         <div className="flex items-center gap-1 text-slate-400">
           <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono font-bold">
+            Space
+          </kbd>
+          <span className="text-[10px]">Pan</span>
+          <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono font-bold ml-1">
             Tab
           </kbd>
           <span className="text-[10px]">Child</span>

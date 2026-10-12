@@ -109,9 +109,29 @@ declare module 'simple-mind-map' {
       enlarge(ratio?: number): void;
       narrow(ratio?: number): void;
       setScale(scale: number): void;
+      translateXTo(x: number): void;
+      translateYTo(y: number): void;
       getTransformData(): { scale: number; x: number; y: number };
       setTransformData(data: { scale: number; x: number; y: number }): void;
     };
+    painter?: {
+      isInPainter: boolean;
+      startPainter(): void;
+      endPainter(): void;
+    };
+    demonstrate?: {
+      isInDemonstrate: boolean;
+      enter(): void;
+      exit(): void;
+    };
+    miniMap?: {
+      calculationMiniMap(boxWidth: number, boxHeight: number): any;
+      onMousedown(e: any): void;
+      onMousemove(e: any): void;
+      onMouseup(e: any): void;
+    };
+    associativeLine?: any;
+    outerFrame?: any;
     export: {
       png(isDownload?: boolean, name?: string, transparent?: boolean): Promise<string>;
       svg(isDownload?: boolean, name?: string): Promise<string>;

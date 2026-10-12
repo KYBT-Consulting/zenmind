@@ -1,39 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Palette,
   Square,
   LayoutGrid,
-  Type,
   Bold,
   Sliders,
   Check,
-  Sparkles,
+  CheckSquare,
+  FileText,
+  Tag,
+  Clock,
+  AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
   ActiveNodeInfo,
   LAYOUT_OPTIONS,
-  LayoutType,
+  PriorityLevel,
+  ProgressLevel,
   SHAPE_OPTIONS,
-  ShapeType,
   THEME_PRESETS,
   BranchLineStyle,
 } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
 
+export type InspectorTab = 'node' | 'task' | 'notes' | 'structure';
+
 interface FormatInspectorProps {
   engine: MindMapEngine | null;
   activeNode: ActiveNodeInfo | null;
+  initialTab?: InspectorTab;
   onClose: () => void;
 }
 
 export const FormatInspector: React.FC<FormatInspectorProps> = ({
   engine,
   activeNode,
+  initialTab = 'node',
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'node' | 'structure' | 'theme'>('node');
+  const [activeTab, setActiveTab] = useState<InspectorTab>(initialTab);
+  const [noteContent, setNoteContent] = useState<string>('');
+  const [newTagInput, setNewTagInput] = useState<string>('');
+
+  // Sync note content when activeNode changes
+  useEffect(() => {
+    setNoteContent(activeNode?.note || '');
+  }, [activeNode?.uid, activeNode?.note]);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const currentLayout = engine?.getLayout() || 'mindMap';
   const currentThemeId = engine?.getThemeId() || 'ocean-breeze';
@@ -54,8 +75,49 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
     '#ffffff', // White
   ];
 
+  // Helper to determine current priority (1-5)
+  const currentPriority = React.useMemo(() => {
+    if (!activeNode?.icon) return null;
+    const pIcon = activeNode.icon.find((i) => i.startsWith('priority_'));
+    if (!pIcon) return null;
+    const num = parseInt(pIcon.replace('priority_', ''), 10);
+    return isNaN(num) ? null : (num as PriorityLevel);
+  }, [activeNode?.icon]);
+
+  // Helper to determine current progress (0-100)
+  const currentProgress = React.useMemo(() => {
+    if (!activeNode?.icon) return null;
+    const pIcon = activeNode.icon.find((i) => i.startsWith('progress_'));
+    if (!pIcon) return null;
+    const num = parseInt(pIcon.replace('progress_', ''), 10);
+    return isNaN(num) ? null : (num as ProgressLevel);
+  }, [activeNode?.icon]);
+
+  const handleNoteBlur = () => {
+    if (activeNode) {
+      engine?.setNodeNote(noteContent);
+    }
+  };
+
+  const handleAddTag = (e: React.FormEvent) => {
+    e.preventDefault();
+    const tag = newTagInput.trim();
+    if (!tag || !activeNode) return;
+    const currentTags = activeNode.tag || [];
+    if (!currentTags.includes(tag)) {
+      engine?.setNodeTags([...currentTags, tag]);
+    }
+    setNewTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    if (!activeNode) return;
+    const currentTags = (activeNode.tag || []).filter((t) => t !== tagToRemove);
+    engine?.setNodeTags(currentTags);
+  };
+
   return (
-    <aside className="w-72 bg-white border-l border-slate-200 flex flex-col z-20 shadow-lg select-none h-full">
+    <aside className="w-80 bg-white border-l border-slate-200 flex flex-col z-20 shadow-lg select-none h-full">
       {/* Inspector Header */}
       <div className="h-12 px-4 border-b border-slate-100 flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
@@ -73,15 +135,16 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
       {/* Tabs */}
       <div className="flex border-b border-slate-100 bg-slate-50/60 p-1 gap-1">
         {[
-          { id: 'node', label: 'Node', icon: Square },
-          { id: 'structure', label: 'Structure', icon: LayoutGrid },
-          { id: 'theme', label: 'Themes', icon: Palette },
+          { id: 'node', label: 'Style', icon: Square },
+          { id: 'task', label: 'Task', icon: CheckSquare },
+          { id: 'notes', label: 'Notes', icon: FileText },
+          { id: 'structure', label: 'Diagram', icon: LayoutGrid },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as InspectorTab)}
               className={cn(
                 'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all',
                 activeTab === tab.id
@@ -98,7 +161,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
 
       {/* Content Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar text-xs">
-        {/* --- NODE TAB --- */}
+        {/* --- STYLE TAB --- */}
         {activeTab === 'node' && (
           <>
             {activeNode ? (
@@ -224,9 +287,211 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
           </>
         )}
 
-        {/* --- STRUCTURE TAB --- */}
+        {/* --- TASK & STATUS TAB --- */}
+        {activeTab === 'task' && (
+          <>
+            {activeNode ? (
+              <div className="space-y-5">
+                {/* Checkbox Quick Action */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Task Checkbox</span>
+                    <span className="text-[10px] text-slate-400">Toggle completion state</span>
+                  </div>
+                  <button
+                    onClick={() => engine?.toggleNodeCheckbox()}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-1.5 shadow-xs',
+                      currentProgress === 100
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    )}
+                  >
+                    <CheckSquare size={13} />
+                    <span>{currentProgress === 100 ? 'Completed' : 'To Do'}</span>
+                  </button>
+                </div>
+
+                {/* Priority Levels */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Priority Level
+                    </label>
+                    {currentPriority && (
+                      <button
+                        onClick={() => engine?.setNodePriority(null)}
+                        className="text-[10px] text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {([1, 2, 3, 4, 5] as PriorityLevel[]).map((level) => {
+                      const colors: Record<number, string> = {
+                        1: 'bg-rose-500 text-white',
+                        2: 'bg-amber-500 text-white',
+                        3: 'bg-blue-500 text-white',
+                        4: 'bg-slate-500 text-white',
+                        5: 'bg-slate-400 text-white',
+                      };
+                      const isSelected = currentPriority === level;
+                      return (
+                        <button
+                          key={level}
+                          onClick={() => engine?.setNodePriority(isSelected ? null : level)}
+                          className={cn(
+                            'py-1.5 rounded-lg border font-bold text-xs flex flex-col items-center justify-center transition-all',
+                            isSelected
+                              ? `${colors[level]} border-transparent ring-2 ring-indigo-400 shadow-xs`
+                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                          )}
+                        >
+                          P{level}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Progress Indicators */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Task Progress
+                    </label>
+                    {currentProgress !== null && (
+                      <button
+                        onClick={() => engine?.setNodeProgress(null)}
+                        className="text-[10px] text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {([0, 25, 50, 75, 100] as ProgressLevel[]).map((percent) => {
+                      const isSelected = currentProgress === percent;
+                      return (
+                        <button
+                          key={percent}
+                          onClick={() => engine?.setNodeProgress(isSelected ? null : percent)}
+                          className={cn(
+                            'py-1.5 rounded-lg border font-bold text-xs flex flex-col items-center justify-center transition-all',
+                            isSelected
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                          )}
+                        >
+                          {percent}%
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    Tip: Click the progress badge on any node to advance it directly!
+                  </p>
+                </div>
+
+                {/* Tag Badges */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Tags & Labels
+                  </label>
+                  <form onSubmit={handleAddTag} className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add tag (e.g. Sprint 1)..."
+                      value={newTagInput}
+                      onChange={(e) => setNewTagInput(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-semibold flex items-center justify-center"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </form>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(activeNode.tag || []).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-medium border border-indigo-100"
+                      >
+                        {tag}
+                        <button
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:text-red-500 transition-colors"
+                        >
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-slate-400">
+                <CheckSquare size={28} className="mx-auto mb-2 opacity-40" />
+                <p className="font-medium">No topic selected</p>
+                <p className="text-[11px] mt-1 text-slate-400">
+                  Select a topic to assign priority, task completion, and status tags.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* --- NOTES TAB (Split-Screen Drawer Editor) --- */}
+        {activeTab === 'notes' && (
+          <>
+            {activeNode ? (
+              <div className="space-y-3 h-full flex flex-col">
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                    Notes for Topic
+                  </span>
+                  <div className="font-semibold text-slate-800 truncate">
+                    {activeNode.text || '(Untitled Topic)'}
+                  </div>
+                </div>
+
+                <div className="flex-1 flex flex-col min-h-[260px]">
+                  <textarea
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    onBlur={handleNoteBlur}
+                    placeholder="Write detailed notes, meeting minutes, Markdown lists, or links here... (Auto-saves on blur)"
+                    className="w-full flex-1 min-h-[240px] p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none leading-relaxed"
+                  />
+                  <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                    <span>{noteContent.length} characters</span>
+                    <button
+                      onClick={handleNoteBlur}
+                      className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded"
+                    >
+                      Save Note
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-slate-400">
+                <FileText size={28} className="mx-auto mb-2 opacity-40" />
+                <p className="font-medium">No topic selected</p>
+                <p className="text-[11px] mt-1 text-slate-400">
+                  Select a topic to draft or view docked Markdown notes.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* --- STRUCTURE & THEME TAB --- */}
         {activeTab === 'structure' && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
                 Layout Structures
@@ -272,43 +537,40 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* --- THEMES TAB --- */}
-        {activeTab === 'theme' && (
-          <div className="space-y-4">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-              Curated Theme Styles
-            </label>
-            <div className="space-y-2">
-              {THEME_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => engine?.setThemePreset(preset.id)}
-                  className={cn(
-                    'w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between',
-                    currentThemeId === preset.id
-                      ? 'border-indigo-600 bg-indigo-50/40 shadow-xs ring-1 ring-indigo-500/20'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  )}
-                >
-                  <div>
-                    <span className="font-semibold text-slate-800 block">{preset.name}</span>
-                    <span className="text-[10px] text-slate-400">Full Palette Harmony</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className="w-5 h-5 rounded-full border border-slate-300 shadow-xs"
-                      style={{ backgroundColor: preset.previewColor }}
-                    />
-                    <div
-                      className="w-5 h-5 rounded-full border border-slate-200 shadow-xs"
-                      style={{ backgroundColor: preset.previewBg }}
-                    />
-                  </div>
-                </button>
-              ))}
+            {/* Themes */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                Theme Color Presets
+              </label>
+              <div className="space-y-2">
+                {THEME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => engine?.setThemePreset(preset.id)}
+                    className={cn(
+                      'w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between',
+                      currentThemeId === preset.id
+                        ? 'border-indigo-600 bg-indigo-50/40 shadow-xs ring-1 ring-indigo-500/20'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    )}
+                  >
+                    <div>
+                      <span className="font-semibold text-slate-800 block">{preset.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="w-4 h-4 rounded-full border border-slate-300 shadow-xs"
+                        style={{ backgroundColor: preset.previewColor }}
+                      />
+                      <div
+                        className="w-4 h-4 rounded-full border border-slate-200 shadow-xs"
+                        style={{ backgroundColor: preset.previewBg }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

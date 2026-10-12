@@ -307,11 +307,18 @@ export interface ActiveNodeInfo {
   note?: string;
   hyperlink?: string;
   tag?: string[];
+  icon?: string[];
+  customLeft?: number;
+  customTop?: number;
   rect?: { left: number; top: number; width: number; height: number };
 }
+
+export type PriorityLevel = 1 | 2 | 3 | 4 | 5;
+export type ProgressLevel = 0 | 25 | 50 | 75 | 100;
 
 export interface MindMapExportOptions {
   filename?: string;
   format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind';
   transparent?: boolean;
 }
+

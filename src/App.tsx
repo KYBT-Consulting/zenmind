@@ -3,13 +3,15 @@ import { MindMapEngine, DEFAULT_INITIAL_DATA } from './engine/MindMapEngine';
 import { ActiveNodeInfo } from './types/mindmap';
 import { Ribbon } from './components/ribbon/Ribbon';
 import { MindMapCanvas } from './components/canvas/MindMapCanvas';
-import { FormatInspector } from './components/inspector/FormatInspector';
+import { MiniMapOverlay } from './components/canvas/MiniMapOverlay';
+import { FormatInspector, InspectorTab } from './components/inspector/FormatInspector';
 import { OutlinePanel } from './components/outline/OutlinePanel';
 import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { AIDialog } from './components/dialogs/AIDialog';
 import { ExportDialog } from './components/dialogs/ExportDialog';
 import { DesktopFileService } from './services/desktopFileService';
+import { FolderImportService } from './services/folderImportService';
 
 export default function App() {
   const [engine, setEngine] = useState<MindMapEngine | null>(null);
@@ -21,6 +23,10 @@ export default function App() {
   const [scale, setScale] = useState(100);
   const [showOutline, setShowOutline] = useState(false);
   const [showInspector, setShowInspector] = useState(true);
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>('node');
+  const [showMiniMap, setShowMiniMap] = useState(false);
+  const [isFormatPainterActive, setIsFormatPainterActive] = useState(false);
+
   const [aiDialogState, setAiDialogState] = useState<{ isOpen: boolean; mode: 'generate' | 'expand' }>({
     isOpen: false,
     mode: 'generate',
@@ -108,6 +114,27 @@ export default function App() {
     e.target.value = '';
   };
 
+  // Folder Import (Folder to MindMap)
+  const handleImportFolder = useCallback(async () => {
+    const res = await FolderImportService.importFolder();
+    if (res.success && res.data) {
+      if (res.folderName) setDocTitle(`${res.folderName} Map`);
+      engine?.setData(res.data);
+    }
+  }, [engine]);
+
+  // Open Notes Tab in Inspector
+  const handleOpenNotes = useCallback(() => {
+    setInspectorTab('notes');
+    setShowInspector(true);
+  }, []);
+
+  // Open Tasks Tab in Inspector
+  const handleOpenTasks = useCallback(() => {
+    setInspectorTab('task');
+    setShowInspector(true);
+  }, []);
+
   // Keyboard shortcut listener (global hotkeys)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -158,6 +185,12 @@ export default function App() {
         onOpenExportDialog={() => setShowExportDialog(true)}
         onSaveFile={handleSaveFile}
         onOpenFile={handleOpenFile}
+        isFormatPainterActive={isFormatPainterActive}
+        showMiniMap={showMiniMap}
+        onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
+        onOpenNotes={handleOpenNotes}
+        onOpenTasks={handleOpenTasks}
+        onImportFolder={handleImportFolder}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
@@ -175,7 +208,12 @@ export default function App() {
         {/* Central Canvas Workspace */}
         <main className="flex-1 relative h-full w-full">
           {/* Context Floating Bubble Menu over selected topic */}
-          <FloatingBubbleMenu engine={engine} activeNode={activeNode} />
+          <FloatingBubbleMenu
+            engine={engine}
+            activeNode={activeNode}
+            isFormatPainterActive={isFormatPainterActive}
+            onOpenNotes={handleOpenNotes}
+          />
 
           <MindMapCanvas
             onEngineReady={setEngine}
@@ -186,7 +224,16 @@ export default function App() {
               setCanUndo(canUndo);
               setCanRedo(canRedo);
             }}
+            onFormatPainterChange={setIsFormatPainterActive}
+            isFormatPainterActive={isFormatPainterActive}
             initialData={DEFAULT_INITIAL_DATA}
+          />
+
+          {/* Navigator Mini-Map Overlay */}
+          <MiniMapOverlay
+            engine={engine}
+            isOpen={showMiniMap}
+            onClose={() => setShowMiniMap(false)}
           />
         </main>
 
@@ -195,6 +242,7 @@ export default function App() {
           <FormatInspector
             engine={engine}
             activeNode={activeNode}
+            initialTab={inspectorTab}
             onClose={() => setShowInspector(false)}
           />
         )}
@@ -205,6 +253,9 @@ export default function App() {
         engine={engine}
         scale={scale}
         nodeCount={totalNodes}
+        isFormatPainterActive={isFormatPainterActive}
+        showMiniMap={showMiniMap}
+        onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
         onOpenAIDialog={() => setAiDialogState({ isOpen: true, mode: 'generate' })}
       />
 

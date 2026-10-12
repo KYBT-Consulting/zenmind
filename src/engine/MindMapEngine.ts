@@ -3,6 +3,8 @@ import {
   ActiveNodeInfo,
   BranchLineStyle,
   LayoutType,
+  PriorityLevel,
+  ProgressLevel,
   ShapeType,
   THEME_PRESETS,
 } from '../types/mindmap';
@@ -12,6 +14,8 @@ export interface MindMapEngineCallbacks {
   onDataChange?: (data: any) => void;
   onScaleChange?: (scale: number) => void;
   onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
+  onFormatPainterChange?: (isActive: boolean) => void;
+  onPresentationModeChange?: (isActive: boolean) => void;
   onError?: (error: any) => void;
 }
 
@@ -144,6 +148,33 @@ export class MindMapEngine {
         canRedo: index < length - 1,
       });
     });
+
+    // Format painter events
+    this.mindMap.on('painter_start', () => {
+      this.callbacks.onFormatPainterChange?.(true);
+    });
+
+    this.mindMap.on('painter_end', () => {
+      this.callbacks.onFormatPainterChange?.(false);
+    });
+
+    // Presentation mode exit event
+    this.mindMap.on('exit_demonstrate', () => {
+      this.callbacks.onPresentationModeChange?.(false);
+    });
+
+    // Interactive icon click: cycle progress or toggle task state directly on canvas
+    this.mindMap.on('node_icon_click', (node: any, iconName: string, event: any) => {
+      if (typeof iconName === 'string' && iconName.startsWith('progress_')) {
+        event?.stopPropagation?.();
+        const cycle = ['progress_0', 'progress_25', 'progress_50', 'progress_75', 'progress_100'];
+        const currentIdx = cycle.indexOf(iconName);
+        const nextIcon = currentIdx >= 0 && currentIdx < cycle.length - 1 ? cycle[currentIdx + 1] : cycle[0];
+        const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('progress_'));
+        node.setIcon([...currentIcons, nextIcon]);
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+      }
+    });
   }
 
   private extractActiveNodeInfo(node: any): ActiveNodeInfo {
@@ -171,6 +202,9 @@ export class MindMapEngine {
       note: data.note || '',
       hyperlink: data.hyperlink || '',
       tag: data.tag || [],
+      icon: data.icon || [],
+      customLeft: data.customLeft,
+      customTop: data.customTop,
       rect,
     };
   }
@@ -205,7 +239,9 @@ export class MindMapEngine {
     this.mindMap?.execCommand('ADD_ASSOCIATIVE_LINE');
   }
 
-  // --- Styling & Properties ---
+  getActiveNode(): any {
+    return this.mindMap?.renderer?.activeNodeList?.[0] || null;
+  }
 
   setNodeText(text: string) {
     this.mindMap?.execCommand('SET_NODE_TEXT', text);
@@ -220,16 +256,180 @@ export class MindMapEngine {
   }
 
   setNodeNote(note: string) {
-    this.mindMap?.execCommand('SET_NODE_NOTE', note);
+    const node = this.getActiveNode();
+    if (node) {
+      node.setNote(note);
+    } else {
+      this.mindMap?.execCommand('SET_NODE_NOTE', note);
+    }
   }
 
   setNodeHyperlink(link: string, title?: string) {
-    this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, title || link);
+    const node = this.getActiveNode();
+    if (node) {
+      node.setHyperlink(link, title || link);
+    } else {
+      this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, title || link);
+    }
   }
 
   setNodeTags(tags: string[]) {
-    this.mindMap?.execCommand('SET_NODE_TAG', tags);
+    const node = this.getActiveNode();
+    if (node) {
+      node.setTag(tags);
+    } else {
+      this.mindMap?.execCommand('SET_NODE_TAG', tags);
+    }
   }
+
+  setNodePriority(priority: PriorityLevel | null) {
+    const node = this.getActiveNode();
+    if (!node) return;
+    const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('priority_'));
+    if (priority !== null) {
+      node.setIcon([...currentIcons, `priority_${priority}`]);
+    } else {
+      node.setIcon(currentIcons);
+    }
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  setNodeProgress(progress: ProgressLevel | null) {
+    const node = this.getActiveNode();
+    if (!node) return;
+    const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('progress_'));
+    if (progress !== null) {
+      node.setIcon([...currentIcons, `progress_${progress}`]);
+    } else {
+      node.setIcon(currentIcons);
+    }
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  toggleNodeCheckbox() {
+    const node = this.getActiveNode();
+    if (!node) return;
+    const icons: string[] = node.getData('icon') || [];
+    const currentProgress = icons.find((i: string) => i.startsWith('progress_'));
+    if (!currentProgress || currentProgress === 'progress_0') {
+      this.setNodeProgress(100);
+    } else {
+      this.setNodeProgress(0);
+    }
+  }
+
+  setNodeIcons(icons: string[]) {
+    const node = this.getActiveNode();
+    if (!node) return;
+    node.setIcon(icons);
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  // --- Format Painter (Style Cloner) ---
+
+  startFormatPainter() {
+    if (!this.mindMap?.painter) return;
+    this.mindMap.painter.startPainter();
+  }
+
+  endFormatPainter() {
+    if (!this.mindMap?.painter) return;
+    this.mindMap.painter.endPainter();
+    this.callbacks.onFormatPainterChange?.(false);
+  }
+
+  isFormatPainterActive(): boolean {
+    return !!this.mindMap?.painter?.isInPainter;
+  }
+
+  // --- Presentation / Pitch Mode ---
+
+  enterPresentationMode() {
+    if (!this.mindMap?.demonstrate) return;
+    this.mindMap.demonstrate.enter();
+    this.callbacks.onPresentationModeChange?.(true);
+  }
+
+  exitPresentationMode() {
+    if (!this.mindMap?.demonstrate) return;
+    this.mindMap.demonstrate.exit();
+    this.callbacks.onPresentationModeChange?.(false);
+  }
+
+  isPresentationMode(): boolean {
+    return !!this.mindMap?.demonstrate?.isInDemonstrate;
+  }
+
+  // --- Mini-Map Navigator ---
+
+  calculateMiniMap(boxWidth: number, boxHeight: number) {
+    if (!this.mindMap?.miniMap) return null;
+    return this.mindMap.miniMap.calculationMiniMap(boxWidth, boxHeight);
+  }
+
+  miniMapMouseDown(e: any) {
+    this.mindMap?.miniMap?.onMousedown?.(e);
+  }
+
+  miniMapMouseMove(e: any) {
+    this.mindMap?.miniMap?.onMousemove?.(e);
+  }
+
+  miniMapMouseUp(e: any) {
+    this.mindMap?.miniMap?.onMouseup?.(e);
+  }
+
+  // --- Canvas Navigation & Ergonomics ---
+
+  panBy(dx: number, dy: number) {
+    if (!this.mindMap?.view) return;
+    const currentX = this.mindMap.view.x;
+    const currentY = this.mindMap.view.y;
+    this.mindMap.view.translateXTo(currentX + dx);
+    this.mindMap.view.translateYTo(currentY + dy);
+  }
+
+  getViewTransform(): { x: number; y: number; scale: number } {
+    return {
+      x: this.mindMap?.view?.x || 0,
+      y: this.mindMap?.view?.y || 0,
+      scale: this.mindMap?.view?.scale || 1,
+    };
+  }
+
+  resetLayout() {
+    this.mindMap?.execCommand('RESET_LAYOUT');
+  }
+
+  toggleAutoNumbering(enable: boolean = true) {
+    const data = this.getData();
+    if (!data) return;
+
+    const stripNumbering = (text: string): string => {
+      return text.replace(/^(\d+(\.\d+)*|[A-Z](\.\d+)*)\.?\s+/, '');
+    };
+
+    const applyNumbering = (node: any, prefix: string) => {
+      if (!node.data) node.data = {};
+      const baseText = stripNumbering(node.data.text || '');
+      node.data.text = enable && prefix ? `${prefix} ${baseText}` : baseText;
+      if (node.children && Array.isArray(node.children)) {
+        node.children.forEach((child: any, idx: number) => {
+          const childPrefix = prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`;
+          applyNumbering(child, childPrefix);
+        });
+      }
+    };
+
+    if (data.children && Array.isArray(data.children)) {
+      data.children.forEach((child: any, idx: number) => {
+        applyNumbering(child, enable ? `${idx + 1}` : '');
+      });
+    }
+
+    this.setData(data);
+  }
+
 
   // --- Layout & Theme ---
 

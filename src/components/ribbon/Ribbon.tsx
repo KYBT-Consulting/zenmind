@@ -29,6 +29,12 @@ import {
   BoxSelect,
   Split,
   ChevronDown,
+  Paintbrush,
+  CheckSquare,
+  Play,
+  Eye,
+  FolderTree,
+  ListOrdered,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -58,6 +64,12 @@ interface RibbonProps {
   onOpenExportDialog: () => void;
   onSaveFile: () => void;
   onOpenFile: () => void;
+  isFormatPainterActive?: boolean;
+  showMiniMap?: boolean;
+  onToggleMiniMap?: () => void;
+  onOpenNotes?: () => void;
+  onOpenTasks?: () => void;
+  onImportFolder?: () => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -75,6 +87,12 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenExportDialog,
   onSaveFile,
   onOpenFile,
+  isFormatPainterActive = false,
+  showMiniMap = false,
+  onToggleMiniMap,
+  onOpenNotes,
+  onOpenTasks,
+  onImportFolder,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -253,6 +271,28 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <span className="text-[10px] font-semibold mt-0.5">Delete</span>
                 <span className="text-[9px] text-slate-400 font-mono">Del</span>
               </button>
+
+              {/* Format Painter */}
+              <button
+                onClick={() => {
+                  if (isFormatPainterActive) {
+                    engine?.endFormatPainter();
+                  } else {
+                    engine?.startFormatPainter();
+                  }
+                }}
+                title="Format Painter: Click to copy style, then click target topic"
+                className={cn(
+                  'flex flex-col items-center justify-center px-3 py-1 rounded-lg border transition-all',
+                  isFormatPainterActive
+                    ? 'bg-amber-100 border-amber-300 text-amber-800 shadow-xs ring-2 ring-amber-400/50'
+                    : 'hover:bg-white hover:shadow-xs border-transparent hover:border-slate-200 text-slate-700'
+                )}
+              >
+                <Paintbrush size={18} className={isFormatPainterActive ? 'text-amber-600' : 'text-amber-500'} />
+                <span className="text-[10px] font-semibold mt-0.5">Painter</span>
+                <span className="text-[9px] text-slate-400 font-mono">{isFormatPainterActive ? 'Active' : 'Copy'}</span>
+              </button>
             </div>
 
             {/* Structure & Layout Dropdown */}
@@ -340,6 +380,29 @@ export const Ribbon: React.FC<RibbonProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Auto Numbering & Align */}
+            <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
+              <button
+                onClick={() => engine?.toggleAutoNumbering(true)}
+                title="Hierarchical Numbering (1, 1.1, 1.1.1)"
+                className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+              >
+                <ListOrdered size={18} className="text-indigo-600" />
+                <span className="text-[10px] font-semibold mt-0.5">Numbering</span>
+                <span className="text-[9px] text-slate-400 font-mono">1.1.1</span>
+              </button>
+
+              <button
+                onClick={() => engine?.resetLayout()}
+                title="Reset Layout & Tidy Branch Alignment"
+                className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+              >
+                <RotateCcw size={18} className="text-slate-600" />
+                <span className="text-[10px] font-semibold mt-0.5">Align</span>
+                <span className="text-[9px] text-slate-400 font-mono">Auto</span>
+              </button>
             </div>
 
             {/* Quick Shape Selector */}
@@ -433,17 +496,22 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <span className="text-[10px] font-semibold mt-1">Relationship Line</span>
             </button>
 
-            <div className="h-8 w-px bg-slate-200 mx-2" />
+            <div className="h-8 w-px bg-slate-200 mx-1" />
 
             <button
-              onClick={() => {
-                const note = prompt('Enter note text for this node:', activeNode?.note || '');
-                if (note !== null) engine?.setNodeNote(note);
-              }}
+              onClick={() => engine?.toggleNodeCheckbox()}
+              className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <CheckSquare size={18} className="text-emerald-600" />
+              <span className="text-[10px] font-semibold mt-1">Task Checkbox</span>
+            </button>
+
+            <button
+              onClick={() => onOpenNotes?.()}
               className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
             >
               <FileText size={18} className="text-amber-600" />
-              <span className="text-[10px] font-semibold mt-1">Note / Callout</span>
+              <span className="text-[10px] font-semibold mt-1">Topic Notes</span>
             </button>
 
             <button
@@ -455,6 +523,17 @@ export const Ribbon: React.FC<RibbonProps> = ({
             >
               <Link2 size={18} className="text-emerald-600" />
               <span className="text-[10px] font-semibold mt-1">Hyperlink</span>
+            </button>
+
+            <div className="h-8 w-px bg-slate-200 mx-1" />
+
+            <button
+              onClick={() => onImportFolder?.()}
+              title="Import a directory tree into mind map"
+              className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <FolderTree size={18} className="text-indigo-600" />
+              <span className="text-[10px] font-semibold mt-1">Import Folder</span>
             </button>
           </div>
         )}
@@ -503,12 +582,37 @@ export const Ribbon: React.FC<RibbonProps> = ({
         {/* --- VIEW TAB --- */}
         {activeTab === 'view' && (
           <div className="flex items-center gap-3">
+            {/* Pitch / Presentation Mode */}
+            <button
+              onClick={() => engine?.enterPresentationMode()}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-sky-600 text-white rounded-lg text-xs font-semibold shadow-xs hover:opacity-95 transition-opacity"
+            >
+              <Play size={13} className="fill-white" />
+              <span>Pitch Presentation</span>
+            </button>
+
+            {/* Mini-map Navigator Toggle */}
+            <button
+              onClick={() => onToggleMiniMap?.()}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors shadow-xs',
+                showMiniMap
+                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-semibold'
+                  : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+              )}
+            >
+              <Eye size={14} className={showMiniMap ? 'text-indigo-600' : 'text-slate-600'} />
+              <span>Navigator (Mini-Map)</span>
+            </button>
+
+            <div className="h-6 w-px bg-slate-200 mx-1" />
+
             <button
               onClick={() => engine?.fitView()}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
             >
               <Maximize2 size={14} className="text-indigo-600" />
-              <span>Fit to Window</span>
+              <span>Fit Window</span>
             </button>
 
             <button
