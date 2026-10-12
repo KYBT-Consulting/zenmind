@@ -10,6 +10,9 @@ import {
   Sparkles,
   Image as ImageIcon,
   Sigma,
+  BoxSelect,
+  ArrowRight,
+  Braces,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
@@ -170,6 +173,44 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         className="p-1.5 rounded-lg text-slate-600 hover:text-fuchsia-600 hover:bg-slate-100 transition-colors"
       >
         <Sigma size={13} />
+      </button>
+
+      <div className="h-4 w-px bg-slate-200 mx-0.5" />
+
+      {/* Structural Annotations */}
+      <button
+        onClick={() => {
+          if (activeNode.outerFrame) {
+            engine?.removeBoundary();
+          } else {
+            engine?.addBoundary();
+          }
+        }}
+        title={activeNode.outerFrame ? 'Remove Boundary Frame' : 'Add Boundary Frame'}
+        className={cn(
+          'p-1.5 rounded-lg transition-colors',
+          activeNode.outerFrame
+            ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
+            : 'text-slate-600 hover:text-purple-600 hover:bg-slate-100'
+        )}
+      >
+        <BoxSelect size={13} />
+      </button>
+
+      <button
+        onClick={() => engine?.addRelationship()}
+        title="Draw Relationship Arrow"
+        className="p-1.5 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-slate-100 transition-colors"
+      >
+        <ArrowRight size={13} />
+      </button>
+
+      <button
+        onClick={() => engine?.addSummary('Summary')}
+        title="Add Summary Conclusion Bracket"
+        className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
+      >
+        <Braces size={13} />
       </button>
 
       <button

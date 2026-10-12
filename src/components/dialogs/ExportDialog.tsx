@@ -7,6 +7,10 @@ import {
   FileText,
   FileJson,
   Check,
+  FolderArchive,
+  ListTree,
+  Network,
+  Sparkles,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 
@@ -17,13 +21,24 @@ interface ExportDialogProps {
   onClose: () => void;
 }
 
+export type ExportFormatId =
+  | 'png'
+  | 'svg'
+  | 'pdf'
+  | 'xmind'
+  | 'zenmind'
+  | 'md'
+  | 'opml'
+  | 'mm'
+  | 'json';
+
 export const ExportDialog: React.FC<ExportDialogProps> = ({
   isOpen,
   engine,
   docTitle,
   onClose,
 }) => {
-  const [selectedFormat, setSelectedFormat] = useState<'png' | 'svg' | 'pdf' | 'md' | 'json'>('png');
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormatId>('png');
   const [transparent, setTransparent] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -31,37 +46,65 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   const formats = [
     {
-      id: 'png',
-      label: 'PNG Image',
+      id: 'png' as ExportFormatId,
+      label: 'PNG Image (.png)',
       desc: 'High resolution raster image for presentations and sharing',
       icon: FileImage,
       color: 'text-indigo-600',
     },
     {
-      id: 'svg',
-      label: 'SVG Vector',
+      id: 'svg' as ExportFormatId,
+      label: 'SVG Vector (.svg)',
       desc: 'Scalable vector graphic with crisp resolution at any scale',
       icon: FileCode,
       color: 'text-emerald-600',
     },
     {
-      id: 'pdf',
-      label: 'PDF Document',
-      desc: 'Print-ready PDF document',
+      id: 'pdf' as ExportFormatId,
+      label: 'PDF Document (.pdf)',
+      desc: 'Print-ready vector PDF document',
       icon: FileText,
       color: 'text-red-600',
     },
     {
-      id: 'md',
-      label: 'Markdown (.md)',
-      desc: 'Hierarchical list formatted in Markdown for Obsidian or Notion',
+      id: 'xmind' as ExportFormatId,
+      label: 'XMind Archive (.xmind)',
+      desc: 'Compatible with XMind 8, XMind Zen, and modern mind mappers',
+      icon: FolderArchive,
+      color: 'text-orange-600',
+    },
+    {
+      id: 'zenmind' as ExportFormatId,
+      label: 'ZenMind Native (.zenmind)',
+      desc: 'Lossless native project file with custom themes, notes, and layout',
+      icon: Sparkles,
+      color: 'text-violet-600',
+    },
+    {
+      id: 'md' as ExportFormatId,
+      label: 'Markdown Outline (.md)',
+      desc: 'Hierarchical list formatted in Markdown for Obsidian, Notion, or Logseq',
       icon: FileText,
       color: 'text-slate-700',
     },
     {
-      id: 'json',
-      label: 'JSON Project',
-      desc: 'Full raw data to reload and backup in ZenMind',
+      id: 'opml' as ExportFormatId,
+      label: 'OPML 2.0 Outline (.opml)',
+      desc: 'Standard outline format for MindNode, OmniOutliner, and Workflowy',
+      icon: ListTree,
+      color: 'text-teal-600',
+    },
+    {
+      id: 'mm' as ExportFormatId,
+      label: 'FreeMind / Freeplane (.mm)',
+      desc: 'Open XML mind map standard used by FreeMind and Freeplane',
+      icon: Network,
+      color: 'text-cyan-600',
+    },
+    {
+      id: 'json' as ExportFormatId,
+      label: 'JSON Tree (.json)',
+      desc: 'Raw structured JSON tree data for developers and pipelines',
       icon: FileJson,
       color: 'text-amber-600',
     },
@@ -85,8 +128,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 select-none">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-xs">
               <Download size={15} />
@@ -104,7 +147,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           <div className="space-y-2">
             {formats.map((fmt) => {
               const Icon = fmt.icon;

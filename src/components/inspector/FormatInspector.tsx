@@ -16,6 +16,10 @@ import {
   Image as ImageIcon,
   Sigma,
   Trash2,
+  BoxSelect,
+  ArrowRight,
+  Braces,
+  Layers,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -51,11 +55,13 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
   const [activeTab, setActiveTab] = useState<InspectorTab>(initialTab);
   const [noteContent, setNoteContent] = useState<string>('');
   const [newTagInput, setNewTagInput] = useState<string>('');
+  const [outerFrameText, setOuterFrameText] = useState<string>('');
 
-  // Sync note content when activeNode changes
+  // Sync note content and outerFrame when activeNode changes
   useEffect(() => {
     setNoteContent(activeNode?.note || '');
-  }, [activeNode?.uid, activeNode?.note]);
+    setOuterFrameText(activeNode?.outerFrame?.text || '');
+  }, [activeNode?.uid, activeNode?.note, activeNode?.outerFrame?.text]);
 
   useEffect(() => {
     if (initialTab) {
@@ -80,6 +86,15 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
     '#475569', // Slate
     '#1e293b', // Dark
     '#ffffff', // White
+  ];
+
+  const boundaryColorPresets = [
+    { name: 'Indigo', stroke: '#4f46e5', fill: 'rgba(79, 70, 229, 0.08)' },
+    { name: 'Emerald', stroke: '#059669', fill: 'rgba(5, 150, 105, 0.08)' },
+    { name: 'Amber', stroke: '#d97706', fill: 'rgba(217, 119, 6, 0.08)' },
+    { name: 'Rose', stroke: '#e11d48', fill: 'rgba(225, 29, 72, 0.08)' },
+    { name: 'Sky', stroke: '#0284c7', fill: 'rgba(2, 132, 199, 0.08)' },
+    { name: 'Purple', stroke: '#7c3aed', fill: 'rgba(124, 58, 237, 0.08)' },
   ];
 
   // Helper to determine current priority (1-5)
@@ -124,7 +139,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
   };
 
   return (
-    <aside className="w-80 bg-white border-l border-slate-200 flex flex-col z-20 shadow-lg select-none h-full">
+    <aside className="absolute md:relative inset-y-0 right-0 w-80 max-w-[90vw] bg-white border-l border-slate-200 flex flex-col z-40 shadow-2xl md:shadow-lg select-none h-full animate-in slide-in-from-right duration-200 pb-12 md:pb-0">
       {/* Inspector Header */}
       <div className="h-12 px-4 border-b border-slate-100 flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
@@ -640,6 +655,164 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     </div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Grouping & Annotations (EdrawMind Style) */}
+            <div className="pt-4 border-t border-slate-200">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-3">
+                Grouping & Annotations
+              </label>
+
+              {/* Boundary / Outer Frame */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 space-y-2.5 mb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                    <BoxSelect size={15} className="text-indigo-600" />
+                    <span>Boundary Frame</span>
+                  </div>
+                  {activeNode?.outerFrame ? (
+                    <button
+                      onClick={() => engine?.removeBoundary()}
+                      className="text-[10px] text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 size={11} /> Remove
+                    </button>
+                  ) : null}
+                </div>
+
+                {activeNode?.outerFrame ? (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-medium block mb-1">Frame Label</span>
+                      <input
+                        type="text"
+                        value={outerFrameText}
+                        onChange={(e) => {
+                          setOuterFrameText(e.target.value);
+                          engine?.updateBoundary({ text: e.target.value });
+                        }}
+                        placeholder="Boundary label..."
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-hidden focus:border-indigo-500 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-medium block mb-1">Color Palette</span>
+                      <div className="grid grid-cols-6 gap-1.5">
+                        {boundaryColorPresets.map((preset) => (
+                          <button
+                            key={preset.name}
+                            onClick={() =>
+                              engine?.updateBoundary({
+                                strokeColor: preset.stroke,
+                                fill: preset.fill,
+                              })
+                            }
+                            title={preset.name}
+                            className="w-7 h-7 rounded-lg border flex items-center justify-center transition-transform hover:scale-105 cursor-pointer"
+                            style={{
+                              backgroundColor: preset.fill,
+                              borderColor: preset.stroke,
+                            }}
+                          >
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: preset.stroke }} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-medium block mb-1">Border Line Dash</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[
+                          { id: 'none', label: 'Solid' },
+                          { id: '5,5', label: 'Dashed' },
+                          { id: '2,3', label: 'Dotted' },
+                        ].map((dash) => (
+                          <button
+                            key={dash.id}
+                            onClick={() => engine?.updateBoundary({ strokeDasharray: dash.id })}
+                            className="px-2 py-1 text-[10px] font-medium rounded-lg border border-slate-200 hover:border-indigo-400 bg-white text-slate-700 cursor-pointer"
+                          >
+                            {dash.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      Enclose the selected topic and its subtopics inside a highlighted boundary frame.
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {boundaryColorPresets.slice(0, 4).map((preset) => (
+                        <button
+                          key={preset.name}
+                          onClick={() =>
+                            engine?.addBoundary({
+                              strokeColor: preset.stroke,
+                              fill: preset.fill,
+                              radius: 8,
+                              strokeDasharray: '5,5',
+                            })
+                          }
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium hover:opacity-90 transition-all text-slate-700 bg-white cursor-pointer shadow-2xs hover:border-indigo-300"
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: preset.stroke }}
+                          />
+                          <span>{preset.name} Frame</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Relationship Arrow */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 space-y-2 mb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                    <ArrowRight size={15} className="text-sky-600" />
+                    <span>Relationship Arrow</span>
+                  </div>
+                  <button
+                    onClick={() => engine?.removeRelationship()}
+                    className="text-[10px] text-slate-400 hover:text-red-600 font-medium cursor-pointer"
+                    title="Delete highlighted relationship arrow"
+                  >
+                    Delete Arrow
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Connect any two arbitrary topics across branches with a draggable bezier curve and text label.
+                </p>
+                <button
+                  onClick={() => engine?.addRelationship()}
+                  className="w-full py-1.5 px-3 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <ArrowRight size={13} />
+                  <span>Connect Selected Topic</span>
+                </button>
+              </div>
+
+              {/* Summary Conclusion Bracket */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                  <Braces size={15} className="text-indigo-600" />
+                  <span>Summary Bracket</span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Groups child topics together with a curly brace bracket and attaches an overarching conclusion node.
+                </p>
+                <button
+                  onClick={() => engine?.addSummary('Key Takeaway')}
+                  className="w-full py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Braces size={13} />
+                  <span>Add Summary Bracket ({'{'}{'}'})</span>
+                </button>
               </div>
             </div>
           </div>

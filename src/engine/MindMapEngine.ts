@@ -3,11 +3,13 @@ import {
   ActiveNodeInfo,
   BranchLineStyle,
   LayoutType,
+  OuterFrameConfig,
   PriorityLevel,
   ProgressLevel,
   ShapeType,
   THEME_PRESETS,
 } from '../types/mindmap';
+import { MindMapFormatService } from '../services/mindMapFormatService';
 
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
@@ -215,6 +217,7 @@ export class MindMapEngine {
         : undefined,
       isFloating: !!data.isFloating,
       rect,
+      outerFrame: data.outerFrame || undefined,
     };
   }
 
@@ -240,12 +243,53 @@ export class MindMapEngine {
     this.mindMap?.execCommand('ADD_GENERALIZATION', { text });
   }
 
-  addBoundary() {
-    this.mindMap?.execCommand('ADD_OUTER_FRAME');
+  addBoundary(config?: OuterFrameConfig) {
+    const defaultConfig: OuterFrameConfig = {
+      radius: 8,
+      strokeWidth: 2,
+      strokeColor: '#4f46e5',
+      strokeDasharray: '5,5',
+      fill: 'rgba(79, 70, 229, 0.08)',
+      text: '',
+      ...config,
+    };
+    (this.mindMap as any)?.execCommand('ADD_OUTER_FRAME', null, defaultConfig);
+    const active = this.getActiveNode();
+    if (active) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+    }
+  }
+
+  updateBoundary(config: OuterFrameConfig) {
+    if ((this.mindMap as any)?.outerFrame) {
+      (this.mindMap as any).outerFrame.updateActiveOuterFrame(config);
+    }
+    const active = this.getActiveNode();
+    if (active) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+    }
+  }
+
+  removeBoundary() {
+    if ((this.mindMap as any)?.outerFrame) {
+      (this.mindMap as any).outerFrame.removeActiveOuterFrame();
+    }
+    const node = this.getActiveNode();
+    if (node) {
+      this.mindMap?.execCommand('SET_NODE_DATA', node, { outerFrame: null });
+      (this.mindMap as any)?.outerFrame?.renderOuterFrames?.();
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    }
   }
 
   addRelationship() {
     this.mindMap?.execCommand('ADD_ASSOCIATIVE_LINE');
+  }
+
+  removeRelationship() {
+    if ((this.mindMap as any)?.associativeLine) {
+      (this.mindMap as any).associativeLine.removeLine();
+    }
   }
 
   getActiveNode(): any {
@@ -598,20 +642,55 @@ export class MindMapEngine {
     setTimeout(() => this.fitView(), 100);
   }
 
-  async export(format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind', filename: string = 'mind-map', transparent: boolean = false): Promise<any> {
+  async export(
+    format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind' | 'opml' | 'mm' | 'zenmind',
+    filename: string = 'mind-map',
+    transparent: boolean = false
+  ): Promise<any> {
     if (!this.mindMap) return;
 
     switch (format) {
       case 'png':
-        return await this.mindMap.export.png(true, filename, transparent);
       case 'svg':
-        return await this.mindMap.export.svg(true, filename);
       case 'pdf':
-        return await this.mindMap.export.pdf(true, filename);
       case 'json':
-        return await this.mindMap.export.json(true, filename);
       case 'md':
-        return await this.mindMap.export.md(true, filename);
+      case 'xmind': {
+        const mm = this.mindMap as any;
+        if (typeof mm.export === 'function') {
+          return await mm.export(format, true, filename, transparent);
+        } else if (mm.export && typeof mm.export[format] === 'function') {
+          return await mm.export[format](true, filename, transparent);
+        }
+        break;
+      }
+      case 'opml': {
+        const data = this.getData();
+        const xml = MindMapFormatService.exportOpml(data, filename);
+        MindMapFormatService.downloadFile(xml, `${filename}.opml`, 'application/xml');
+        return xml;
+      }
+      case 'mm': {
+        const data = this.getData();
+        const xml = MindMapFormatService.exportFreeMind(data);
+        MindMapFormatService.downloadFile(xml, `${filename}.mm`, 'application/xml');
+        return xml;
+      }
+      case 'zenmind': {
+        const data = this.getData();
+        const json = JSON.stringify(
+          {
+            version: '1.0.0',
+            title: filename,
+            createdAt: new Date().toISOString(),
+            content: data,
+          },
+          null,
+          2
+        );
+        MindMapFormatService.downloadFile(json, `${filename}.zenmind`, 'application/json');
+        return json;
+      }
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }

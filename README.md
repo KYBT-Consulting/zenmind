@@ -14,9 +14,26 @@
   - Catalog Trees
   - Horizontal & Vertical Timelines
   - Ishikawa Fishbone Diagrams (Cause & Effect)
+- **Multi-Format Compatibility Suite (Import & Export)**:
+  - **.zenmind**: Native lossless JSON schema
+  - **.xmind**: Standard XMind 8 & XMind Zen archives
+  - **.md**: Markdown outline trees (Obsidian, Notion, Logseq ready)
+  - **.opml**: OPML 2.0 outlines (MindNode, OmniOutliner, Workflowy)
+  - **.mm**: FreeMind & Freeplane open XML standard
+  - **PNG / SVG / PDF**: High-res raster, infinite vector graphics, and print-ready PDFs
+  - **Canvas Drag & Drop**: Drop any supported file directly onto the canvas to load instantly
+- **EdrawMind Structural Annotations**:
+  - **Boundary Frames**: Highlight node clusters with custom background tints, border dash styles, and titles.
+  - **Relationship Lines**: Connect arbitrary nodes across branches with interactive bezier curves and editable labels.
+  - **Summary Brackets**: Group sibling branches with curly braces (`{`) and conclusion topics.
+  - **Auto-Numbering Schemes**: Hierarchical decimal (`1.`, `1.1.`, `1.1.1.`) or alphabetical prefixes.
+- **Mobile & Touch Optimized**:
+  - Responsive **Mobile Bottom Navigation Drawer** on viewports `< 768px`.
+  - Multi-touch 2-finger pinch-to-zoom and canvas panning.
+  - Responsive slide-over drawers for Format Inspector and Outline panel.
 - **Rich Media & Attachments**:
-  - Image attachments with inline resizing handles.
-  - LaTeX mathematical equation rendering via KaTeX.
+  - Image attachments with inline interactive hover resizing handles.
+  - LaTeX mathematical equations rendering via KaTeX.
 - **Canvas Ergonomics & Navigation**:
   - Format Painter style cloner for 1-click styling transfer.
   - Spacebar quick-pan (`Space + Drag`) across the infinite canvas.
@@ -26,12 +43,6 @@
 - **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
 - **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
 - **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
-- **Rich Mind Map Primitives**: Summaries (curly braces), Boundaries (outer frames), Relationship lines, and Hyperlinks.
-- **Bi-Directional Outline Sync**: Split-screen Notion-style hierarchical outline synchronized with the canvas.
-- **Context Floating Bubble Toolbar**: Rapidly add subtopics (`Tab`), siblings (`Enter`), colors, and shapes directly over selected nodes.
-- **Format Inspector Sidebar**: Fine-grained styling for shapes, branch bezier curves, rainbow branch palettes, and harmonious theme presets.
-- **AI-Powered Brainstorming**: Powered by Google Gemini 2.5 Flash to generate full mind maps from prompts or expand subtopics automatically.
-- **Multi-Format Export**: PNG, SVG (vector), PDF, Markdown, and JSON.
 - **Cross-Platform Ready**: Designed for native desktop packaging via **Tauri v3 Alpha** (Linux, Windows, macOS) and mobile/PWA deployment.
 
 ---

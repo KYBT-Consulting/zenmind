@@ -313,14 +313,31 @@ export interface ActiveNodeInfo {
   image?: { url: string; title?: string; width?: number; height?: number };
   isFloating?: boolean;
   rect?: { left: number; top: number; width: number; height: number };
+  outerFrame?: {
+    text?: string;
+    radius?: number;
+    strokeWidth?: number;
+    strokeColor?: string;
+    strokeDasharray?: string;
+    fill?: string;
+  };
 }
 
 export type PriorityLevel = 1 | 2 | 3 | 4 | 5;
 export type ProgressLevel = 0 | 25 | 50 | 75 | 100;
 
+export interface OuterFrameConfig {
+  text?: string;
+  radius?: number;
+  strokeWidth?: number;
+  strokeColor?: string;
+  strokeDasharray?: string;
+  fill?: string;
+}
+
 export interface MindMapExportOptions {
   filename?: string;
-  format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind';
+  format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind' | 'opml' | 'mm' | 'zenmind';
   transparent?: boolean;
 }
 

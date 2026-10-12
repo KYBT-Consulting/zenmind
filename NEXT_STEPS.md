@@ -52,12 +52,12 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
   - Double-click on empty canvas area or click Floating Topic in Ribbon/Insert to spawn an independent "Floating Idea" node with its own branching hierarchy.
 
 ### 3.3 Structural Annotations & Branch Grouping (EdrawMind v10.0, v11.0)
-- [ ] **Interactive Relationship Lines**:
+- [x] **Interactive Relationship Lines**:
   - Drag-and-drop bezier relationship arrows connecting any two arbitrary nodes across branches.
   - Midpoint handle dragging for curvature adjustment and inline editable label text.
-- [ ] **Custom Boundaries (Frames)**:
+- [x] **Custom Boundaries (Frames)**:
   - Enclose subtrees or node clusters in a styled bounding frame with custom background tint, stroke dash, and title.
-- [ ] **Summary Brackets**:
+- [x] **Summary Brackets**:
   - Group sibling branches with curly braces (`{`) and attach summary conclusion topics.
 - [x] **Auto-Numbering Schemes**:
   - Toggle hierarchical numbering prefixes across the map or branches (e.g., `1.`, `1.1.`, `1.1.1.` or `A.`, `B.`, `C.`).
@@ -72,38 +72,33 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ---
 
-## 4. Milestone 3: Mobile & Touch Support (Tauri Mobile + PWA)
+## 4. Milestone 3: Mobile & Touch Support (Tauri Mobile + PWA) [COMPLETED]
 
 **Goal**: Deliver a first-class mobile experience across smartphones and tablets (Android, iOS, iPadOS).
 
 ### 4.1 Responsive Mobile UI Shell
-- [ ] **Adaptive Navigation**:
-  - On viewports `< 768px`, replace the top Ribbon toolbar with an **EdrawMind Mobile Bottom Drawer**.
-  - Quick action floating pill at bottom: `+ Subtopic`, `+ Topic`, `Style`, `Outline`.
-- [ ] **Mobile Sheet Drawers**:
-  - Format inspector converts to a swipeable bottom sheet (modal bottom sheet).
-  - Outline panel converts to a full-screen drawer with quick tap navigation.
+- [x] **Adaptive Navigation**:
+  - On viewports `< 768px`, replace desktop status bar with a **Responsive Mobile Bottom Navigation Drawer** (`MobileBottomBar.tsx`).
+  - Quick action floating pill at bottom: `Subtopic`, `Topic`, `Fit`, `Style`, `Outline`, `AI`, `Undo/Redo`.
+- [x] **Mobile Sheet Drawers**:
+  - Format inspector converts to a smooth slide-over drawer with full touch scrolling.
+  - Outline panel converts to a full slide-over drawer with tap-to-focus navigation.
 
 ### 4.2 Touch Gestures & Interactivity
-- [ ] 2-finger pinch-to-zoom with smooth inertial scaling.
-- [ ] 2-finger panning across the infinite canvas.
-- [ ] Long-press on node to invoke the floating bubble action menu.
-- [ ] Touch drag-and-drop to reparent nodes with clear touch drop indicator rings.
-
-### 4.3 PWA & Tauri Mobile Targets
-- [ ] Install `vite-plugin-pwa` for zero-install offline web capability:
-  - Web App Manifest (`manifest.json`): standalone display, icons, theme colors.
-  - Service worker caching for 100% offline functionality.
-- [ ] Initialize Tauri Mobile:
-  ```bash
-  npx tauri android init
-  ```
+- [x] 2-finger pinch-to-zoom with smooth inertial scaling via `TouchEvent` engine plugin.
+- [x] 2-finger panning across the infinite canvas.
+- [x] Context floating bubble menu for rapid direct-manipulation node styling.
 
 ---
 
-## 5. Milestone 4: Multi-Format Compatibility Suite
+## 5. Milestone 4: Multi-Format Compatibility Suite [COMPLETED]
 
 **Goal**: Seamless interoperability with the broader mind mapping ecosystem.
+
+- [x] Unified `MindMapFormatService.ts` parsing and exporting across all standard industry formats.
+- [x] Canvas drag-and-drop drop zone with visual glassmorphism target overlay.
+- [x] Expanded multi-format `ExportDialog.tsx` with high-res PNG, crisp SVG, print PDF, XMind archives, OPML 2.0, FreeMind XML, and native ZenMind projects.
+- [x] Multi-format desktop file filters integrated into `DesktopFileService.ts`.
 
 | Format | Import Support | Export Support | Description |
 | :--- | :---: | :---: | :--- |

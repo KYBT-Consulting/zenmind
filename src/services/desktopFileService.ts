@@ -98,13 +98,33 @@ export class DesktopFileService {
     if (this.isTauri()) {
       try {
         const selected = await open({
-          title: 'Open ZenMind Project',
+          title: 'Open Mind Map Document',
           multiple: false,
           directory: false,
           filters: [
             {
-              name: 'ZenMind Mind Map',
+              name: 'Supported Mind Maps (*.zenmind, *.json, *.xmind, *.md, *.opml, *.mm)',
+              extensions: ['zenmind', 'json', 'xmind', 'md', 'markdown', 'opml', 'mm'],
+            },
+            {
+              name: 'ZenMind / JSON Projects (*.zenmind, *.json)',
               extensions: ['zenmind', 'json'],
+            },
+            {
+              name: 'XMind Archives (*.xmind)',
+              extensions: ['xmind'],
+            },
+            {
+              name: 'Markdown Documents (*.md, *.markdown)',
+              extensions: ['md', 'markdown'],
+            },
+            {
+              name: 'OPML Outlines (*.opml)',
+              extensions: ['opml'],
+            },
+            {
+              name: 'FreeMind XML (*.mm)',
+              extensions: ['mm'],
             },
           ],
         });

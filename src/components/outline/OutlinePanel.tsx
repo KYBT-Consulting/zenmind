@@ -89,7 +89,7 @@ export const OutlinePanel: React.FC<OutlinePanelProps> = ({
   onClose,
 }) => {
   return (
-    <aside className="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shadow-md select-none h-full">
+    <aside className="absolute md:relative inset-y-0 left-0 w-80 max-w-[90vw] bg-white border-r border-slate-200 flex flex-col z-40 shadow-2xl md:shadow-md select-none h-full animate-in slide-in-from-left duration-200 pb-12 md:pb-0">
       <div className="h-12 px-4 border-b border-slate-100 flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
           <List size={14} className="text-indigo-600" />
