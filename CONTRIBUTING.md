@@ -31,7 +31,8 @@ We are committed to providing a welcoming, inclusive, and harassment-free enviro
 - **Rust Toolchain** *(Optional, only needed for native desktop development)*:
   - Rust `1.85+` (`rustup default stable`)
   - OS-specific build tools:
-    - **Linux**: `libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `file`, `libssl-dev`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`
+    - **Fedora / RHEL (`dnf`)**: `sudo dnf install webkit2gtk4.1-devel openssl-devel libappindicator-gtk3-devel librsvg2-devel libxdo-devel rpm-build gcc gcc-c++ make`
+    - **Ubuntu 24.04+ / Debian (`apt`)**: `sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev libssl-dev rpm build-essential`
     - **macOS**: Xcode Command Line Tools
     - **Windows**: Microsoft C++ Build Tools & WebView2 runtime
 
