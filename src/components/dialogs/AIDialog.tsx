@@ -21,7 +21,7 @@ import {
 } from '../../services/aiService';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
-import { cn } from '../../lib/utils';
+import { cn, stripHtml } from '../../lib/utils';
 
 interface AIDialogProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
   onClose,
 }) => {
   const [topic, setTopic] = useState(
-    mode === 'expand' && activeNode ? activeNode.text : ''
+    mode === 'expand' && activeNode ? stripHtml(activeNode.text) : ''
   );
   const [loading, setLoading] = useState(false);
   const [activeView, setActiveView] = useState<'prompt' | 'settings'>('prompt');
@@ -55,7 +55,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
       setConfig(AIService.getConfig());
       setTestStatus({ testing: false });
       if (mode === 'expand' && activeNode) {
-        setTopic(activeNode.text);
+        setTopic(stripHtml(activeNode.text));
       }
     }
   }, [isOpen, mode, activeNode]);

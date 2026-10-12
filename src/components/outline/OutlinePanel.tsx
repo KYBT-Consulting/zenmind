@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
-import { cn } from '../../lib/utils';
+import { cn, stripHtml } from '../../lib/utils';
 
 interface OutlineItemProps {
   node: any;
@@ -28,7 +28,8 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const children = node.children || [];
   const hasChildren = children.length > 0;
-  const isSelected = activeNode?.text === node.data?.text;
+  const isSelected =
+    stripHtml(activeNode?.text || '') === stripHtml(node.data?.text || '');
 
   return (
     <div className="select-none">
@@ -54,7 +55,7 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
         )}
 
         <span className="text-xs truncate flex-1 font-medium">
-          {node.data?.text || '(Untitled Topic)'}
+          {stripHtml(node.data?.text) || '(Untitled Topic)'}
         </span>
       </div>
 

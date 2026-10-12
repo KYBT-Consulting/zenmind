@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
-import { cn } from '../../lib/utils';
+import { cn, stripHtml } from '../../lib/utils';
 
 interface FloatingBubbleMenuProps {
   engine: MindMapEngine | null;
@@ -48,7 +48,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-3 py-1.5 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
       <span className="text-xs font-bold text-slate-800 max-w-[130px] truncate mr-1.5 pr-2 border-r border-slate-200">
-        {activeNode.text || 'Topic'}
+        {stripHtml(activeNode.text) || 'Topic'}
       </span>
 
       <button

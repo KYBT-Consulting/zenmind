@@ -9,6 +9,7 @@ import {
 import katex from 'katex';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
+import { stripHtml } from '../../lib/utils';
 
 interface FormulaDialogProps {
   isOpen: boolean;
@@ -158,7 +159,7 @@ export const FormulaDialog: React.FC<FormulaDialogProps> = ({
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <div className="text-[11px] text-slate-400 flex items-center gap-1">
             <HelpCircle size={12} />
-            Target: <span className="font-semibold text-slate-600 truncate max-w-[150px]">{activeNode?.text || 'Selected Topic'}</span>
+            Target: <span className="font-semibold text-slate-600 truncate max-w-[150px]">{stripHtml(activeNode?.text) || 'Selected Topic'}</span>
           </div>
 
           <div className="flex items-center gap-2">

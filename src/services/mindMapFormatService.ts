@@ -1,4 +1,5 @@
 import MindMap from 'simple-mind-map';
+import { stripHtml } from '../lib/utils';
 
 export interface ParseResult {
   success: boolean;
@@ -226,7 +227,7 @@ export class MindMapFormatService {
    */
   static exportOpml(treeData: any, title: string = 'ZenMind Map'): string {
     const serializeOutline = (node: any, indent: string = '      '): string => {
-      const text = this.escapeXml(node.data?.text || 'Topic');
+      const text = this.escapeXml(stripHtml(node.data?.text || 'Topic'));
       const noteAttr = node.data?.note ? ` _note="${this.escapeXml(node.data.note)}"` : '';
       const children = node.children || [];
 
@@ -259,7 +260,7 @@ ${serializeOutline(rootNode)}  </body>
    */
   static exportFreeMind(treeData: any): string {
     const serializeNode = (node: any, indent: string = '  '): string => {
-      const text = this.escapeXml(node.data?.text || 'Topic');
+      const text = this.escapeXml(stripHtml(node.data?.text || 'Topic'));
       const children = node.children || [];
 
       if (children.length === 0) {

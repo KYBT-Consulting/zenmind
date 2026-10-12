@@ -31,7 +31,7 @@ import {
   THEME_PRESETS,
   BranchLineStyle,
 } from '../../types/mindmap';
-import { cn } from '../../lib/utils';
+import { cn, stripHtml } from '../../lib/utils';
 
 export type InspectorTab = 'node' | 'task' | 'notes' | 'structure';
 
@@ -194,7 +194,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     Selected Topic
                   </span>
                   <div className="font-semibold text-slate-800 truncate">
-                    {activeNode.text || '(Untitled Topic)'}
+                    {stripHtml(activeNode.text) || '(Untitled Topic)'}
                   </div>
                 </div>
 
@@ -539,7 +539,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     Notes for Topic
                   </span>
                   <div className="font-semibold text-slate-800 truncate">
-                    {activeNode.text || '(Untitled Topic)'}
+                    {stripHtml(activeNode.text) || '(Untitled Topic)'}
                   </div>
                 </div>
 

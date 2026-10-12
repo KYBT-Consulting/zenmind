@@ -10,6 +10,7 @@ import {
   THEME_PRESETS,
 } from '../types/mindmap';
 import { MindMapFormatService } from '../services/mindMapFormatService';
+import { stripHtml } from '../lib/utils';
 
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
@@ -133,6 +134,21 @@ export class MindMapEngine {
       }
     });
 
+    // In-place text editing finished or tree re-rendered
+    this.mindMap.on('hide_text_edit', () => {
+      const active = this.getActiveNode();
+      if (active) {
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+      }
+    });
+
+    this.mindMap.on('node_tree_render_end', () => {
+      const active = this.getActiveNode();
+      if (active) {
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+      }
+    });
+
     // Data changes
     this.mindMap.on('data_change', (data: any) => {
       this.callbacks.onDataChange?.(data);
@@ -190,7 +206,7 @@ export class MindMapEngine {
 
     return {
       uid: node.uid,
-      text: data.text || '',
+      text: stripHtml(data.text || ''),
       isRoot: !!node.isRoot,
       shape: data.shape || node.getStyle?.('shape') || 'roundedRectangle',
       fillColor: data.fillColor || node.getStyle?.('fillColor'),
@@ -297,7 +313,16 @@ export class MindMapEngine {
   }
 
   setNodeText(text: string) {
-    this.mindMap?.execCommand('SET_NODE_TEXT', text);
+    const node = this.getActiveNode();
+    if (node) {
+      const clean = stripHtml(text);
+      if ((this.mindMap as any)?.richText) {
+        this.mindMap?.execCommand('SET_NODE_TEXT', node, `<p>${clean}</p>`, true);
+      } else {
+        this.mindMap?.execCommand('SET_NODE_TEXT', node, clean);
+      }
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    }
   }
 
   setNodeShape(shape: ShapeType) {
