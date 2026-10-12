@@ -113,6 +113,16 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ---
 
+## 5.1 AI Copilot & Multi-Provider Architecture [COMPLETED]
+
+- [x] Dual-engine provider abstraction supporting **Google Gemini** & **OpenAI-Compatible** APIs.
+- [x] Ready presets for local LLMs: **Ollama** (`http://localhost:11434/v1`) & **LM Studio** (`http://localhost:1234/v1`).
+- [x] Cloud alternatives: **OpenAI**, **Groq**, **DeepSeek**, and **OpenRouter**.
+- [x] Real-time diagnostic ping / connection tester in the AI settings modal.
+- [x] Prompt generation for full map brainstorming and active-node tree expansion.
+
+---
+
 ## 6. Milestone 5: Open Source Governance & Community Launch
 
 **Goal**: Prepare ZenMind for open-source adoption, contributors, and showcase.
@@ -130,7 +140,6 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ## 7. Immediate Next Action Item
 
-The logical first step to execute is **Milestone 1 (Tauri v2 Initialization)**:
-1. Configure Rust toolchain on your Linux machine (`rustup default stable`).
-2. Install Tauri v2 CLI and initialize the `src-tauri` native desktop scaffolding.
-3. Test the native Linux desktop build (`cargo tauri dev`).
+The next milestone to complete is **Milestone 5 (Open Source Governance & Release)**:
+1. Create `CONTRIBUTING.md` and GitHub issue templates (`.github/ISSUE_TEMPLATE/`).
+2. Add GitHub Pages automated demo deployment workflow (`.github/workflows/deploy-pages.yml`).

@@ -40,6 +40,11 @@
   - Bird's-eye canvas Mini-Map overlay navigator.
   - Double-click empty canvas to spawn independent **Floating Topics**.
 - **Task & Progress Tracking**: Interactive todo checkboxes (0%-100%) and P1-P5 priority badges.
+- **AI Mind Map Copilot & Multi-Provider Support**:
+  - Full mind map expansion and brainstorm suggestions.
+  - Built-in support for **Google Gemini** as well as **OpenAI-compatible endpoints** (`/v1/chat/completions`).
+  - Seamless connection to local LLMs via **Ollama** (`http://localhost:11434/v1`) and **LM Studio** (`http://localhost:1234/v1`), plus cloud models (OpenAI, Groq, DeepSeek, OpenRouter).
+  - Built-in live connection tester and customizable model names.
 - **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
 - **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
 - **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
