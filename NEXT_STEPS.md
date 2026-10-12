@@ -12,73 +12,64 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ---
 
-## 2. Milestone 1: Desktop Native App Integration (Tauri v2)
+## 2. Milestone 1: Desktop Native App Integration (Tauri v3 Alpha) [COMPLETED]
 
 **Goal**: Transform ZenMind into a native desktop application with tiny binary footprint (~15MB), fast startup, low RAM consumption (~40MB), and native OS capabilities.
 
-### 2.1 Tauri v2 Initialization
-- [ ] Configure the Rust toolchain: `rustup default stable`.
-- [ ] Install Tauri v2 CLI: `npm install -D @tauri-apps/cli@next @tauri-apps/api@next`.
-- [ ] Initialize Tauri in the project:
-  ```bash
-  npx tauri init
-  ```
-  - App Name: `ZenMind`
-  - Window Title: `ZenMind - Open Source Mind Mapping`
-  - Web assets: `../dist`
-  - Dev server: `http://localhost:3000`
-- [ ] Configure `src-tauri/tauri.conf.json`:
-  - Window dimensions: `1280x800` (min `900x600`).
-  - App icons (Linux png/svg, Windows `.ico`, macOS `.icns`).
-  - Native permissions: file-system, dialog, os.
-
-### 2.2 Native OS File System Integration
-- [ ] Implement Tauri file dialog plugin (`@tauri-apps/plugin-dialog` & `@tauri-apps/plugin-fs`).
-- [ ] Native file operations:
-  - **Open File**: Native file picker with `.zenmind` / `.json` filter.
-  - **Save / Save As**: Native save dialog saving directly to disk without browser download prompts.
-  - **Dirty State Tracking**: Display asterisk `*` or bullet in title bar when there are unsaved changes.
-  - **Auto-Save / Backup**: Configurable periodic backup to app data directory.
-  - **Recent Files Menu**: Persist recently opened file paths in local storage.
-
-### 2.3 Automated GitHub Actions CI/CD for Multi-Platform Builds
-- [ ] Create `.github/workflows/release.yml`:
-  - Trigger: On Git tag push (e.g., `v0.2.0`).
-  - **Linux Job** (`ubuntu-latest`): Builds `.deb`, `.AppImage`, and `.tar.gz`.
-  - **Windows Job** (`windows-latest`): Builds `.msi` and portable `.exe`.
-  - **macOS Job** (`macos-latest`): Builds universal `.dmg` (Apple Silicon M1/M2/M3 + Intel x86_64) without needing a physical Apple device!
-  - Automatically publishes binaries to the GitHub Releases page with changelog.
+- [x] Configure Rust toolchain & Tauri v3 Alpha (`3.0.0-alpha.4` CLI, `3.0.0-alpha.2` API).
+- [x] Initialize native desktop scaffolding in `src-tauri` with Linux, Windows, and macOS target support.
+- [x] Implement native filesystem service (`DesktopFileService.ts`) with `tauri-plugin-dialog` & `tauri-plugin-fs` direct-to-disk open/save operations and web fallback.
+- [x] Automated CI/CD GitHub Actions workflow (`release.yml` & `ci.yml`) for multi-platform builds (.deb, .AppImage, .msi, .exe, .dmg universal).
 
 ---
 
 ## 3. Milestone 2: EdrawMind Feature Depth & Visual Polish
 
-**Goal**: Elevate canvas interactions, animations, and formatting tools to directly match or exceed EdrawMind.
+**Goal**: Elevate canvas interactions, formatting tools, and node capabilities to match EdrawMind's signature user experience (derived from EdrawMind changelog v6.0–v14.0 review).
 
-### 3.1 Advanced Mind Map Elements
+### 3.1 Core Topic Metadata & Task Management (EdrawMind v12.4 & v13.0)
+- [ ] **Task / Todo Checkboxes & Progress Tracking**:
+  - Add checkbox attribute to topics with completion states (`Not Started`, `In Progress`, `Completed`).
+  - Progress markers (0%, 25%, 50%, 75%, 100%) and Priority badges (P1, P2, P3) using built-in SVG icon sets.
+  - Interactive click-to-toggle directly on the canvas node or via Floating Menu.
+- [ ] **Dedicated Topic Notes Drawer / Split-Screen Editor**:
+  - Expandable side panel / drawer to view and write comprehensive Markdown notes for the active node.
+  - Keeps complex thoughts and meeting notes docked cleanly without cluttering the visual canvas.
+- [ ] **Rich Node Content & Attachments**:
+  - Node icons / emoji picker (priority, progress, flags, stars from engine icon library).
+  - Hyperlinks with preview tooltip and title.
+  - Image attachments with inline resizing handle.
+
+### 3.2 Canvas Navigation & Ergonomics (EdrawMind v8.0, v9.0, v10.0)
+- [ ] **Format Painter (Style Cloner)**:
+  - One-click copy/paste of topic styles (shape, fill color, border width, border color, font styling).
+  - Powered by the built-in `Painter` engine plugin; accessible via Ribbon *Home* tab and Floating Bubble menu.
+- [ ] **Spacebar Quick-Pan**:
+  - Hold `Spacebar` + drag left mouse button to pan smoothly across the infinite canvas (Figma & EdrawMind standard).
+- [ ] **Canvas Mini-Map (Bird's Eye Navigator)**:
+  - Collapsible thumbnail preview overlay in bottom-right corner showing current viewport bounds over the entire diagram.
+  - Powered by the built-in `MiniMap` engine plugin.
 - [ ] **Floating Topics**:
-  - Allow double-clicking on empty canvas area to spawn an independent "Floating Idea" node.
-  - Floating nodes can branch into their own subtrees.
-- [ ] **Interactive Relationship Lines**:
-  - Drag-and-drop relationship links connecting any two arbitrary nodes across branches.
-  - Support midpoint control handle dragging for custom bezier curvature.
-  - Inline editable relationship label text.
-- [ ] **Custom Boundaries (Frames)**:
-  - Select subtrees or nodes and wrap them in a styled boundary box.
-  - Customize boundary background tint, border dash array, and header label.
-- [ ] **Summary Brackets**:
-  - Group multiple sibling nodes with curly braces (`{`) or brackets.
-  - Attach summary text nodes to the bracket tip.
-- [ ] **Rich Node Content**:
-  - Node icons / emojis picker.
-  - Color-coded priority tags (e.g., `Priority 1`, `In Progress`, `Done`).
-  - Image attachments (drag-and-drop images directly onto nodes).
+  - Double-click on empty canvas area to spawn an independent "Floating Idea" node with its own branching hierarchy.
 
-### 3.2 Presentation / Pitch Mode
-- [ ] Fullscreen presentation mode:
-  - Hide all ribbons, sidebars, and toolbars.
-  - Step-by-step traversal: pressing `ArrowRight` or `Space` pans/zooms to the next branch in sequence.
-  - Ideal for presenting mind maps as slide replacements.
+### 3.3 Structural Annotations & Branch Grouping (EdrawMind v10.0, v11.0)
+- [ ] **Interactive Relationship Lines**:
+  - Drag-and-drop bezier relationship arrows connecting any two arbitrary nodes across branches.
+  - Midpoint handle dragging for curvature adjustment and inline editable label text.
+- [ ] **Custom Boundaries (Frames)**:
+  - Enclose subtrees or node clusters in a styled bounding frame with custom background tint, stroke dash, and title.
+- [ ] **Summary Brackets**:
+  - Group sibling branches with curly braces (`{`) and attach summary conclusion topics.
+- [ ] **Auto-Numbering Schemes**:
+  - Toggle hierarchical numbering prefixes across the map or branches (e.g., `1.`, `1.1.`, `1.1.1.` or `A.`, `B.`, `C.`).
+
+### 3.4 Presentation Mode & Smart Import (EdrawMind v12.0, v12.3.18)
+- [ ] **Pitch / Fullscreen Presentation Mode**:
+  - Turn mind maps into instant slideshows without exporting to PowerPoint.
+  - Step-by-step traversal with `ArrowRight` / `Space` camera zooms smoothly into each branch.
+  - Powered by the built-in `Demonstrate` engine plugin.
+- [ ] **Local Folder Structure Import (Folder-to-MindMap)**:
+  - Select a local directory (via native dialog in Tauri or `<input webkitdirectory>` in web) to automatically generate an organized mind map tree of project files and folders with direct hyperlinks.
 
 ---
 
