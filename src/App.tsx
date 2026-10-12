@@ -9,6 +9,7 @@ import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { AIDialog } from './components/dialogs/AIDialog';
 import { ExportDialog } from './components/dialogs/ExportDialog';
+import { DesktopFileService } from './services/desktopFileService';
 
 export default function App() {
   const [engine, setEngine] = useState<MindMapEngine | null>(null);
@@ -26,6 +27,7 @@ export default function App() {
   });
   const [showExportDialog, setShowExportDialog] = useState(false);
 
+  const [currentFilePath, setCurrentFilePath] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate total topic count from data tree
@@ -42,32 +44,40 @@ export default function App() {
 
   const totalNodes = countNodes(mindMapData);
 
-  // File Save (.zenmind JSON)
-  const handleSaveFile = useCallback(() => {
+  // File Save (.zenmind JSON) - Native Desktop & Web
+  const handleSaveFile = useCallback(async () => {
     if (!engine) return;
     const data = engine.getData();
-    const payload = {
-      version: '1.0.0',
-      title: docTitle,
-      savedAt: new Date().toISOString(),
-      content: data,
-    };
+    const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
+    if (result.success && result.filePath) {
+      setCurrentFilePath(result.filePath);
+    }
+  }, [engine, docTitle, currentFilePath]);
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${docTitle.trim() || 'mindmap'}.zenmind`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [engine, docTitle]);
-
-  // File Open (.zenmind / .json)
-  const handleOpenFile = useCallback(() => {
+  // File Open (.zenmind / .json) - Native Desktop & Web
+  const handleOpenFile = useCallback(async () => {
+    if (DesktopFileService.isTauri()) {
+      const result = await DesktopFileService.openZenMindFile();
+      if (result.success && result.content) {
+        try {
+          const parsed = JSON.parse(result.content);
+          if (parsed.content) {
+            if (parsed.title) setDocTitle(parsed.title);
+            engine?.setData(parsed.content);
+          } else if (parsed.data) {
+            engine?.setData(parsed);
+          }
+          if (result.filePath) setCurrentFilePath(result.filePath);
+        } catch (err) {
+          console.error('File parsing error:', err);
+          alert('Could not open mind map file.');
+        }
+      }
+      return;
+    }
+    // Web fallback
     fileInputRef.current?.click();
-  }, []);
+  }, [engine]);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
