@@ -4,7 +4,7 @@
 > 
 > **[🌐 Try Live Demo](https://kybt-consulting.github.io/zenmind/)** · **[Contributing Guidelines](./CONTRIBUTING.md)** · **[Architecture Roadmap](./NEXT_STEPS.md)**
 >
-> Maintained with ❤️ by [KYBT Consulting](https://github.com/KYBT-Consulting).
+> Maintained with ❤️ by **[KYBT Consulting](https://kybtconsulting.com)** — makers of **[Vertaxa EA](https://vertaxa.online)**.
 
 ---
 
@@ -97,6 +97,12 @@ npm run build
 ## 📄 Architecture & Roadmap
 
 For full technical specifications, architecture decisions, and roadmap, see [`NEXT_STEPS.md`](./NEXT_STEPS.md).
+
+---
+
+## 🏢 About the Maintainer
+
+**ZenMind** is proudly built and maintained by **[KYBT Consulting](https://kybtconsulting.com)**, creators of **[Vertaxa EA](https://vertaxa.online)** (advanced algorithmic trading technology and execution systems).
 
 ---
 

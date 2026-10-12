@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to **ZenMind**! ZenMind is an open-source, modern EdrawMind alternative built for cross-platform mind mapping productivity.
 
-This project is proudly maintained by [KYBT Consulting](https://github.com/KYBT-Consulting) and community contributors.
+This project is proudly maintained by [KYBT Consulting](https://kybtconsulting.com) — makers of [Vertaxa EA](https://vertaxa.online) — and community contributors.
 
 ---
 
