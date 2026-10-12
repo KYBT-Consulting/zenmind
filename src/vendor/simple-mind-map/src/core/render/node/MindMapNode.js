@@ -61,8 +61,8 @@ class MindMapNode {
     // top
     this._top = opt.top || 0
     // 自定义位置
-    this.customLeft = opt.data.data.customLeft || undefined
-    this.customTop = opt.data.data.customTop || undefined
+    this.customLeft = opt.data.data.customLeft !== undefined ? opt.data.data.customLeft : undefined
+    this.customTop = opt.data.data.customTop !== undefined ? opt.data.data.customTop : undefined
     // 是否正在拖拽中
     this.isDrag = false
     // 父节点
@@ -171,7 +171,7 @@ class MindMapNode {
 
   // 支持自定义位置
   get left() {
-    return this.customLeft || this._left
+    return this.customLeft !== undefined ? this.customLeft : this._left
   }
 
   set left(val) {
@@ -179,7 +179,7 @@ class MindMapNode {
   }
 
   get top() {
-    return this.customTop || this._top
+    return this.customTop !== undefined ? this.customTop : this._top
   }
 
   set top(val) {
@@ -319,8 +319,8 @@ class MindMapNode {
     if (!ignoreUpdateCustomTextWidth) {
       this.customTextWidth = this.getData('customTextWidth') || undefined
     }
-    this.customLeft = this.getData('customLeft') || undefined
-    this.customTop = this.getData('customTop') || undefined
+    this.customLeft = this.getData('customLeft') !== undefined ? this.getData('customLeft') : undefined
+    this.customTop = this.getData('customTop') !== undefined ? this.getData('customTop') : undefined
     // 这里不要更新概要，不然即使概要没修改，每次也会重新渲染
     // this.updateGeneralization()
     this.createNodeData(recreateTypes)

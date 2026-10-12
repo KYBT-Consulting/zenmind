@@ -71,6 +71,7 @@ export class MindMapEngine {
   private currentLayout: LayoutType = 'mindMap';
   private currentThemeId: string = 'ocean-breeze';
   private rainbowLinesEnabled: boolean = true;
+  private isAutoNumbering: boolean = false;
 
   constructor(container: HTMLElement, callbacks: MindMapEngineCallbacks = {}, initialData?: any) {
     this.container = container;
@@ -98,6 +99,7 @@ export class MindMapEngine {
       isShowCreateChildBtnIcon: true,
       enableCtrlKeyNodeSelection: true,
       enableDragModifyNodeWidth: true,
+      enableFreeDrag: true, // Allows freely dragging nodes and floating topics anywhere on canvas
       errorHandler: (code: string, err: any) => {
         console.error('MindMap error:', code, err);
         this.callbacks.onError?.({ code, err });
@@ -326,11 +328,29 @@ export class MindMapEngine {
   }
 
   setNodeShape(shape: ShapeType) {
-    this.mindMap?.execCommand('SET_NODE_SHAPE', shape);
+    const list = this.mindMap?.renderer?.activeNodeList || [];
+    if (list.length > 0) {
+      list.forEach((node: any) => {
+        this.mindMap?.execCommand('SET_NODE_STYLE', node, 'shape', shape);
+      });
+      const active = this.getActiveNode();
+      if (active) {
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+      }
+    }
   }
 
   setNodeStyle(property: string, value: any) {
-    this.mindMap?.execCommand('SET_NODE_STYLE', property, value);
+    const list = this.mindMap?.renderer?.activeNodeList || [];
+    if (list.length > 0) {
+      list.forEach((node: any) => {
+        this.mindMap?.execCommand('SET_NODE_STYLE', node, property, value);
+      });
+      const active = this.getActiveNode();
+      if (active) {
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
+      }
+    }
   }
 
   setNodeNote(note: string) {
@@ -557,18 +577,27 @@ export class MindMapEngine {
     this.mindMap?.execCommand('RESET_LAYOUT');
   }
 
-  toggleAutoNumbering(enable: boolean = true) {
+  toggleAutoNumbering(enable?: boolean) {
     const data = this.getData();
     if (!data) return;
 
     const stripNumbering = (text: string): string => {
-      return text.replace(/^(\d+(\.\d+)*|[A-Z](\.\d+)*)\.?\s+/, '');
+      const clean = stripHtml(text);
+      return clean.replace(/^(\d+(\.\d+)*|[A-Z](\.\d+)*)\.?\s+/, '');
     };
+
+    const targetState = enable !== undefined ? enable : !this.isAutoNumbering;
+    this.isAutoNumbering = targetState;
 
     const applyNumbering = (node: any, prefix: string) => {
       if (!node.data) node.data = {};
       const baseText = stripNumbering(node.data.text || '');
-      node.data.text = enable && prefix ? `${prefix} ${baseText}` : baseText;
+      const numberedText = targetState && prefix ? `${prefix} ${baseText}` : baseText;
+      if (node.data.richText) {
+        node.data.text = `<p>${numberedText}</p>`;
+      } else {
+        node.data.text = numberedText;
+      }
       if (node.children && Array.isArray(node.children)) {
         node.children.forEach((child: any, idx: number) => {
           const childPrefix = prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`;
@@ -579,7 +608,7 @@ export class MindMapEngine {
 
     if (data.children && Array.isArray(data.children)) {
       data.children.forEach((child: any, idx: number) => {
-        applyNumbering(child, enable ? `${idx + 1}` : '');
+        applyNumbering(child, targetState ? `${idx + 1}` : '');
       });
     }
 

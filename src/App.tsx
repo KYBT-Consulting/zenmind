@@ -17,7 +17,7 @@ import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { MobileBottomBar } from './components/mobile/MobileBottomBar';
-import { FolderArchive } from 'lucide-react';
+import { FolderArchive, SlidersHorizontal } from 'lucide-react';
 
 export default function App() {
   const [engine, setEngine] = useState<MindMapEngine | null>(null);
@@ -225,6 +225,10 @@ export default function App() {
         onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
         onOpenNotes={handleOpenNotes}
         onOpenTasks={handleOpenTasks}
+        onOpenStructure={() => {
+          setInspectorTab('structure');
+          setShowInspector(true);
+        }}
         onImportFolder={handleImportFolder}
         onOpenImageDialog={() => setShowImageDialog(true)}
         onOpenFormulaDialog={() => setShowFormulaDialog(true)}
@@ -299,7 +303,7 @@ export default function App() {
         </main>
 
         {/* Right Format Inspector Sidebar */}
-        {showInspector && (
+        {showInspector ? (
           <FormatInspector
             engine={engine}
             activeNode={activeNode}
@@ -308,6 +312,18 @@ export default function App() {
             onOpenImageDialog={() => setShowImageDialog(true)}
             onOpenFormulaDialog={() => setShowFormulaDialog(true)}
           />
+        ) : (
+          /* Sleek Right Docked Tab to Reopen Inspector */
+          <button
+            onClick={() => setShowInspector(true)}
+            title="Open Format Inspector (Sidebar)"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-white/95 hover:bg-white border-l border-y border-slate-200/90 shadow-md hover:shadow-xl rounded-l-xl px-2 py-3.5 flex flex-col items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-all cursor-pointer group"
+          >
+            <SlidersHorizontal size={14} className="text-indigo-600 group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] font-bold tracking-wider [writing-mode:vertical-lr] rotate-180 uppercase text-slate-500 group-hover:text-indigo-600">
+              Format
+            </span>
+          </button>
         )}
       </div>
 
@@ -320,6 +336,8 @@ export default function App() {
           isFormatPainterActive={isFormatPainterActive}
           showMiniMap={showMiniMap}
           onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
+          showInspector={showInspector}
+          onToggleInspector={() => setShowInspector(!showInspector)}
           onOpenAIDialog={() => setAiDialogState({ isOpen: true, mode: 'generate' })}
         />
       </div>

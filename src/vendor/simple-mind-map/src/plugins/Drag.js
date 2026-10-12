@@ -184,10 +184,10 @@ class Drag extends Base {
       )
     } else if (
       this.clone &&
-      enableFreeDrag &&
-      this.beingDragNodeList.length === 1
+      (enableFreeDrag || (this.mousedownNode && this.mousedownNode.getData('isFloating'))) &&
+      this.beingDragNodeList.length >= 1
     ) {
-      // 如果只拖拽了一个节点，那么设置自定义位置
+      // 如果开启了自由拖拽或拖拽的是浮动节点，那么设置自定义位置
       let { x, y } = this.mindMap.toPos(
         e.clientX - this.offsetX,
         e.clientY - this.offsetY
@@ -195,16 +195,22 @@ class Drag extends Base {
       let { scaleX, scaleY, translateX, translateY } = this.drawTransform
       x = (x - translateX) / scaleX
       y = (y - translateY) / scaleY
-      this.mousedownNode.left = x
-      this.mousedownNode.top = y
-      this.mousedownNode.customLeft = x
-      this.mousedownNode.customTop = y
-      this.mindMap.execCommand(
-        'SET_NODE_CUSTOM_POSITION',
-        this.mousedownNode,
-        x,
-        y
-      )
+      const deltaX = x - this.mousedownNode.left
+      const deltaY = y - this.mousedownNode.top
+      this.beingDragNodeList.forEach(node => {
+        const nx = (node.customLeft !== undefined ? node.customLeft : node.left) + deltaX
+        const ny = (node.customTop !== undefined ? node.customTop : node.top) + deltaY
+        node.left = nx
+        node.top = ny
+        node.customLeft = nx
+        node.customTop = ny
+        this.mindMap.execCommand(
+          'SET_NODE_CUSTOM_POSITION',
+          node,
+          nx,
+          ny
+        )
+      })
       this.mindMap.render()
     }
     if (this.isDragging) {

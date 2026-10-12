@@ -13,6 +13,7 @@ import {
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { LAYOUT_OPTIONS } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
+import { SlidersHorizontal } from 'lucide-react';
 
 interface StatusBarProps {
   engine: MindMapEngine | null;
@@ -21,6 +22,8 @@ interface StatusBarProps {
   isFormatPainterActive?: boolean;
   showMiniMap?: boolean;
   onToggleMiniMap?: () => void;
+  showInspector?: boolean;
+  onToggleInspector?: () => void;
   onOpenAIDialog: () => void;
 }
 
@@ -31,6 +34,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isFormatPainterActive = false,
   showMiniMap = false,
   onToggleMiniMap,
+  showInspector = false,
+  onToggleInspector,
   onOpenAIDialog,
 }) => {
   const currentLayoutId = engine?.getLayout() || 'mindMap';
@@ -119,6 +124,23 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         >
           <Maximize2 size={12} />
           <span>Fit</span>
+        </button>
+
+        <span className="h-3 w-px bg-slate-200" />
+
+        {/* Format Inspector Toggle */}
+        <button
+          onClick={onToggleInspector}
+          title="Toggle Format Inspector Sidebar"
+          className={cn(
+            'flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors',
+            showInspector
+              ? 'bg-indigo-50 text-indigo-700 font-semibold'
+              : 'hover:text-slate-800 text-slate-600 hover:bg-slate-100'
+          )}
+        >
+          <SlidersHorizontal size={12} className={showInspector ? 'text-indigo-600' : ''} />
+          <span>Format</span>
         </button>
 
         <span className="h-3 w-px bg-slate-200" />

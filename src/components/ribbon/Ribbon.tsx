@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FolderOpen,
   Save,
@@ -72,6 +72,7 @@ interface RibbonProps {
   onToggleMiniMap?: () => void;
   onOpenNotes?: () => void;
   onOpenTasks?: () => void;
+  onOpenStructure?: () => void;
   onImportFolder?: () => void;
   onOpenImageDialog?: () => void;
   onOpenFormulaDialog?: () => void;
@@ -97,6 +98,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onToggleMiniMap,
   onOpenNotes,
   onOpenTasks,
+  onOpenStructure,
   onImportFolder,
   onOpenImageDialog,
   onOpenFormulaDialog,
@@ -105,6 +107,45 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
+
+  const layoutMenuRef = useRef<HTMLDivElement>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+  const shapeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (layoutMenuRef.current && !layoutMenuRef.current.contains(target)) {
+        setShowLayoutMenu(false);
+      }
+      if (themeMenuRef.current && !themeMenuRef.current.contains(target)) {
+        setShowThemeMenu(false);
+      }
+      if (shapeMenuRef.current && !shapeMenuRef.current.contains(target)) {
+        setShowShapeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleLayoutMenu = () => {
+    setShowLayoutMenu((prev) => !prev);
+    setShowThemeMenu(false);
+    setShowShapeMenu(false);
+  };
+
+  const toggleThemeMenu = () => {
+    setShowThemeMenu((prev) => !prev);
+    setShowLayoutMenu(false);
+    setShowShapeMenu(false);
+  };
+
+  const toggleShapeMenu = () => {
+    setShowShapeMenu((prev) => !prev);
+    setShowLayoutMenu(false);
+    setShowThemeMenu(false);
+  };
 
   const tabs: { id: RibbonTab; label: string }[] = [
     { id: 'home', label: 'Home' },
@@ -243,7 +284,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
       </div>
 
       {/* Ribbon Toolbar Content Area */}
-      <div className="h-16 px-4 py-2 flex items-center gap-6 overflow-x-auto bg-slate-50/50">
+      <div className="h-16 px-4 py-2 flex items-center gap-6 overflow-visible bg-slate-50/50">
         {/* --- HOME TAB --- */}
         {activeTab === 'home' && (
           <>
@@ -313,9 +354,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </div>
 
             {/* Structure & Layout Dropdown */}
-            <div className="relative pr-4 border-r border-slate-200">
+            <div ref={layoutMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
-                onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                onClick={toggleLayoutMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
                 <LayoutGrid size={18} className="text-indigo-600" />
@@ -350,14 +391,25 @@ export const Ribbon: React.FC<RibbonProps> = ({
                       </button>
                     ))}
                   </div>
+                  <div className="pt-1 mt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        onOpenStructure?.();
+                        setShowLayoutMenu(false);
+                      }}
+                      className="w-full text-center px-2 py-1.5 rounded-lg text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    >
+                      More in Format Sidebar →
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Themes Dropdown */}
-            <div className="relative pr-4 border-r border-slate-200">
+            <div ref={themeMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
-                onClick={() => setShowThemeMenu(!showThemeMenu)}
+                onClick={toggleThemeMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
                 <Palette size={18} className="text-amber-500" />
@@ -395,6 +447,17 @@ export const Ribbon: React.FC<RibbonProps> = ({
                       </button>
                     ))}
                   </div>
+                  <div className="pt-1 mt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        onOpenStructure?.();
+                        setShowThemeMenu(false);
+                      }}
+                      className="w-full text-center px-2 py-1.5 rounded-lg text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    >
+                      All Themes in Format Sidebar →
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -402,8 +465,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Auto Numbering & Align */}
             <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
               <button
-                onClick={() => engine?.toggleAutoNumbering(true)}
-                title="Hierarchical Numbering (1, 1.1, 1.1.1)"
+                onClick={() => engine?.toggleAutoNumbering()}
+                title="Toggle Hierarchical Numbering (1, 1.1, 1.1.1)"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
                 <ListOrdered size={18} className="text-indigo-600" />
@@ -423,9 +486,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </div>
 
             {/* Quick Shape Selector */}
-            <div className="relative pr-4 border-r border-slate-200">
+            <div ref={shapeMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
-                onClick={() => setShowShapeMenu(!showShapeMenu)}
+                onClick={toggleShapeMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
                 <Square size={18} className="text-emerald-600" />
@@ -459,7 +522,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </div>
 
             {/* Quick Colors */}
-            <div className="flex flex-col justify-center gap-1">
+            <div className="flex flex-col justify-center gap-1 pr-4 border-r border-slate-200">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Quick Fill</span>
               <div className="flex items-center gap-1">
                 {[
@@ -482,6 +545,24 @@ export const Ribbon: React.FC<RibbonProps> = ({
                   />
                 ))}
               </div>
+            </div>
+
+            {/* Format Sidebar Button */}
+            <div className="flex items-center">
+              <button
+                onClick={onToggleInspector}
+                title="Toggle Format Inspector Sidebar"
+                className={cn(
+                  'flex flex-col items-center justify-center px-3 py-1 rounded-lg border transition-all',
+                  showInspector
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-xs'
+                    : 'hover:bg-white hover:shadow-xs border-transparent hover:border-slate-200 text-slate-700'
+                )}
+              >
+                <SlidersHorizontal size={18} className={showInspector ? 'text-indigo-600' : 'text-slate-600'} />
+                <span className="text-[10px] font-semibold mt-0.5">Format</span>
+                <span className="text-[9px] text-slate-400 font-mono">Sidebar</span>
+              </button>
             </div>
           </>
         )}
