@@ -28,27 +28,26 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 **Goal**: Elevate canvas interactions, formatting tools, and node capabilities to match EdrawMind's signature user experience (derived from EdrawMind changelog v6.0–v14.0 review).
 
 ### 3.1 Core Topic Metadata & Task Management (EdrawMind v12.4 & v13.0)
-- [ ] **Task / Todo Checkboxes & Progress Tracking**:
+- [x] **Task / Todo Checkboxes & Progress Tracking**:
   - Add checkbox attribute to topics with completion states (`Not Started`, `In Progress`, `Completed`).
-  - Progress markers (0%, 25%, 50%, 75%, 100%) and Priority badges (P1, P2, P3) using built-in SVG icon sets.
-  - Interactive click-to-toggle directly on the canvas node or via Floating Menu.
-- [ ] **Dedicated Topic Notes Drawer / Split-Screen Editor**:
-  - Expandable side panel / drawer to view and write comprehensive Markdown notes for the active node.
-  - Keeps complex thoughts and meeting notes docked cleanly without cluttering the visual canvas.
+  - Progress markers (0%, 25%, 50%, 75%, 100%) and Priority badges (P1–P5) using built-in SVG icon sets.
+  - Interactive click-to-toggle directly on the canvas node or via Floating Menu / Inspector.
+- [x] **Dedicated Topic Notes Drawer / Split-Screen Editor**:
+  - Dedicated docked Notes tab in Format Inspector to view and write comprehensive Markdown notes for the active node with auto-save.
+  - Keeps complex thoughts and meeting notes docked cleanly without modal dialogs cluttering the canvas.
 - [ ] **Rich Node Content & Attachments**:
-  - Node icons / emoji picker (priority, progress, flags, stars from engine icon library).
-  - Hyperlinks with preview tooltip and title.
   - Image attachments with inline resizing handle.
+  - LaTeX mathematical formulas rendering.
 
 ### 3.2 Canvas Navigation & Ergonomics (EdrawMind v8.0, v9.0, v10.0)
-- [ ] **Format Painter (Style Cloner)**:
+- [x] **Format Painter (Style Cloner)**:
   - One-click copy/paste of topic styles (shape, fill color, border width, border color, font styling).
-  - Powered by the built-in `Painter` engine plugin; accessible via Ribbon *Home* tab and Floating Bubble menu.
-- [ ] **Spacebar Quick-Pan**:
+  - Powered by the built-in `Painter` engine plugin; accessible via Ribbon *Home* tab, Floating Bubble menu, and Status Bar.
+- [x] **Spacebar Quick-Pan**:
   - Hold `Spacebar` + drag left mouse button to pan smoothly across the infinite canvas (Figma & EdrawMind standard).
-- [ ] **Canvas Mini-Map (Bird's Eye Navigator)**:
+- [x] **Canvas Mini-Map (Bird's Eye Navigator)**:
   - Collapsible thumbnail preview overlay in bottom-right corner showing current viewport bounds over the entire diagram.
-  - Powered by the built-in `MiniMap` engine plugin.
+  - Powered by the built-in `MiniMap` engine plugin with interactive draggable viewport rectangle.
 - [ ] **Floating Topics**:
   - Double-click on empty canvas area to spawn an independent "Floating Idea" node with its own branching hierarchy.
 
@@ -60,15 +59,15 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
   - Enclose subtrees or node clusters in a styled bounding frame with custom background tint, stroke dash, and title.
 - [ ] **Summary Brackets**:
   - Group sibling branches with curly braces (`{`) and attach summary conclusion topics.
-- [ ] **Auto-Numbering Schemes**:
+- [x] **Auto-Numbering Schemes**:
   - Toggle hierarchical numbering prefixes across the map or branches (e.g., `1.`, `1.1.`, `1.1.1.` or `A.`, `B.`, `C.`).
 
 ### 3.4 Presentation Mode & Smart Import (EdrawMind v12.0, v12.3.18)
-- [ ] **Pitch / Fullscreen Presentation Mode**:
+- [x] **Pitch / Fullscreen Presentation Mode**:
   - Turn mind maps into instant slideshows without exporting to PowerPoint.
   - Step-by-step traversal with `ArrowRight` / `Space` camera zooms smoothly into each branch.
   - Powered by the built-in `Demonstrate` engine plugin.
-- [ ] **Local Folder Structure Import (Folder-to-MindMap)**:
+- [x] **Local Folder Structure Import (Folder-to-MindMap)**:
   - Select a local directory (via native dialog in Tauri or `<input webkitdirectory>` in web) to automatically generate an organized mind map tree of project files and folders with direct hyperlinks.
 
 ---
