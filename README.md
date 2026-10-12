@@ -130,7 +130,7 @@ npm run build
 
 ## 🏢 About the Maintainer
 
-**ZenMind** is proudly built and maintained by **[KYBT Consulting](https://kybtconsulting.com)**, creators of **[Vertaxa EA](https://vertaxa.online)** (advanced algorithmic trading technology and execution systems).
+**ZenMind** is proudly built and maintained by **[KYBT Consulting](https://kybtconsulting.com)**, creators of **[Vertaxa EA](https://vertaxa.online)** (Enterprise Architecture in minutes with AI built-in from the ground up).
 
 ---
 
