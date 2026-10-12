@@ -46,7 +46,7 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libsoup-3.0-dev libssl-dev
 
       - name: Install frontend dependencies
         run: npm ci
@@ -61,7 +61,26 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'ZenMind ${{ github.ref_name }}'
-          releaseBody: 'See changelog and release notes.'
           releaseDraft: false
           prerelease: false
+          retryAttempts: 3
           args: ${{ matrix.args }}
+          releaseBody: |
+            ## ZenMind ${{ github.ref_name }} 🧘‍♂️
+
+            Welcome to the official **ZenMind v0.1.0** desktop release! An open-source, modern EdrawMind alternative built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
+
+            ### 🌟 Key Highlights
+            - **Interactive SVG Engine**: Dynamic layout trees, logic charts, timelines, fishbone diagrams, and free-floating topics with smooth drag-and-drop.
+            - **Modern Office/EdrawMind Ribbon UI**: Intuitive tabs (Home, Insert, Page Style, View, AI), synchronized outline editor, format painter, and docked format inspector.
+            - **Local & Cloud AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter).
+            - **Task & Presentation Tools**: Todo checkboxes, progress tracking (0%-100%), priority badges (P1-P5), markdown notes drawer, and presentation mode.
+            - **Multi-Format Interoperability**: Import and export PNG, crisp SVG, print PDF, XMind archives, OPML 2.0, FreeMind XML, and native `.zenmind` files.
+            - **Cross-Platform Native Desktop**: Built on Tauri for fast startup, low RAM footprint (~40MB), and direct filesystem access.
+
+            ### 🌐 Live Web Demo
+            - Try ZenMind online: [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/)
+
+            ---
+            Built with ❤️ by [KYBT Consulting](https://kybtconsulting.com) (makers of [Vertaxa EA](https://vertaxa.online)).
+
