@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Open-source EdrawMind alternative for cross-platform mind mapping"
 authors = ["ZenMind Contributors"]
 license = "MIT"
-repository = "https://github.com/nuts23/zenmind"
+repository = "https://github.com/KYBT-Consulting/zenmind"
 edition = "2024"
 rust-version = "1.90"
 

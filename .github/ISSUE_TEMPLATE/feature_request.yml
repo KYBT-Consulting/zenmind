@@ -1,0 +1,28 @@
+name: '💡 Feature Request'
+description: Suggest an idea, new layout, or improvement for ZenMind
+title: '[Feature]: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We love new ideas! Please let us know what features or workflows you'd like to see in ZenMind.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of the limitation or workflow gap.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution / Feature
+      description: Describe what you would like ZenMind to do and how it should look or function.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you've thought about (e.g. how EdrawMind, XMind, or MindNode handles it).

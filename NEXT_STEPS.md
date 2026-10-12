@@ -6,7 +6,7 @@ ZenMind has completed **Phase 1**:
 - Headless mathematical SVG mind mapping engine internalized into `src/vendor/simple-mind-map/`.
 - EdrawMind UI Shell complete: Ribbon toolbar, Format Inspector, Synchronized Outline, Floating Bubble menu, and Status Bar.
 - AI integration via Google Gemini 2.5 Flash for topic generation and expansion.
-- Repository created and pushed to [github.com/nuts23/zenmind](https://github.com/nuts23/zenmind) under the MIT License.
+- Repository created and pushed to [github.com/KYBT-Consulting/zenmind](https://github.com/KYBT-Consulting/zenmind) under the MIT License.
 
 This document outlines the concrete technical tasks for **Phase 2 through Phase 5**.
 
@@ -123,15 +123,16 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ---
 
-## 6. Milestone 5: Open Source Governance & Community Launch
+## 6. Milestone 5: Open Source Governance & Community Launch [IN PROGRESS]
 
 **Goal**: Prepare ZenMind for open-source adoption, contributors, and showcase.
 
-- [ ] **Documentation**:
-  - Create `CONTRIBUTING.md` with development setup, coding standards, and PR workflows.
+- [x] **Documentation**:
+  - Created [`CONTRIBUTING.md`](./CONTRIBUTING.md) with development setup, coding standards, and PR workflows.
+- [x] **Demo / Landing Site**:
+  - Created GitHub Pages automated workflow (`deploy-pages.yml`) deploying to `https://kybt-consulting.github.io/zenmind`.
+- [ ] **Community Templates**:
   - Create issue templates: Bug Report, Feature Request, New Layout Suggestion.
-- [ ] **Demo / Landing Site**:
-  - Set up GitHub Pages workflow to deploy the web build automatically from `main` to `https://nuts23.github.io/zenmind`.
 - [ ] **Security & Code Quality**:
   - Automated GitHub Actions linting and typechecking on PRs.
   - Dependabot alerts and automated dependency auditing.
@@ -140,6 +141,6 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ## 7. Immediate Next Action Item
 
-The next milestone to complete is **Milestone 5 (Open Source Governance & Release)**:
-1. Create `CONTRIBUTING.md` and GitHub issue templates (`.github/ISSUE_TEMPLATE/`).
-2. Add GitHub Pages automated demo deployment workflow (`.github/workflows/deploy-pages.yml`).
+The next milestone to complete is **Community Templates & Polish**:
+1. Add GitHub issue templates (`.github/ISSUE_TEMPLATE/`) for bug reports and feature requests.
+2. Enable GitHub Pages in repository settings pointing to GitHub Actions.

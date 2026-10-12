@@ -1,6 +1,10 @@
 # ZenMind 🧠
 
 > An open-source, modern EdrawMind alternative built for cross-platform productivity (Linux, Windows, macOS, and Mobile).
+> 
+> **[🌐 Try Live Demo](https://kybt-consulting.github.io/zenmind/)** · **[Contributing Guidelines](./CONTRIBUTING.md)** · **[Architecture Roadmap](./NEXT_STEPS.md)**
+>
+> Maintained with ❤️ by [KYBT Consulting](https://github.com/KYBT-Consulting).
 
 ---
 
