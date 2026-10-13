@@ -69,18 +69,23 @@ jobs:
           releaseBody: |
             ## ZenMind ${{ github.ref_name }} 🧘‍♂️
 
-            Welcome to the official **ZenMind v0.1.0** desktop release! An open-source, modern EdrawMind alternative built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
+            Desktop release of **ZenMind**: an open-source, modern EdrawMind alternative built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
+
+            See the [changelog](https://github.com/KYBT-Consulting/zenmind/blob/main/CHANGELOG.md) for what is new in this release.
 
             ### 🌟 Key Highlights
             - **Interactive SVG Engine**: Dynamic layout trees, logic charts, timelines, fishbone diagrams, and free-floating topics with smooth drag-and-drop.
             - **Modern Office/EdrawMind Ribbon UI**: Intuitive tabs (Home, Insert, Page Style, View, AI), synchronized outline editor, format painter, and docked format inspector.
             - **Local & Cloud AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter).
+            - **Multiple Maps in Tabs**: Work on several mind maps at once, each with its own undo history, zoom and unsaved-changes marker.
             - **Task & Presentation Tools**: Todo checkboxes, progress tracking (0%-100%), priority badges (P1-P5), markdown notes drawer, and presentation mode.
             - **Multi-Format Interoperability**: Import and export PNG, crisp SVG, print PDF, XMind archives, OPML 2.0, FreeMind XML, and native `.zenmind` files.
             - **Cross-Platform Native Desktop**: Built on Tauri for fast startup, low RAM footprint (~40MB), and direct filesystem access (including standalone Windows Portable ZIP).
 
             ### 🌐 Live Web Demo
             - Try ZenMind online: [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/)
+
+            > Desktop builds use **Tauri v3 Alpha**, so platform-specific quirks are possible. Please report any issues on GitHub.
 
             ---
             Built with ❤️ by [KYBT Consulting](https://kybtconsulting.com) (makers of [Vertaxa EA](https://vertaxa.online)).

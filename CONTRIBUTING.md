@@ -67,7 +67,12 @@ We are committed to providing a welcoming, inclusive, and harassment-free enviro
    npm run lint
    ```
 
-6. **Production Web Build**:
+6. **Unit Tests**:
+   ```bash
+   npm test
+   ```
+
+7. **Production Web Build**:
    ```bash
    npm run build
    ```
@@ -123,6 +128,7 @@ zenmind/
 3. Verify that typechecking and bundling pass with zero errors:
    ```bash
    npm run lint
+   npm test
    npm run build
    ```
 
@@ -151,8 +157,11 @@ Before opening your pull request, please make sure you have:
 
 - [ ] Tested your changes locally in the browser (`npm run dev`).
 - [ ] Run `npm run lint` and resolved all TypeScript errors.
+- [ ] Run `npm test` and kept the tests passing (add tests for logic you change, especially parsing, sanitising and export).
 - [ ] Run `npm run build` and verified that Vite bundles without warnings or errors.
 - [ ] Kept commit messages informative and formatted using Conventional Commits.
 - [ ] Updated documentation or `README.md` if introducing new features or shortcuts.
+
+Looking for something to work on? [`docs/CODE_REVIEW.md`](docs/CODE_REVIEW.md) lists known issues and their status, and [`docs/RELEASE_PLAN_0.1.2.md`](docs/RELEASE_PLAN_0.1.2.md) describes the next release.
 
 Thank you for helping make ZenMind the best open-source mind mapping tool! 🚀

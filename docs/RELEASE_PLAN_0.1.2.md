@@ -20,7 +20,7 @@ A stabilisation release: ship the fixes already on `main`, prove the desktop bui
 |---|------|-----|---------------|
 | G1 | **Desktop smoke test** on at least Linux and Windows builds | The Tauri CSP, the narrowed capabilities (`fs:allow-read-file/read-dir/write-file`, `dialog:allow-open/save`) and the recursive folder grant have never run in a built app. A wrong permission would break Open/Save silently. `fs:default` did not include write-file, so Save may have been broken in 0.1.0/0.1.1 as well. | Build with `npm run desktop:build`. Open each format, Save, Save As, re-Save, open a folder via Folder Import, open a `.xmind`. Check the devtools console for CSP violations. |
 | G2 | **CSP check in the desktop webview** | The policy was only validated against the web build in Chrome. Tauri adds its own `ipc:` origins and injects scripts. | Launch, edit, export PNG/PDF/SVG, use the formula dialog, call an AI endpoint (local Ollama and Gemini). Fix or relax the policy if anything is blocked. |
-| G3 | **Version bump and release notes** | `release.yml` hard-codes "ZenMind v0.1.0" in the release body. Version fields were never bumped for 0.1.1. | See "Release chores". |
+| G3 | **Version bump and release notes** (done: versions are 0.1.2, `release.yml` body is version-agnostic, `CHANGELOG.md` added; remaining: replace "Unreleased" with the date when tagging) | `release.yml` hard-codes "ZenMind v0.1.0" in the release body. Version fields were never bumped for 0.1.1. | See "Release chores". |
 | G4 | `npm run lint` and `npm run build` green in CI on the release commit | Existing CI gate. | CI. |
 
 ### Should fix in 0.1.2 (the remaining data-loss and robustness items)

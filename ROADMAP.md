@@ -20,14 +20,28 @@ ZenMind is built to deliver an uncompromised mind mapping and visual thinking ex
 ## 📍 Release Horizons
 
 ```
-  v0.1.0 (Released)           v0.2.0 (Near-Term)          v0.3.0 (Mid-Term)           v1.0.0 (Long-Term)
+  v0.1.x (Stabilisation)      v0.2.0 (Near-Term)          v0.3.0 (Mid-Term)           v1.0.0 (Long-Term)
 ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-│ • Core SVG Engine    │    │ • Template Gallery   │    │ • P2P Real-Time Sync │    │ • Plugin Ecosystem   │
-│ • EdrawMind Ribbon   │───▶│ • Keyboard Nav (Vim) │───▶│ • WebDAV / Cloud Sync│───▶│ • Tauri Mobile (iOS) │
-│ • Local/Cloud AI     │    │ • History Snapshots  │    │ • Obsidian Vault Sync│    │ • Freehand Canvas    │
-│ • Linux/Mac/Win App  │    │ • Rich-Text Callouts │    │ • Voice-to-Map Audio │    │ • PPTX Slide Export  │
+│ • Tabs, New Map      │    │ • Template Gallery   │    │ • P2P Real-Time Sync │    │ • Plugin Ecosystem   │
+│ • Security & a11y    │───▶│ • Keyboard Nav (Vim) │───▶│ • WebDAV / Cloud Sync│───▶│ • Tauri Mobile (iOS) │
+│ • Format fidelity    │    │ • History Snapshots  │    │ • Obsidian Vault Sync│    │ • Freehand Canvas    │
+│ • Unit tests         │    │ • Rich-Text Callouts │    │ • Voice-to-Map Audio │    │ • PPTX Slide Export  │
 └──────────────────────┘    └──────────────────────┘    └──────────────────────┘    └──────────────────────┘
 ```
+
+---
+
+## 🟢 v0.1.2 — Stabilisation Release [IN PROGRESS]
+
+A bug-fix and hardening release that follows a full code review ([`docs/CODE_REVIEW.md`](docs/CODE_REVIEW.md)); see [`docs/RELEASE_PLAN_0.1.2.md`](docs/RELEASE_PLAN_0.1.2.md) and the [changelog](CHANGELOG.md).
+
+* [x] Multiple maps in tabs, a New Map action, and reliable unsaved-changes tracking.
+* [x] Security hardening: Content Security Policy, narrower desktop permissions, link and imported-content sanitising.
+* [x] Notes, links and tags survive OPML and FreeMind export.
+* [x] Keyboard shortcuts, auto-numbering, theme and branch-style fixes.
+* [x] Accessibility: tab and dialog keyboard support, labelled controls.
+* [x] Unit tests in CI.
+* [ ] Desktop smoke test of the Tauri build (Open, Save, Folder Import, `.xmind`) before tagging.
 
 ---
 
