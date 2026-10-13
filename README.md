@@ -52,11 +52,14 @@
 - **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
 - **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
 - **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
-- **Cross-Platform Ready**: Native desktop releases via **Tauri v3** (Linux RPM, Ubuntu DEB, AppImage, macOS Universal DMG, Windows MSI/EXE, and Windows Portable ZIP).
+- **Cross-Platform Ready**: Native desktop releases via **Tauri v3 Alpha** (Linux RPM, Ubuntu DEB, AppImage, macOS Universal DMG, Windows MSI/EXE, and Windows Portable ZIP).
 
 ---
 
 ## 📦 Desktop Downloads & Linux Packages
+
+> [!NOTE]
+> ZenMind desktop packages are currently built against **Tauri v3 Alpha** (`3.0.0-alpha.x`). Because Tauri v3 is an early preview release, compiled OS-specific packages (Windows, macOS, and Linux) may encounter experimental edge cases or platform-specific quirks. If you experience an issue on your OS, please submit an issue on GitHub or try the zero-install [Web Demo](https://kybt-consulting.github.io/zenmind/) or [Docker container](#-self-hosting-with-docker-web-application).
 
 ZenMind binaries and installer bundles are published for every release under [GitHub Releases](https://github.com/KYBT-Consulting/zenmind/releases):
 
