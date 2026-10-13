@@ -135,6 +135,12 @@ npm run build
 
 ---
 
+## 🙏 Acknowledgements & Credits
+
+ZenMind's core mind mapping layout algorithms and SVG engine are based upon the open-source **[simple-mind-map](https://github.com/wanglin2/mind-map)** project by **Wang Lin** ([@wanglin2](https://github.com/wanglin2)), released under the MIT License. We are deeply grateful to Wang Lin and the MindMap contributors for their foundational work.
+
+---
+
 ## 📜 License
 
-MIT License. Open source and community driven.
+MIT License. Open source and community driven. See [LICENSE](./LICENSE) for full terms and third-party notices.
