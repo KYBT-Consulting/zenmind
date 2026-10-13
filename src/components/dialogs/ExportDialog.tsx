@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDialogA11y } from '../../lib/useDialogA11y';
 import {
   Download,
   X,
@@ -41,6 +42,8 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   const [selectedFormat, setSelectedFormat] = useState<ExportFormatId>('png');
   const [transparent, setTransparent] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  const dialogRef = useDialogA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -127,7 +130,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 select-none">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Export mind map"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 select-none focus:outline-none"
+    >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
           <div className="flex items-center gap-2">
@@ -139,7 +149,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
               <p className="text-[11px] text-slate-400">Select output format and options</p>
             </div>
           </div>
-          <button
+          <button aria-label="Close"
             onClick={onClose}
             className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
           >

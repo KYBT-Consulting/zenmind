@@ -189,7 +189,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
         {/* Quick Action Buttons */}
         <div className="flex items-center gap-1">
-          <button
+          <button aria-label="Undo (Ctrl+Z)"
             onClick={() => engine?.undo()}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
@@ -200,7 +200,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
           >
             <Undo2 size={15} />
           </button>
-          <button
+          <button aria-label="Redo (Ctrl+Y)"
             onClick={() => engine?.redo()}
             disabled={!canRedo}
             title="Redo (Ctrl+Y)"
@@ -214,21 +214,21 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
 
-          <button
+          <button aria-label={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
             onClick={onNewFile}
             title={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
           >
             <FilePlus size={15} />
           </button>
-          <button
+          <button aria-label="Save Project (.zenmind)"
             onClick={onSaveFile}
             title="Save Project (.zenmind)"
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
           >
             <Save size={15} />
           </button>
-          <button
+          <button aria-label="Open Project"
             onClick={onOpenFile}
             title="Open Project"
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
@@ -238,7 +238,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
 
-          <button
+          <button aria-label="Toggle Outline View"
             onClick={onToggleOutline}
             title="Toggle Outline View"
             className={cn(
@@ -252,7 +252,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             <span>Outline</span>
           </button>
 
-          <button
+          <button aria-label="Toggle Format Inspector"
             onClick={onToggleInspector}
             title="Toggle Format Inspector"
             className={cn(
@@ -301,7 +301,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
           <>
             {/* Topic Operations Group */}
             <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
-              <button
+              <button aria-label="Add Sibling Topic (Enter)"
                 onClick={() => engine?.insertSiblingNode()}
                 title="Add Sibling Topic (Enter)"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -311,7 +311,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <span className="text-[9px] text-slate-400 font-mono">Enter</span>
               </button>
 
-              <button
+              <button aria-label="Add Subtopic (Tab)"
                 onClick={() => engine?.insertChildNode()}
                 title="Add Subtopic (Tab)"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -321,7 +321,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <span className="text-[9px] text-slate-400 font-mono">Tab</span>
               </button>
 
-              <button
+              <button aria-label="Spawn Independent Floating Topic"
                 onClick={() => engine?.insertFloatingNode()}
                 title="Spawn Independent Floating Topic"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -331,7 +331,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <span className="text-[9px] text-slate-400 font-mono">Idea</span>
               </button>
 
-              <button
+              <button aria-label="Delete Selected Topic (Delete)"
                 onClick={() => engine?.deleteNode()}
                 title="Delete Selected Topic (Delete)"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-red-50 hover:text-red-700 border border-transparent hover:border-red-200 text-slate-700 transition-all"
@@ -342,7 +342,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               </button>
 
               {/* Format Painter */}
-              <button
+              <button aria-label="Format Painter: Click to copy style, then click target topic"
                 onClick={() => {
                   if (isFormatPainterActive) {
                     engine?.endFormatPainter();
@@ -475,7 +475,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
             {/* Auto Numbering & Align */}
             <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
-              <button
+              <button aria-label="Toggle Hierarchical Numbering (1, 1.1, 1.1.1)"
                 onClick={() => engine?.toggleAutoNumbering()}
                 title="Toggle Hierarchical Numbering (1, 1.1, 1.1.1)"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -485,7 +485,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <span className="text-[9px] text-slate-400 font-mono">1.1.1</span>
               </button>
 
-              <button
+              <button aria-label="Reset Layout & Tidy Branch Alignment"
                 onClick={() => engine?.resetLayout()}
                 title="Reset Layout & Tidy Branch Alignment"
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -545,7 +545,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                   '#1e293b', // Slate
                   '#ffffff', // White
                 ].map((color) => (
-                  <button
+                  <button aria-label={`Fill color ${color}`}
                     key={color}
                     onClick={() => {
                       engine?.setNodeStyle('fillColor', color);
@@ -560,7 +560,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
             {/* Format Sidebar Button */}
             <div className="flex items-center">
-              <button
+              <button aria-label="Toggle Format Inspector Sidebar"
                 onClick={onToggleInspector}
                 title="Toggle Format Inspector Sidebar"
                 className={cn(
@@ -605,7 +605,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <span className="text-[10px] font-semibold mt-1">Relationship Line</span>
             </button>
 
-            <button
+            <button aria-label="Spawn an independent floating topic"
               onClick={() => engine?.insertFloatingNode()}
               title="Spawn an independent floating topic"
               className="flex flex-col items-center justify-center px-4 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -616,7 +616,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
             <div className="h-8 w-px bg-slate-200 mx-1" />
 
-            <button
+            <button aria-label="Attach and resize image on selected topic"
               onClick={() => onOpenImageDialog?.()}
               title="Attach and resize image on selected topic"
               className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -625,7 +625,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <span className="text-[10px] font-semibold mt-1">Image</span>
             </button>
 
-            <button
+            <button aria-label="Insert LaTeX mathematical equation"
               onClick={() => onOpenFormulaDialog?.()}
               title="Insert LaTeX mathematical equation"
               className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -667,7 +667,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
             <div className="h-8 w-px bg-slate-200 mx-1" />
 
-            <button
+            <button aria-label="Import a directory tree into mind map"
               onClick={() => onImportFolder?.()}
               title="Import a directory tree into mind map"
               className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
@@ -763,7 +763,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <span>Reset (100%)</span>
             </button>
 
-            <button
+            <button aria-label="Zoom In"
               onClick={() => engine?.zoomIn()}
               className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-700 shadow-xs"
               title="Zoom In"
@@ -771,7 +771,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <ZoomIn size={14} />
             </button>
 
-            <button
+            <button aria-label="Zoom Out"
               onClick={() => engine?.zoomOut()}
               className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-700 shadow-xs"
               title="Zoom Out"

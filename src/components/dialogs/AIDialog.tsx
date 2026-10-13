@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDialogA11y } from '../../lib/useDialogA11y';
 import {
   Sparkles,
   X,
@@ -62,6 +63,8 @@ export const AIDialog: React.FC<AIDialogProps> = ({
     // re-run on every engine update and wipe unsaved settings edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, activeNode?.uid]);
+
+  const dialogRef = useDialogA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -131,7 +134,14 @@ export const AIDialog: React.FC<AIDialogProps> = ({
       : `${config.openaiModel || 'Custom'} (${config.openaiEndpoint.replace('https://', '').replace('http://', '').replace('/v1', '')})`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 select-none">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI assistant"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 select-none focus:outline-none"
+    >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
@@ -179,7 +189,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
                 </>
               )}
             </button>
-            <button
+            <button aria-label="Close"
               onClick={onClose}
               className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
             >

@@ -35,8 +35,6 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
   onOpenImage,
   onOpenFormula,
 }) => {
-  if (!activeNode) return null;
-
   const currentProgress = React.useMemo(() => {
     if (!activeNode?.icon) return null;
     const pIcon = activeNode.icon.find((i) => i.startsWith('progress_'));
@@ -45,13 +43,16 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
     return isNaN(num) ? null : num;
   }, [activeNode?.icon]);
 
+  // After all hooks (hooks must run in the same order on every render)
+  if (!activeNode) return null;
+
   return (
     <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl px-3 py-1.5 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
       <span className="text-xs font-bold text-slate-800 max-w-[130px] truncate mr-1.5 pr-2 border-r border-slate-200">
         {stripHtml(activeNode.text) || 'Topic'}
       </span>
 
-      <button
+      <button aria-label="Add Subtopic (Tab)"
         onClick={() => engine?.insertChildNode()}
         title="Add Subtopic (Tab)"
         className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors"
@@ -60,7 +61,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <span>Sub</span>
       </button>
 
-      <button
+      <button aria-label="Add Sibling Topic (Enter)"
         onClick={() => engine?.insertSiblingNode()}
         title="Add Sibling Topic (Enter)"
         className="flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold transition-colors"
@@ -72,7 +73,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
       <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
       {/* Task Checkbox Quick Toggle */}
-      <button
+      <button aria-label="Toggle Task Checkbox"
         onClick={() => engine?.toggleNodeCheckbox()}
         title="Toggle Task Checkbox"
         className={cn(
@@ -86,7 +87,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
       </button>
 
       {/* Format Painter */}
-      <button
+      <button aria-label="Format Painter (Clone Topic Style)"
         onClick={() => {
           if (isFormatPainterActive) {
             engine?.endFormatPainter();
@@ -110,7 +111,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
       {/* Quick Color Swatches */}
       <div className="flex items-center gap-1">
         {['#0284c7', '#059669', '#7c3aed', '#d97706', '#e11d48', '#ffffff'].map((c) => (
-          <button
+          <button aria-label={`Fill color ${c}`}
             key={c}
             onClick={() => {
               engine?.setNodeStyle('fillColor', c);
@@ -125,7 +126,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
       <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
       {/* Note Drawer Opener */}
-      <button
+      <button aria-label="Open Notes Editor"
         onClick={() => onOpenNotes?.()}
         title="Open Notes Editor"
         className={cn(
@@ -138,7 +139,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <FileText size={13} />
       </button>
 
-      <button
+      <button aria-label="Add Hyperlink"
         onClick={() => {
           const link = prompt('Add/Edit hyperlink URL:', activeNode.hyperlink || 'https://');
           if (link && engine && !engine.setNodeHyperlink(link)) {
@@ -156,7 +157,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <Link2 size={13} />
       </button>
 
-      <button
+      <button aria-label="Attach Image"
         onClick={() => onOpenImage?.()}
         title="Attach Image"
         className={cn(
@@ -169,7 +170,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <ImageIcon size={13} />
       </button>
 
-      <button
+      <button aria-label="Insert LaTeX Formula"
         onClick={() => onOpenFormula?.()}
         title="Insert LaTeX Formula"
         className="p-1.5 rounded-lg text-slate-600 hover:text-fuchsia-600 hover:bg-slate-100 transition-colors"
@@ -199,7 +200,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <BoxSelect size={13} />
       </button>
 
-      <button
+      <button aria-label="Draw Relationship Arrow"
         onClick={() => engine?.addRelationship()}
         title="Draw Relationship Arrow"
         className="p-1.5 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-slate-100 transition-colors"
@@ -207,7 +208,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <ArrowRight size={13} />
       </button>
 
-      <button
+      <button aria-label="Add Summary Conclusion Bracket"
         onClick={() => engine?.addSummary('Summary')}
         title="Add Summary Conclusion Bracket"
         className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
@@ -215,7 +216,7 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
         <Braces size={13} />
       </button>
 
-      <button
+      <button aria-label="Delete Topic"
         onClick={() => engine?.deleteNode()}
         title="Delete Topic"
         className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors ml-0.5"

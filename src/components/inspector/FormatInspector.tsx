@@ -149,7 +149,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
           <Sliders size={14} className="text-indigo-600" />
           Format Inspector
         </h3>
-        <button
+        <button aria-label="Close inspector"
           onClick={onClose}
           className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
         >
@@ -231,7 +231,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                   </label>
                   <div className="grid grid-cols-6 gap-1.5 mb-2">
                     {colorPalette.map((color) => (
-                      <button
+                      <button aria-label={`Fill color ${color}`}
                         key={color}
                         onClick={() => {
                           engine?.setNodeStyle('fillColor', color);
@@ -283,7 +283,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     </div>
 
                     {/* Bold toggle */}
-                    <button
+                    <button aria-label="Bold" aria-pressed={activeNode.fontWeight === 'bold'}
                       onClick={() => {
                         const isBold = activeNode.fontWeight === 'bold';
                         engine?.setNodeStyle('fontWeight', isBold ? 'normal' : 'bold');
@@ -313,7 +313,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                           <ImageIcon size={13} className="text-blue-600" />
                           Image Attached
                         </span>
-                        <button
+                        <button aria-label="Remove Image"
                           onClick={() => engine?.setNodeImage(null)}
                           className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
                           title="Remove Image"
@@ -509,7 +509,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[11px] font-medium border border-indigo-100"
                       >
                         {tag}
-                        <button
+                        <button aria-label={`Remove tag ${tag}`}
                           onClick={() => handleRemoveTag(tag)}
                           className="hover:text-red-500 transition-colors"
                         >
@@ -780,7 +780,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     <ArrowRight size={15} className="text-sky-600" />
                     <span>Relationship Arrow</span>
                   </div>
-                  <button
+                  <button aria-label="Delete highlighted relationship arrow"
                     onClick={() => engine?.removeRelationship()}
                     className="text-[10px] text-slate-400 hover:text-red-600 font-medium cursor-pointer"
                     title="Delete highlighted relationship arrow"

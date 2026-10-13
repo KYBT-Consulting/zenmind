@@ -114,6 +114,7 @@ export default function App() {
 
   // Per-tab canvas callbacks (stable per tab id, since MindMapCanvas binds them once at mount)
   const callbacksCache = useRef<Record<string, any>>({});
+  const lastActiveNode = useRef<Record<string, string>>({});
   const getCallbacks = (id: string) => {
     if (!callbacksCache.current[id]) {
       callbacksCache.current[id] = {
@@ -128,7 +129,13 @@ export default function App() {
             prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: signature } : t))
           );
         },
-        onActiveNodeChange: (activeNode: ActiveNodeInfo | null) => updateView(id, { activeNode }),
+        onActiveNodeChange: (activeNode: ActiveNodeInfo | null) => {
+          // The engine reports on every render; only touch React state when something changed
+          const key = JSON.stringify(activeNode);
+          if (lastActiveNode.current[id] === key) return;
+          lastActiveNode.current[id] = key;
+          updateView(id, { activeNode });
+        },
         onScaleChange: (scale: number) => updateView(id, { scale }),
         onHistoryChange: ({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolean }) => {
           updateView(id, { canUndo, canRedo });
@@ -166,6 +173,7 @@ export default function App() {
   /** Drops the per-tab engine/view/callback entries of a tab that is going away. */
   const forgetTab = (id: string) => {
     delete callbacksCache.current[id];
+    delete lastActiveNode.current[id];
     setEngines((prev) => {
       const { [id]: _gone, ...rest } = prev;
       return rest;
@@ -512,7 +520,7 @@ export default function App() {
           />
         ) : (
           /* Sleek Right Docked Tab to Reopen Inspector */
-          <button
+          <button aria-label="Open Format Inspector (Sidebar)"
             onClick={() => setShowInspector(true)}
             title="Open Format Inspector (Sidebar)"
             className="absolute right-0 top-1/2 -translate-y-1/2 z-30 bg-white/95 hover:bg-white border-l border-y border-slate-200/90 shadow-md hover:shadow-xl rounded-l-xl px-2 py-3.5 flex flex-col items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-all cursor-pointer group"

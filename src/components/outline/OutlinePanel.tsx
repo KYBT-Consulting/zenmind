@@ -50,7 +50,7 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
         }}
       >
         {hasChildren ? (
-          <button
+          <button aria-label={collapsed ? "Expand" : "Collapse"} aria-expanded={!collapsed}
             onClick={(e) => {
               e.stopPropagation();
               setCollapsed(!collapsed);
@@ -105,7 +105,7 @@ export const OutlinePanel: React.FC<OutlinePanelProps> = ({
           <List size={14} className="text-indigo-600" />
           Mind Map Outline
         </h3>
-        <button
+        <button aria-label="Close outline"
           onClick={onClose}
           className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
         >

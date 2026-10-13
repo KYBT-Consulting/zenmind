@@ -38,7 +38,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     >
       {/* Undo / Redo */}
       <div className="flex items-center gap-0.5">
-        <button
+        <button aria-label="Undo"
           onClick={() => engine?.undo()}
           disabled={!canUndo}
           title="Undo"
@@ -46,7 +46,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         >
           <Undo2 size={17} />
         </button>
-        <button
+        <button aria-label="Redo"
           onClick={() => engine?.redo()}
           disabled={!canRedo}
           title="Redo"
@@ -59,7 +59,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       <div className="h-5 w-px bg-slate-200" />
 
       {/* Add Subtopic */}
-      <button
+      <button aria-label="Add Subtopic"
         onClick={() => engine?.insertChildNode()}
         disabled={!activeNode}
         title="Add Subtopic"
@@ -70,7 +70,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       </button>
 
       {/* Add Sibling Topic */}
-      <button
+      <button aria-label="Add Sibling Topic"
         onClick={() => engine?.insertSiblingNode()}
         disabled={!activeNode || activeNode.isRoot}
         title="Add Sibling Topic"
@@ -81,7 +81,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       </button>
 
       {/* Fit View */}
-      <button
+      <button aria-label="Fit Map to View"
         onClick={() => engine?.fitView()}
         title="Fit Map to View"
         className="flex flex-col items-center justify-center px-2 py-1 rounded-xl text-slate-700 hover:bg-slate-100"
@@ -93,7 +93,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       <div className="h-5 w-px bg-slate-200" />
 
       {/* Format Inspector Drawer Toggle */}
-      <button
+      <button aria-label="Format Inspector"
         onClick={onToggleInspector}
         title="Format Inspector"
         className="flex flex-col items-center justify-center px-2 py-1 rounded-xl text-slate-700 hover:bg-slate-100"
@@ -103,7 +103,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       </button>
 
       {/* Outline Drawer Toggle */}
-      <button
+      <button aria-label="Outline Tree"
         onClick={onToggleOutline}
         title="Outline Tree"
         className="flex flex-col items-center justify-center px-2 py-1 rounded-xl text-slate-700 hover:bg-slate-100"
@@ -113,7 +113,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       </button>
 
       {/* AI Expansion Dialog */}
-      <button
+      <button aria-label="AI Idea Generator"
         onClick={onOpenAIDialog}
         title="AI Idea Generator"
         className="flex flex-col items-center justify-center px-2 py-1 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-xs hover:opacity-95"

@@ -95,8 +95,11 @@ export class DesktopFileService {
       const a = document.createElement('a');
       a.href = url;
       a.download = `${suggestedName.trim() || 'mindmap'}.zenmind`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      // Revoking immediately can cancel the download in some browsers
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
       return { success: true };
     } catch (error) {
       console.error('Browser save error:', error);

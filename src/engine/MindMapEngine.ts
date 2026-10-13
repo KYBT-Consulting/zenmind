@@ -77,6 +77,8 @@ export class MindMapEngine {
   private isAutoNumbering: boolean = false;
   private active: boolean = true;
   private hasRenderedOnce: boolean = false;
+  private numberPrefixes = new Map<string, string>();
+  private timers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(container: HTMLElement, callbacks: MindMapEngineCallbacks = {}, initialData?: any) {
     this.container = container;
@@ -110,6 +112,8 @@ export class MindMapEngine {
         if (!this.active || !this.mindMap) return false;
         const target = e.target as HTMLElement;
         if (target === document.body) return true;
+        // The canvas container is focusable and has focus after a click on the map
+        if (target === this.container) return true;
         return (this.mindMap as any).editNodeClassList?.some((c: string) => target.classList?.contains(c)) ?? false;
       },
       enableFreeDrag: true, // Allows freely dragging nodes and floating topics anywhere on canvas
@@ -122,7 +126,7 @@ export class MindMapEngine {
     this.bindEvents();
 
     // Trigger initial scale and layout fit
-    setTimeout(() => {
+    this.later(() => {
       this.fitView();
       if (this.callbacks.onScaleChange && this.mindMap?.view) {
         this.callbacks.onScaleChange(Math.round(this.mindMap.view.scale * 100));
@@ -352,14 +356,15 @@ export class MindMapEngine {
     return this.mindMap?.renderer?.activeNodeList?.[0] || null;
   }
 
+  /** Sets the active topic's text. `text` is plain text: it is escaped, never interpreted as markup. */
   setNodeText(text: string) {
     const node = this.getActiveNode();
     if (node) {
-      const clean = stripHtml(text);
       if ((this.mindMap as any)?.richText) {
-        this.mindMap?.execCommand('SET_NODE_TEXT', node, `<p>${clean}</p>`, true);
+        const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        this.mindMap?.execCommand('SET_NODE_TEXT', node, `<p>${escaped}</p>`, true);
       } else {
-        this.mindMap?.execCommand('SET_NODE_TEXT', node, clean);
+        this.mindMap?.execCommand('SET_NODE_TEXT', node, text);
       }
       this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     }
@@ -608,44 +613,56 @@ export class MindMapEngine {
     this.mindMap?.execCommand('RESET_LAYOUT');
   }
 
+  /**
+   * Numbers (or un-numbers) topics as 1, 1.1, 1.2, 2 ... The prefix applied to each topic is
+   * remembered by uid, so turning numbering off or renumbering removes exactly what we added and
+   * never touches text that merely looks like a number ("2024 roadmap", "A plan").
+   */
   toggleAutoNumbering(enable?: boolean) {
     const data = this.getTreeData();
     if (!data) return;
 
-    const stripNumbering = (text: string): string => {
-      const clean = stripHtml(text);
-      return clean.replace(/^(\d+(\.\d+)*|[A-Z](\.\d+)*)\.?\s+/, '');
-    };
-
     const targetState = enable !== undefined ? enable : !this.isAutoNumbering;
     this.isAutoNumbering = targetState;
 
+    // Works on plain text and on rich-text HTML (the prefix goes after any leading tags)
+    const leadingTags = (text: string) => /^(?:\s*<[^>]+>)*/.exec(text)![0];
+    const addPrefix = (text: string, prefix: string) => {
+      const lead = leadingTags(text);
+      return `${lead}${prefix} ${text.slice(lead.length)}`;
+    };
+    const removePrefix = (text: string, prefix: string | undefined) => {
+      if (!prefix) return text;
+      const lead = leadingTags(text);
+      const rest = text.slice(lead.length);
+      return rest.startsWith(`${prefix} `) ? lead + rest.slice(prefix.length + 1) : text;
+    };
+
+    const previous = this.numberPrefixes;
+    const applied = new Map<string, string>();
     const applyNumbering = (node: any, prefix: string) => {
       if (!node.data) node.data = {};
-      const baseText = stripNumbering(node.data.text || '');
-      const numberedText = targetState && prefix ? `${prefix} ${baseText}` : baseText;
-      if (node.data.richText) {
-        node.data.text = `<p>${numberedText}</p>`;
-      } else {
-        node.data.text = numberedText;
+      const uid: string | undefined = node.data.uid;
+      let text = removePrefix(node.data.text || '', uid ? previous.get(uid) : undefined);
+      if (targetState && prefix && uid) {
+        text = addPrefix(text, prefix);
+        applied.set(uid, prefix);
       }
-      if (node.children && Array.isArray(node.children)) {
+      node.data.text = text;
+      if (Array.isArray(node.children)) {
         node.children.forEach((child: any, idx: number) => {
-          const childPrefix = prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`;
-          applyNumbering(child, childPrefix);
+          applyNumbering(child, prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`);
         });
       }
     };
 
-    if (data.children && Array.isArray(data.children)) {
-      data.children.forEach((child: any, idx: number) => {
-        applyNumbering(child, targetState ? `${idx + 1}` : '');
-      });
+    if (Array.isArray(data.children)) {
+      data.children.forEach((child: any, idx: number) => applyNumbering(child, `${idx + 1}`));
     }
+    this.numberPrefixes = applied;
 
     this.setData(data);
   }
-
 
   // --- Layout & Theme ---
 
@@ -745,7 +762,7 @@ export class MindMapEngine {
   setData(data: any) {
     if (!this.mindMap) return;
     this.mindMap.setData(sanitizeMapData(data));
-    setTimeout(() => this.fitView(), 100);
+    this.later(() => this.fitView(), 100);
   }
 
   async export(
@@ -810,7 +827,27 @@ export class MindMapEngine {
     this.mindMap?.resize();
   }
 
+  /** setTimeout that is cancelled on destroy(), so a closed tab's engine never runs late callbacks. */
+  private later(fn: () => void, ms: number) {
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      fn();
+    }, ms);
+    this.timers.add(id);
+  }
+
+  /** Subscribes to anything that changes what the minimap shows. Returns an unsubscribe function. */
+  onMapChange(cb: () => void): () => void {
+    const mm = this.mindMap as any;
+    if (!mm) return () => {};
+    const events = ['view_data_change', 'node_tree_render_end', 'data_change'];
+    events.forEach((e) => mm.on(e, cb));
+    return () => events.forEach((e) => mm.off(e, cb));
+  }
+
   destroy() {
+    this.timers.forEach(clearTimeout);
+    this.timers.clear();
     if (this.mindMap) {
       this.mindMap.destroy();
       this.mindMap = null;

@@ -44,12 +44,24 @@ export const MiniMapOverlay: React.FC<MiniMapOverlayProps> = ({
     }
   }, [engine, isOpen]);
 
+  // Redraw when the map or the view changes (coalesced), instead of polling on a timer
   useEffect(() => {
     if (!isOpen || !engine) return;
 
     updateMiniMap();
-    const interval = setInterval(updateMiniMap, 400);
-    return () => clearInterval(interval);
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const schedule = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        updateMiniMap();
+      }, 120);
+    };
+    const unsubscribe = engine.onMapChange(schedule);
+    return () => {
+      unsubscribe();
+      if (pending) clearTimeout(pending);
+    };
   }, [isOpen, engine, updateMiniMap]);
 
   const handleBoxMouseDown = (e: React.MouseEvent) => {
@@ -90,14 +102,14 @@ export const MiniMapOverlay: React.FC<MiniMapOverlayProps> = ({
           <span>Navigator</span>
         </span>
         <div className="flex items-center gap-1">
-          <button
+          <button aria-label="Fit to Window"
             onClick={() => engine?.fitView()}
             title="Fit to Window"
             className="p-1 hover:bg-slate-200/60 rounded text-slate-400 hover:text-slate-700 transition-colors"
           >
             <Maximize2 size={11} />
           </button>
-          <button
+          <button aria-label="Close Navigator"
             onClick={onClose}
             title="Close Navigator"
             className="p-1 hover:bg-slate-200/60 rounded text-slate-400 hover:text-slate-700 transition-colors"

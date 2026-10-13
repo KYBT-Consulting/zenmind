@@ -74,7 +74,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 animate-pulse text-[10px] font-bold">
               <Paintbrush size={10} />
               <span>Painter Active - Click Topic</span>
-              <button
+              <button aria-label="Cancel Format Painter"
                 onClick={() => engine?.endFormatPainter()}
                 className="hover:text-amber-950 ml-0.5"
                 title="Cancel Format Painter"
@@ -89,7 +89,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       {/* Right Controls: Mini-Map, Pitch, Zoom & Shortcuts */}
       <div className="flex items-center gap-3">
         {/* Pitch Mode Button */}
-        <button
+        <button aria-label="Start Presentation Mode"
           onClick={() => engine?.enterPresentationMode()}
           title="Start Presentation Mode"
           className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors px-1 py-0.5 rounded hover:bg-indigo-50 font-semibold"
@@ -101,7 +101,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className="h-3 w-px bg-slate-200" />
 
         {/* Mini-Map Toggle */}
-        <button
+        <button aria-label="Toggle Navigator Mini-Map"
           onClick={onToggleMiniMap}
           title="Toggle Navigator Mini-Map"
           className={cn(
@@ -117,7 +117,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <span className="h-3 w-px bg-slate-200" />
 
-        <button
+        <button aria-label="Fit Mind Map to Window"
           onClick={() => engine?.fitView()}
           title="Fit Mind Map to Window"
           className="flex items-center gap-1 hover:text-slate-800 transition-colors px-1 py-0.5 rounded hover:bg-slate-100"
@@ -129,7 +129,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className="h-3 w-px bg-slate-200" />
 
         {/* Format Inspector Toggle */}
-        <button
+        <button aria-label="Toggle Format Inspector Sidebar"
           onClick={onToggleInspector}
           title="Toggle Format Inspector Sidebar"
           className={cn(
@@ -146,7 +146,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className="h-3 w-px bg-slate-200" />
 
         <div className="flex items-center gap-1">
-          <button
+          <button aria-label="Zoom Out (-)"
             onClick={() => engine?.zoomOut()}
             className="p-1 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-800 transition-colors"
             title="Zoom Out (-)"
@@ -158,7 +158,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             {scale || 100}%
           </span>
 
-          <button
+          <button aria-label="Zoom In (+)"
             onClick={() => engine?.zoomIn()}
             className="p-1 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-800 transition-colors"
             title="Zoom In (+)"

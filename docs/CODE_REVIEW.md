@@ -29,9 +29,9 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 13 | Engine | Minimap viewport drag calls the background-pan handlers (5x sensitivity) instead of `onViewBox*`. **Confirmed.** | Fixed |
 | 14 | Engine | `screenToCanvasPos` ignores pan/zoom, so double-click floating topics land in the wrong place when zoomed/panned. **Confirmed.** | Fixed |
 | 15 | Engine | `insertFloatingNode` mutates data directly: no undo, no `data_change`, so the tab is not marked dirty. Plausible. | Fixed (now an `INSERT_CHILD_NODE` command) |
-| 16 | Engine | `setNodeText` runs user text through `stripHtml` (drops `<b>`-like text, decodes entities) and re-wraps without escaping. Plausible. | Open |
-| 17 | Engine | Auto-numbering regex strips real leading words (`2024 roadmap`, `A plan`) and drops rich-text formatting. **Confirmed.** | Open |
-| 18 | Engine | Shortcut gate (`customCheckEnableShortcut`) only allows `document.body`/edit targets; keys may be ignored while the canvas container has focus. Plausible; Tab also failed on the original code in manual testing. | Open |
+| 16 | Engine | `setNodeText` runs user text through `stripHtml` (drops `<b>`-like text, decodes entities) and re-wraps without escaping. Plausible. | Fixed (text is escaped, not stripped; no UI path calls `setNodeText` currently) |
+| 17 | Engine | Auto-numbering regex strips real leading words (`2024 roadmap`, `A plan`) and drops rich-text formatting. **Confirmed.** | Fixed (prefixes are tracked per topic uid and removed exactly; works on rich-text HTML) |
+| 18 | Engine | Shortcut gate (`customCheckEnableShortcut`) only allows `document.body`/edit targets; keys may be ignored while the canvas container has focus. Plausible; Tab also failed on the original code in manual testing. | Fixed: the focused canvas container is now accepted as a shortcut target; Tab/Enter/Delete work after clicking a topic (they did not before, including on the original code) |
 | 19 | UI | Image dialog keeps state from the previous topic (mounted, returns null when closed); Attach can copy topic A's image to B. **Confirmed.** | Fixed |
 | 20 | UI | Outline rows have no click-to-select; highlight compares text (duplicates all highlight); index keys. **Confirmed.** | Fixed (click/Enter selects, uid-based highlight) |
 | 21 | UI | Inspector ignores a repeated "open Notes/Tasks" request (effect keyed on `initialTab`). **Confirmed.** | Fixed (tab request counter) |
@@ -43,14 +43,16 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 
 ## Low
 
-- Quick export buttons in the ribbon have no error handling (the Export dialog does). Plausible.
-- State update on every `node_tree_render_end`, and the minimap recomputes the full SVG every 400 ms. Plausible.
-- Tabs and icon-only buttons lack roles/aria-labels; dialogs lack Escape-to-close and focus trap. **Confirmed.**
-- `FloatingBubbleMenu` calls a hook after an early return. Works today (no crash observed in manual testing); a lint violation.
+- Quick export buttons in the ribbon have no error handling (the Export dialog does). Plausible. **Open (skipped with import/export work).**
+- State update on every `node_tree_render_end`, and the minimap recomputes the full SVG every 400 ms. Plausible. **Fixed:** active-node updates are skipped when unchanged; the minimap redraws on map/view change events (coalesced) instead of polling.
+- Tabs and icon-only buttons lack roles/aria-labels; dialogs lack Escape-to-close and focus trap. **Confirmed. Fixed:** tablist/tab roles with arrow-key navigation, aria-labels on icon buttons, and `useDialogA11y` (role=dialog, Escape, focus trap, focus restore) on the four dialogs. Backdrop-click-to-close was not added.
+- `FloatingBubbleMenu` calls a hook after an early return. Works today (no crash observed in manual testing); a lint violation. **Fixed.**
 - Mobile bottom bar offers fewer actions than the ribbon. Plausible.
-- Web save fallback revokes the blob URL immediately after `click()`. Plausible.
+- Web save fallback revokes the blob URL immediately after `click()`. Plausible. **Fixed** (delayed revoke, anchor attached to the DOM).
 - JSON import accepts anything with `.content`/`.data` and falls back to markdown on a parse failure. Plausible.
 - `simple-mind-map.d.ts` omits most of the API used, hiding wrong calls behind `any`.
+- Engine timers are now cancelled in `destroy()`.
+- The minimap preview looks mis-scaled in the navigator (viewport box much larger than the map). Not investigated.
 - Dev-only: destroyed engines log `appendChild of null` / `rbox` errors when a tab closes or React StrictMode remounts.
 
 ## Security notes
