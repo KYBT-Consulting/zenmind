@@ -4,7 +4,7 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
-## [0.1.2] - Unreleased
+## [0.1.2] - 2026-10-13
 
 A stabilisation release following a full code review. Details and status of every finding are in
 [`docs/CODE_REVIEW.md`](docs/CODE_REVIEW.md).
