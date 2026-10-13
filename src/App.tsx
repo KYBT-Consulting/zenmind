@@ -25,10 +25,15 @@ interface TabInfo {
   title: string;
   filePath?: string;
   initialData: any;
-  /** JSON of the engine data at last load/save; dirty = current data differs */
+  /** Content signature at first render / last save; null until the map has rendered */
   savedJson: string | null;
+  /** Title at last save (or creation) */
+  savedTitle: string;
+  /** Map content differs from savedJson (title changes are checked separately, see isDirty) */
   dirty: boolean;
 }
+
+const isDirty = (t: TabInfo) => t.dirty || t.title !== t.savedTitle;
 
 interface TabView {
   activeNode: ActiveNodeInfo | null;
@@ -48,6 +53,7 @@ const makeTab = (title: string, initialData: any, filePath?: string): TabInfo =>
   filePath,
   initialData,
   savedJson: null,
+  savedTitle: title,
   dirty: false,
 });
 
@@ -112,17 +118,14 @@ export default function App() {
       callbacksCache.current[id] = {
         onEngineReady: (eng: MindMapEngine) => {
           setEngines((prev) => ({ ...prev, [id]: eng }));
-          // Baseline is taken once the library has finished its first render/normalisation;
-          // snapshotting at construction time would make every fresh tab look modified.
-          // (React StrictMode mounts twice in dev, so `eng` may already be destroyed: use the current engine.)
-          setTimeout(() => {
-            const current = enginesRef.current[id];
-            if (!current?.getTreeData()) return;
-            const signature = current.getContentSignature();
-            setTabs((prev) =>
-              prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: signature } : t))
-            );
-          }, 500);
+        },
+        // Baseline = the map as first rendered (before any possible user edit)
+        onFirstRender: (eng: MindMapEngine) => {
+          if (!eng.getTreeData()) return; // engine was destroyed (React StrictMode double mount)
+          const signature = eng.getContentSignature();
+          setTabs((prev) =>
+            prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: signature } : t))
+          );
         },
         onActiveNodeChange: (activeNode: ActiveNodeInfo | null) => updateView(id, { activeNode }),
         onScaleChange: (scale: number) => updateView(id, { scale }),
@@ -156,14 +159,40 @@ export default function App() {
 
   const totalNodes = countNodes(mindMapData);
 
-  /** Opens a map in a new tab (replacing a pristine untitled one if it's the only tab). */
-  const openInNewTab = useCallback((title: string, data: any, filePath?: string) => {
-    const tab = makeTab(title, data, filePath);
-    setTabs((prev) => {
-      const only = prev.length === 1 ? prev[0] : null;
-      const replace = only && !only.dirty && !only.filePath && only.title === 'Untitled Mind Map';
-      return replace ? [tab] : [...prev, tab];
+  const tabsRef = useRef(tabs);
+  tabsRef.current = tabs;
+
+  /** Drops the per-tab engine/view/callback entries of a tab that is going away. */
+  const forgetTab = (id: string) => {
+    delete callbacksCache.current[id];
+    setEngines((prev) => {
+      const { [id]: _gone, ...rest } = prev;
+      return rest;
     });
+    setViews((prev) => {
+      const { [id]: _gone, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  /**
+   * Opens a map in a new tab. A file that is already open is focused instead (two tabs on one
+   * path would overwrite each other on save); a lone pristine untitled tab is replaced.
+   */
+  const openInNewTab = useCallback((title: string, data: any, filePath?: string) => {
+    const current = tabsRef.current;
+    const existing = filePath ? current.find((t) => t.filePath === filePath) : undefined;
+    if (existing) {
+      setActiveId(existing.id);
+      return;
+    }
+    const tab = makeTab(title, data, filePath);
+    const only = current.length === 1 ? current[0] : null;
+    const replace = !!only && !isDirty(only) && !only.filePath && only.title === 'Untitled Mind Map';
+    if (replace) forgetTab(only!.id);
+    const next = replace ? [tab] : [...current, tab];
+    tabsRef.current = next; // several files can be opened in one tick (multi-drop)
+    setTabs(next);
     setActiveId(tab.id);
   }, []);
 
@@ -180,16 +209,8 @@ export default function App() {
     (id: string) => {
       const tab = tabs.find((t) => t.id === id);
       if (!tab) return;
-      if (tab.dirty && !window.confirm(`"${tab.title}" has unsaved changes. Close it anyway?`)) return;
-      delete callbacksCache.current[id];
-      setEngines((prev) => {
-        const { [id]: _gone, ...rest } = prev;
-        return rest;
-      });
-      setViews((prev) => {
-        const { [id]: _gone, ...rest } = prev;
-        return rest;
-      });
+      if (isDirty(tab) && !window.confirm(`"${tab.title}" has unsaved changes. Close it anyway?`)) return;
+      forgetTab(id);
       const remaining = tabs.filter((t) => t.id !== id);
       if (remaining.length === 0) {
         const fresh = makeTab('Untitled Mind Map', BLANK_MAP());
@@ -211,12 +232,14 @@ export default function App() {
     if (!engine) return;
     const data = engine.getData();
     const savedTree = engine.getContentSignature();
+    const savedTitleAtSave = docTitle;
     const id = activeTab.id;
     const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
     if (result.success) {
       // Saved state is what was written, not whatever the user typed while the dialog was open
       updateTab(id, {
         savedJson: savedTree,
+        savedTitle: savedTitleAtSave,
         dirty: enginesRef.current[id]?.getContentSignature() !== savedTree,
         ...(result.filePath ? { filePath: result.filePath } : {}),
       });
@@ -341,7 +364,7 @@ export default function App() {
         e.preventDefault();
         handleSaveFile();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      if (DesktopFileService.newMapShortcut().matches(e)) {
         e.preventDefault();
         handleNewFile();
       }
@@ -399,7 +422,7 @@ export default function App() {
       />
 
       <TabBar
-        tabs={tabs.map(({ id, title, dirty }) => ({ id, title, dirty }))}
+        tabs={tabs.map((t) => ({ id: t.id, title: t.title, dirty: isDirty(t) }))}
         activeId={activeTab.id}
         onSelect={handleSelectTab}
         onClose={handleCloseTab}

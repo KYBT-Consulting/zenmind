@@ -19,6 +19,8 @@ export interface MindMapEngineCallbacks {
   onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
   onFormatPainterChange?: (isActive: boolean) => void;
   onPresentationModeChange?: (isActive: boolean) => void;
+  /** Fired once, after the first tree render completes (the map is laid out and stable). */
+  onFirstRender?: (engine: MindMapEngine) => void;
   onError?: (error: any) => void;
 }
 
@@ -73,6 +75,7 @@ export class MindMapEngine {
   private rainbowLinesEnabled: boolean = false;
   private isAutoNumbering: boolean = false;
   private active: boolean = true;
+  private hasRenderedOnce: boolean = false;
 
   constructor(container: HTMLElement, callbacks: MindMapEngineCallbacks = {}, initialData?: any) {
     this.container = container;
@@ -154,6 +157,10 @@ export class MindMapEngine {
     });
 
     this.mindMap.on('node_tree_render_end', () => {
+      if (!this.hasRenderedOnce) {
+        this.hasRenderedOnce = true;
+        this.callbacks.onFirstRender?.(this);
+      }
       const active = this.getActiveNode();
       if (active) {
         this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(active));
@@ -717,11 +724,17 @@ export class MindMapEngine {
   }
 
   /**
-   * Stable string of the map content, for dirty checks. Ignores layout-only state the library
-   * writes into node data after edits (`dir`: which side of the root a branch sits on).
+   * Stable string of the map content, for dirty checks. Ignores state the library adds on its own
+   * after rendering or editing: `dir` (which side of the root a branch sits on) and empty
+   * objects/arrays (e.g. `imgMap: {}`), so "absent" and "empty" compare equal.
    */
   getContentSignature(): string {
-    return JSON.stringify(this.getTreeData(), (key, value) => (key === 'dir' ? undefined : value));
+    return JSON.stringify(this.getTreeData(), function (this: any, key, value) {
+      if (key === 'dir') return undefined;
+      const isContainer = value !== null && typeof value === 'object';
+      const isEmpty = Array.isArray(value) ? value.length === 0 : isContainer && Object.keys(value).length === 0;
+      return isEmpty && !Array.isArray(this) && key !== '' ? undefined : value;
+    });
   }
 
   setData(data: any) {

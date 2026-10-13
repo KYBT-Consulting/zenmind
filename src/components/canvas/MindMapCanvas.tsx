@@ -4,6 +4,7 @@ import { ActiveNodeInfo } from '../../types/mindmap';
 
 interface MindMapCanvasProps {
   onEngineReady: (engine: MindMapEngine) => void;
+  onFirstRender?: (engine: MindMapEngine) => void;
   onActiveNodeChange: (node: ActiveNodeInfo | null) => void;
   onDataChange: (data: any) => void;
   onScaleChange: (scale: number) => void;
@@ -17,6 +18,7 @@ interface MindMapCanvasProps {
 
 export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   onEngineReady,
+  onFirstRender,
   onActiveNodeChange,
   onDataChange,
   onScaleChange,
@@ -46,6 +48,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       onHistoryChange,
       onFormatPainterChange,
       onPresentationModeChange,
+      onFirstRender,
       onError: (err) => console.error('ZenMind Engine Error:', err),
     };
 
@@ -67,13 +70,19 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   }, []);
 
   // Tabs stay mounted; only the active one takes keyboard shortcuts and needs a re-measure on show
+  const wasActiveRef = useRef(isActive);
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
     engine.setActive(isActive);
-    if (isActive) {
+    const justActivated = isActive && !wasActiveRef.current;
+    wasActiveRef.current = isActive;
+    if (justActivated) {
       engine.resize();
-      containerRef.current?.focus();
+      // Only take focus if nothing else (an input, a dialog) has it
+      if (document.activeElement === document.body || document.activeElement === null) {
+        containerRef.current?.focus();
+      }
     }
   }, [isActive]);
 

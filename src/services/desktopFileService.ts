@@ -27,6 +27,17 @@ export class DesktopFileService {
   }
 
   /**
+   * Browsers reserve Ctrl/Cmd+N (new window) and page scripts can't intercept it, so the web
+   * build uses Alt+N; the desktop app uses Ctrl/Cmd+N.
+   */
+  static newMapShortcut(): { label: string; matches: (e: KeyboardEvent) => boolean } {
+    if (this.isTauri()) {
+      return { label: 'Ctrl+N', matches: (e) => (e.ctrlKey || e.metaKey) && e.code === 'KeyN' };
+    }
+    return { label: 'Alt+N', matches: (e) => e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyN' };
+  }
+
+  /**
    * Native file save dialog and direct disk write (Tauri) with browser fallback.
    */
   static async saveZenMindFile(

@@ -1,3 +1,4 @@
+import { DesktopFileService } from '../../services/desktopFileService';
 import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -49,7 +50,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeId, onSelect, onClos
     ))}
     <button
       onClick={onNew}
-      title="New Mind Map (Ctrl+N)"
+      title={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
       className="p-1.5 mb-0.5 rounded hover:bg-slate-200 text-slate-600 shrink-0"
     >
       <Plus size={14} />

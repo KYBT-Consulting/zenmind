@@ -1,3 +1,4 @@
+import { DesktopFileService } from '../../services/desktopFileService';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FolderOpen,
@@ -215,7 +216,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
           <button
             onClick={onNewFile}
-            title="New Mind Map (Ctrl+N)"
+            title={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
           >
             <FilePlus size={15} />
