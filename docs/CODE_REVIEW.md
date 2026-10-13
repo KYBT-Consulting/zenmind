@@ -3,6 +3,8 @@
 Date: 2026-10-13. Scope: everything under `src/` and `src-tauri/` plus build config; the vendored `src/vendor/simple-mind-map` library is excluded except where our code calls into it.
 Method: three read-only reviews (engine, services, UI components) plus a review of the tabs commit. The top findings were checked against the code; the rest are marked **plausible** (not reproduced).
 
+See [`RELEASE_PLAN_0.1.2.md`](RELEASE_PLAN_0.1.2.md) for what is planned for the next point release.
+
 Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 
 ## Critical / high
