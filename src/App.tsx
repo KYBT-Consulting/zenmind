@@ -104,7 +104,7 @@ export default function App() {
           // (React StrictMode mounts twice in dev, so `eng` may already be destroyed: use the current engine.)
           setTimeout(() => {
             const current = enginesRef.current[id];
-            const data = current?.getData();
+            const data = current?.getTreeData();
             if (!data) return;
             setTabs((prev) =>
               prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: JSON.stringify(data) } : t))
@@ -121,7 +121,7 @@ export default function App() {
             prev.map((t) => {
               if (t.id !== id || t.savedJson === null) return t;
               const eng = enginesRef.current[id];
-              const dirty = eng ? JSON.stringify(eng.getData()) !== t.savedJson : t.dirty;
+              const dirty = eng ? JSON.stringify(eng.getTreeData()) !== t.savedJson : t.dirty;
               return dirty === t.dirty ? t : { ...t, dirty };
             })
           );
@@ -201,13 +201,14 @@ export default function App() {
   const handleSaveFile = useCallback(async () => {
     if (!engine) return;
     const data = engine.getData();
+    const savedTree = JSON.stringify(engine.getTreeData());
     const id = activeTab.id;
     const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
     if (result.success) {
       // Saved state is what was written, not whatever the user typed while the dialog was open
       updateTab(id, {
-        savedJson: JSON.stringify(data),
-        dirty: JSON.stringify(enginesRef.current[id]?.getData()) !== JSON.stringify(data),
+        savedJson: savedTree,
+        dirty: JSON.stringify(enginesRef.current[id]?.getTreeData()) !== savedTree,
         ...(result.filePath ? { filePath: result.filePath } : {}),
       });
     }

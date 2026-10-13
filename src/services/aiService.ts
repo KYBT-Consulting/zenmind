@@ -108,11 +108,9 @@ export const ENDPOINT_PRESETS: AIEndpointPreset[] = [
 
 export class AIService {
   /**
-   * Load current AI configuration from localStorage with env fallback.
+   * Load current AI configuration from localStorage (keys are entered in the UI, never bundled).
    */
   static getConfig(): AIConfig {
-    const envGeminiKey =
-      (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
     const legacyGeminiKey =
       typeof window !== 'undefined'
         ? localStorage.getItem('zenmind_gemini_api_key') || ''
@@ -128,7 +126,7 @@ export class AIService {
         return {
           ...DEFAULT_AI_CONFIG,
           ...parsed,
-          geminiApiKey: parsed.geminiApiKey || legacyGeminiKey || envGeminiKey,
+          geminiApiKey: parsed.geminiApiKey || legacyGeminiKey,
         };
       }
     } catch {
@@ -137,7 +135,7 @@ export class AIService {
 
     return {
       ...DEFAULT_AI_CONFIG,
-      geminiApiKey: legacyGeminiKey || envGeminiKey,
+      geminiApiKey: legacyGeminiKey,
     };
   }
 
@@ -149,6 +147,9 @@ export class AIService {
     localStorage.setItem('zenmind_ai_config', JSON.stringify(config));
     if (config.geminiApiKey) {
       localStorage.setItem('zenmind_gemini_api_key', config.geminiApiKey);
+    } else {
+      // Don't let getConfig resurrect a key the user just cleared
+      localStorage.removeItem('zenmind_gemini_api_key');
     }
   }
 

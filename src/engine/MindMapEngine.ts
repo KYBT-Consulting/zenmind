@@ -70,7 +70,7 @@ export class MindMapEngine {
   private callbacks: MindMapEngineCallbacks;
   private currentLayout: LayoutType = 'mindMap';
   private currentThemeId: string = 'ocean-breeze';
-  private rainbowLinesEnabled: boolean = true;
+  private rainbowLinesEnabled: boolean = false;
   private isAutoNumbering: boolean = false;
   private active: boolean = true;
 
@@ -587,7 +587,7 @@ export class MindMapEngine {
   }
 
   toggleAutoNumbering(enable?: boolean) {
-    const data = this.getData();
+    const data = this.getTreeData();
     if (!data) return;
 
     const stripNumbering = (text: string): string => {
@@ -640,7 +640,7 @@ export class MindMapEngine {
     const preset = THEME_PRESETS.find((t) => t.id === themeId);
     if (!preset || !this.mindMap) return;
     this.currentThemeId = themeId;
-    this.mindMap.setThemeConfig(preset.config);
+    this.mindMap.setThemeConfig({ ...preset.config });
   }
 
   getThemeId(): string {
@@ -649,16 +649,17 @@ export class MindMapEngine {
 
   setBranchLineStyle(style: BranchLineStyle) {
     if (!this.mindMap) return;
-    this.mindMap.setThemeConfig({ lineStyle: style });
+    // setThemeConfig replaces the whole config, so merge into the current one
+    this.mindMap.setThemeConfig({ ...this.mindMap.getCustomThemeConfig(), lineStyle: style });
   }
 
   toggleRainbowLines(enable: boolean) {
     this.rainbowLinesEnabled = enable;
-    if (!this.mindMap) return;
-    // SimpleMindMap RainbowLines plugin config
-    this.mindMap.setThemeConfig({
-      enableRainbowLines: enable,
-    });
+    const mm = this.mindMap as any;
+    if (!mm?.rainbowLines) return;
+    // The plugin reads opt.rainbowLinesConfig (not the theme config); an empty colour list uses its defaults
+    mm.opt.rainbowLinesConfig = { open: enable, colorsList: [] };
+    mm.rainbowLines.updateRainLinesConfig({ open: enable });
   }
 
   // --- View & Navigation ---
@@ -695,8 +696,14 @@ export class MindMapEngine {
 
   // --- Data & Import/Export ---
 
+  /** Full document: {layout, root, theme, view}. Use for saving .zenmind files. */
   getData(): any {
     return this.mindMap?.getData(true) || null;
+  }
+
+  /** Just the node tree (root node with children). Use for exports and content comparison. */
+  getTreeData(): any {
+    return this.mindMap?.getData(false) || null;
   }
 
   setData(data: any) {
@@ -728,13 +735,13 @@ export class MindMapEngine {
         break;
       }
       case 'opml': {
-        const data = this.getData();
+        const data = this.getTreeData();
         const xml = MindMapFormatService.exportOpml(data, filename);
         MindMapFormatService.downloadFile(xml, `${filename}.opml`, 'application/xml');
         return xml;
       }
       case 'mm': {
-        const data = this.getData();
+        const data = this.getTreeData();
         const xml = MindMapFormatService.exportFreeMind(data);
         MindMapFormatService.downloadFile(xml, `${filename}.mm`, 'application/xml');
         return xml;
