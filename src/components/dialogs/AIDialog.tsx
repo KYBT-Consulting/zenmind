@@ -58,7 +58,10 @@ export const AIDialog: React.FC<AIDialogProps> = ({
         setTopic(stripHtml(activeNode.text));
       }
     }
-  }, [isOpen, mode, activeNode]);
+    // Only when opened or the target topic changes: depending on the activeNode object would
+    // re-run on every engine update and wipe unsaved settings edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mode, activeNode?.uid]);
 
   if (!isOpen) return null;
 
@@ -108,10 +111,9 @@ export const AIDialog: React.FC<AIDialogProps> = ({
         // Expand selected topic into subtopics
         const subtopics = await AIService.expandTopic(topic, config);
         if (engine && subtopics && subtopics.length > 0) {
-          for (const sub of subtopics) {
-            engine.insertChildNode();
-            engine.setNodeText(sub);
-          }
+          // Insert under the topic the dialog was opened for (explicit parent: the library only
+          // activates new nodes asynchronously, so insert-then-set-text overwrote the parent).
+          engine.addChildTopics(subtopics, activeNode?.uid);
           onClose();
         }
       }

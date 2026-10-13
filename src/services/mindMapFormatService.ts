@@ -51,8 +51,13 @@ export class MindMapFormatService {
     const trimmed = text.trim();
     const lowerName = filenameHint.toLowerCase();
 
-    // 1. OPML Outline (.opml) or XML containing <opml>
-    if (lowerName.endsWith('.opml') || trimmed.includes('<opml')) {
+    // Decide XML formats by file extension, or by the document's root element (never by
+    // substring: a JSON/Markdown file may legitimately mention "<opml" in a node's text).
+    const rootElement = /^(?:<\?xml[^>]*\?>\s*|<!--[\s\S]*?-->\s*|<!DOCTYPE[^>]*>\s*)*<([A-Za-z][\w:-]*)/.exec(trimmed)?.[1]?.toLowerCase();
+    const isKnownTextExt = /\.(md|markdown|zenmind|json)$/.test(lowerName);
+
+    // 1. OPML Outline (.opml) or XML whose root is <opml>
+    if (lowerName.endsWith('.opml') || (!isKnownTextExt && rootElement === 'opml')) {
       try {
         const res = this.parseOpml(trimmed);
         const title = res.title || filenameHint.replace(/\.[^/.]+$/, '') || 'OPML Outline';
@@ -63,7 +68,7 @@ export class MindMapFormatService {
     }
 
     // 2. FreeMind / Freeplane (.mm) or XML containing <map>
-    if (lowerName.endsWith('.mm') || (trimmed.startsWith('<map') || trimmed.includes('<map version='))) {
+    if (lowerName.endsWith('.mm') || (!isKnownTextExt && rootElement === 'map')) {
       try {
         const data = this.parseFreeMind(trimmed);
         const title = data.data?.text || filenameHint.replace(/\.[^/.]+$/, '') || 'FreeMind Map';
@@ -87,6 +92,9 @@ export class MindMapFormatService {
     // 4. JSON / ZenMind (.zenmind, .json)
     try {
       const parsed = JSON.parse(trimmed);
+      if (!parsed || typeof parsed !== 'object') {
+        return { success: false, error: 'Not a valid mind map file (expected a JSON object).' };
+      }
       if (parsed.content) {
         return {
           success: true,

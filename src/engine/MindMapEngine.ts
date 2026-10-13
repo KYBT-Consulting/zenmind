@@ -319,6 +319,27 @@ export class MindMapEngine {
     }
   }
 
+  /** Select a node by uid and bring it into view. Returns false if no such node exists. */
+  selectNodeByUid(uid: string): boolean {
+    const renderer = this.mindMap?.renderer as any;
+    const node = renderer?.findNodeByUid?.(uid);
+    if (!node) return false;
+    renderer.clearActiveNodeList?.();
+    renderer.setNodeActive(node, true);
+    renderer.moveNodeToCenter?.(node);
+    return true;
+  }
+
+  /** Add several child topics under a node (by uid, default: the active node) as one undoable step. */
+  addChildTopics(texts: string[], parentUid?: string): boolean {
+    const renderer = this.mindMap?.renderer as any;
+    if (!this.mindMap || !renderer || texts.length === 0) return false;
+    const parent = parentUid ? renderer.findNodeByUid?.(parentUid) : this.getActiveNode();
+    if (!parent) return false;
+    this.mindMap.execCommand('INSERT_MULTI_CHILD_NODE', [parent], texts.map((text) => ({ data: { text } })));
+    return true;
+  }
+
   getActiveNode(): any {
     return this.mindMap?.renderer?.activeNodeList?.[0] || null;
   }

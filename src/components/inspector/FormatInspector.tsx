@@ -39,6 +39,8 @@ interface FormatInspectorProps {
   engine: MindMapEngine | null;
   activeNode: ActiveNodeInfo | null;
   initialTab?: InspectorTab;
+  /** Bump to re-apply initialTab even when its value is unchanged */
+  tabRequest?: number;
   onClose: () => void;
   onOpenImageDialog?: () => void;
   onOpenFormulaDialog?: () => void;
@@ -48,6 +50,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
   engine,
   activeNode,
   initialTab = 'node',
+  tabRequest,
   onClose,
   onOpenImageDialog,
   onOpenFormulaDialog,
@@ -67,7 +70,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
     if (initialTab) {
       setActiveTab(initialTab);
     }
-  }, [initialTab]);
+  }, [initialTab, tabRequest]);
 
   const currentLayout = engine?.getLayout() || 'mindMap';
   const currentThemeId = engine?.getThemeId() || 'ocean-breeze';

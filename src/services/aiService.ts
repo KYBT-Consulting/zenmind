@@ -251,6 +251,31 @@ export class AIService {
     return response.text || '';
   }
 
+  /** Validate/normalise an LLM-produced mind map tree; throws if it isn't usable. */
+  private static validateTree(node: any, depth = 0): GeneratedMindMapNode {
+    const text = node?.data?.text;
+    if (typeof text !== 'string' || !text.trim() || depth > 8) {
+      throw new Error('The AI response was not a valid mind map (missing topic text).');
+    }
+    const children = Array.isArray(node.children)
+      ? node.children.map((c: any) => this.validateTree(c, depth + 1))
+      : [];
+    return { data: { text: text.trim() }, children };
+  }
+
+  /** Normalise an LLM-produced list of subtopics: strings, or objects with a title-like field. */
+  private static validateSubtopics(list: any): string[] {
+    if (!Array.isArray(list)) throw new Error('The AI response was not a list of subtopics.');
+    const out = list
+      .map((item) =>
+        typeof item === 'string' ? item : item?.text ?? item?.title ?? item?.name ?? item?.data?.text
+      )
+      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+      .map((t) => t.trim());
+    if (out.length === 0) throw new Error('The AI response contained no usable subtopics.');
+    return out;
+  }
+
   /**
    * Generate an entire hierarchical mind map from a user prompt.
    */
@@ -286,10 +311,7 @@ Create 3-5 main branches and 2-4 subtopics per branch. Keep text concise (2-5 wo
           ],
           config
         );
-        const parsed = this.parseJsonFromResponse(raw);
-        if (parsed.data && parsed.data.text) {
-          return parsed;
-        }
+        return this.validateTree(this.parseJsonFromResponse(raw));
       } catch (err: any) {
         console.warn('OpenAI generation error:', err);
         throw err;
@@ -303,17 +325,15 @@ Create 3-5 main branches and 2-4 subtopics per branch. Keep text concise (2-5 wo
           `${systemPrompt}\n\nTopic: ${topic}`,
           config
         );
-        const parsed = this.parseJsonFromResponse(raw);
-        if (parsed.data && parsed.data.text) {
-          return parsed;
-        }
+        return this.validateTree(this.parseJsonFromResponse(raw));
       } catch (err: any) {
-        console.warn('Gemini generation error, falling back:', err);
-        // If API key failed, fall through to fallback
+        // Surface the failure instead of passing a template off as an AI result
+        console.warn('Gemini generation error:', err);
+        throw err;
       }
     }
 
-    // 3. Fallback structure if offline or no key
+    // 3. Offline template: only when no provider is configured (no Gemini key)
     return this.getFallbackMindMap(topic);
   }
 
@@ -342,10 +362,7 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
           ],
           config
         );
-        const parsed = this.parseJsonFromResponse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+        return this.validateSubtopics(this.parseJsonFromResponse(raw));
       } catch (err: any) {
         console.warn('OpenAI topic expansion error:', err);
         throw err;
@@ -355,12 +372,10 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
     if (config.provider === 'gemini' && config.geminiApiKey) {
       try {
         const raw = await this.callGemini(prompt, config);
-        const parsed = this.parseJsonFromResponse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+        return this.validateSubtopics(this.parseJsonFromResponse(raw));
       } catch (err: any) {
-        console.warn('Gemini topic expansion error, falling back:', err);
+        console.warn('Gemini topic expansion error:', err);
+        throw err;
       }
     }
 

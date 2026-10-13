@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Image as ImageIcon,
   Upload,
@@ -17,6 +17,8 @@ interface ImageDialogProps {
   onClose: () => void;
 }
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 export const ImageDialog: React.FC<ImageDialogProps> = ({
   isOpen,
   engine,
@@ -29,15 +31,40 @@ export const ImageDialog: React.FC<ImageDialogProps> = ({
   const [width, setWidth] = useState<number>(activeNode?.image?.width || 180);
   const [height, setHeight] = useState<number>(activeNode?.image?.height || 120);
   const [previewError, setPreviewError] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // The dialog stays mounted while closed, so re-sync from the selected topic each time it opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setTab('upload');
+    setImageUrl(activeNode?.image?.url || '');
+    setImageTitle(activeNode?.image?.title || '');
+    setWidth(activeNode?.image?.width || 180);
+    setHeight(activeNode?.image?.height || 120);
+    setPreviewError(false);
+    setUploadError('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeNode?.uid]);
 
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please choose an image file.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setUploadError('Image is larger than 5MB. Please choose a smaller one.');
+      return;
+    }
+    setUploadError('');
 
     const reader = new FileReader();
+    reader.onerror = () => setUploadError('Could not read the selected file.');
     reader.onload = (event) => {
       const result = event.target?.result as string;
       if (result) {
@@ -149,6 +176,8 @@ export const ImageDialog: React.FC<ImageDialogProps> = ({
               />
             </div>
           )}
+
+          {uploadError && <div className="text-xs text-rose-500 font-medium">{uploadError}</div>}
 
           {/* Preview Box */}
           {imageUrl && (

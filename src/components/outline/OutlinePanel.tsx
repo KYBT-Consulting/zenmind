@@ -28,8 +28,8 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const children = node.children || [];
   const hasChildren = children.length > 0;
-  const isSelected =
-    stripHtml(activeNode?.text || '') === stripHtml(node.data?.text || '');
+  const uid: string | undefined = node.data?.uid;
+  const isSelected = !!uid && uid === activeNode?.uid;
 
   return (
     <div className="select-none">
@@ -39,6 +39,15 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
           isSelected ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'hover:bg-slate-50 text-slate-700'
         )}
         style={{ paddingLeft: `${depth * 14 + 8}px` }}
+        role="button"
+        tabIndex={0}
+        onClick={() => uid && engine?.selectNodeByUid(uid)}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && uid) {
+            e.preventDefault();
+            engine?.selectNodeByUid(uid);
+          }
+        }}
       >
         {hasChildren ? (
           <button
@@ -63,7 +72,7 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
         <div className="space-y-0.5">
           {children.map((child: any, idx: number) => (
             <OutlineItem
-              key={idx}
+              key={child.data?.uid ?? idx}
               node={child}
               depth={depth + 1}
               engine={engine}

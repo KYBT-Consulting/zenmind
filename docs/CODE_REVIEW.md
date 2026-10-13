@@ -3,7 +3,7 @@
 Date: 2026-10-13. Scope: everything under `src/` and `src-tauri/` plus build config; the vendored `src/vendor/simple-mind-map` library is excluded except where our code calls into it.
 Method: three read-only reviews (engine, services, UI components) plus a review of the tabs commit. The top findings were checked against the code; the rest are marked **plausible** (not reproduced).
 
-Status: **Fixed** = fixed in the commit following this document. **Open** = not yet addressed.
+Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 
 ## Critical / high
 
@@ -15,9 +15,9 @@ Status: **Fixed** = fixed in the commit following this document. **Open** = not 
 | 4 | Build | `vite.config.ts` inlined `GEMINI_API_KEY` into the client bundle; no `.dockerignore`, so a local `.env` entered the Docker build. **Confirmed.** | Fixed |
 | 5 | Services | Clearing the Gemini key in settings left the legacy `zenmind_gemini_api_key` in localStorage, and `getConfig` resurrected it. **Confirmed.** | Fixed |
 | 6 | Tabs | Dirty tracking compared the whole wrapper including pan/zoom, so panning could mark a tab dirty or keep it dirty after undo. | Fixed |
-| 7 | Services | Format sniffing uses `includes('<opml')` / `includes('<map version=')` on the whole text, so a `.zenmind`/`.md` file mentioning those strings fails to open. **Confirmed.** | Open |
-| 8 | Services | Desktop (Tauri) open reads `.xmind` with `readTextFile`; only the web path can parse the zip. Plausible. | Open |
-| 9 | Services | AI errors are swallowed and replaced with a generic template map, so users think the AI answered. **Confirmed.** | Open |
+| 7 | Services | Format sniffing uses `includes('<opml')` / `includes('<map version=')` on the whole text, so a `.zenmind`/`.md` file mentioning those strings fails to open. **Confirmed.** | Fixed (root-element/extension detection) |
+| 8 | Services | Desktop (Tauri) open reads `.xmind` with `readTextFile`; only the web path can parse the zip. Plausible. | Fixed (desktop open reads .xmind as bytes) |
+| 9 | Services | AI errors are swallowed and replaced with a generic template map, so users think the AI answered. **Confirmed.** | Fixed (Gemini/OpenAI errors now surface and responses are validated; the offline template remains only when no Gemini key is set) |
 | 10 | Services | FreeMind/OPML export drops notes, links and tags and writes raw HTML into OPML notes. **Confirmed.** | Open |
 | 11 | Security | Tauri `csp: null` and `fs:default`/`dialog:default` granted in full while API keys live in localStorage. Plausible. | Open |
 | 12 | Security | Hyperlinks accept `javascript:`/`data:` URLs (prompt input and imported files). Plausible. | Open |
@@ -32,11 +32,11 @@ Status: **Fixed** = fixed in the commit following this document. **Open** = not 
 | 16 | Engine | `setNodeText` runs user text through `stripHtml` (drops `<b>`-like text, decodes entities) and re-wraps without escaping. Plausible. | Open |
 | 17 | Engine | Auto-numbering regex strips real leading words (`2024 roadmap`, `A plan`) and drops rich-text formatting. **Confirmed.** | Open |
 | 18 | Engine | Shortcut gate (`customCheckEnableShortcut`) only allows `document.body`/edit targets; keys may be ignored while the canvas container has focus. Plausible; Tab also failed on the original code in manual testing. | Open |
-| 19 | UI | Image dialog keeps state from the previous topic (mounted, returns null when closed); Attach can copy topic A's image to B. **Confirmed.** | Open |
-| 20 | UI | Outline rows have no click-to-select; highlight compares text (duplicates all highlight); index keys. **Confirmed.** | Open |
-| 21 | UI | Inspector ignores a repeated "open Notes/Tasks" request (effect keyed on `initialTab`). **Confirmed.** | Open |
-| 22 | UI | AI dialog's reload effect depends on `activeNode` and can wipe unsaved config edits; AI "expand" may nest children instead of adding siblings. Plausible. | Open |
-| 23 | UI | Image "max 5MB" not enforced; uploads inlined as base64 with no type/size/error handling. **Confirmed.** | Open |
+| 19 | UI | Image dialog keeps state from the previous topic (mounted, returns null when closed); Attach can copy topic A's image to B. **Confirmed.** | Fixed |
+| 20 | UI | Outline rows have no click-to-select; highlight compares text (duplicates all highlight); index keys. **Confirmed.** | Fixed (click/Enter selects, uid-based highlight) |
+| 21 | UI | Inspector ignores a repeated "open Notes/Tasks" request (effect keyed on `initialTab`). **Confirmed.** | Fixed (tab request counter) |
+| 22 | UI | AI dialog's reload effect depends on `activeNode` and can wipe unsaved config edits; AI "expand" may nest children instead of adding siblings. Plausible. | Fixed (effect keyed on uid; expand now inserts siblings under the topic via `addChildTopics`. The old code also overwrote the parent's text) |
+| 23 | UI | Image "max 5MB" not enforced; uploads inlined as base64 with no type/size/error handling. **Confirmed.** | Fixed (5MB and image-type checks, read errors) |
 | 24 | Tabs | Same file can be opened in two tabs (saves overwrite each other); the baseline snapshot uses a fixed 500 ms timer; replacing the pristine tab leaks engine/view/callback entries; title edits do not mark dirty; canvas `focus()` on tab activation steals focus; Ctrl+N is reserved in browsers and fires while typing. Plausible. | Open |
 | 25 | Services | Folder import has no per-directory error handling or size cap; child paths joined with `/` onto native paths. Plausible. | Open |
 

@@ -1,5 +1,5 @@
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readFile, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
 export interface FileSaveResult {
   success: boolean;
@@ -12,6 +12,8 @@ export interface FileOpenResult {
   success: boolean;
   filePath?: string;
   content?: string;
+  /** Raw bytes, set for binary formats (.xmind) that can't be read as text */
+  bytes?: Uint8Array;
   canceled?: boolean;
   error?: any;
 }
@@ -133,6 +135,10 @@ export class DesktopFileService {
           return { success: false, canceled: true };
         }
 
+        if (selected.toLowerCase().endsWith('.xmind')) {
+          const bytes = await readFile(selected);
+          return { success: true, filePath: selected, bytes };
+        }
         const content = await readTextFile(selected);
         return { success: true, filePath: selected, content };
       } catch (error) {

@@ -61,6 +61,7 @@ export default function App() {
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('node');
+  const [inspectorTabRequest, setInspectorTabRequest] = useState(0);
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [isFormatPainterActive, setIsFormatPainterActive] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -218,19 +219,27 @@ export default function App() {
   const handleOpenFile = useCallback(async () => {
     if (DesktopFileService.isTauri()) {
       const result = await DesktopFileService.openZenMindFile();
-      if (result.success && result.content) {
-        try {
-          const parsed = await MindMapFormatService.parseText(result.content, result.filePath || '');
-          if (parsed.success && parsed.data) {
-            const name = result.filePath?.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '');
-            openInNewTab(parsed.title || name || 'Untitled', parsed.data, result.filePath);
-          } else {
-            alert(parsed.error || 'Could not parse mind map file.');
-          }
-        } catch (err: any) {
-          console.error('File parsing error:', err);
-          alert('Could not open mind map file.');
+      if (!result.success) {
+        if (!result.canceled && result.error) alert('Could not open file: ' + (result.error.message || result.error));
+        return;
+      }
+      try {
+        const fileName = result.filePath?.split(/[\\/]/).pop() || 'Untitled';
+        const baseName = fileName.replace(/\.[^.]+$/, '');
+        // Binary formats (.xmind) go through the File parser; text formats through parseText
+        const parsed = result.bytes
+          ? await MindMapFormatService.parseFile(new File([result.bytes as BlobPart], fileName))
+          : result.content != null
+            ? await MindMapFormatService.parseText(result.content, result.filePath || '')
+            : null;
+        if (parsed?.success && parsed.data) {
+          openInNewTab(parsed.title || baseName, parsed.data, result.filePath);
+        } else {
+          alert(parsed?.error || 'Could not parse mind map file.');
         }
+      } catch (err: any) {
+        console.error('File parsing error:', err);
+        alert('Could not open mind map file.');
       }
       return;
     }
@@ -300,12 +309,14 @@ export default function App() {
   // Open Notes Tab in Inspector
   const handleOpenNotes = useCallback(() => {
     setInspectorTab('notes');
+    setInspectorTabRequest((n) => n + 1);
     setShowInspector(true);
   }, []);
 
   // Open Tasks Tab in Inspector
   const handleOpenTasks = useCallback(() => {
     setInspectorTab('task');
+    setInspectorTabRequest((n) => n + 1);
     setShowInspector(true);
   }, []);
 
@@ -371,6 +382,7 @@ export default function App() {
         onOpenTasks={handleOpenTasks}
         onOpenStructure={() => {
           setInspectorTab('structure');
+          setInspectorTabRequest((n) => n + 1);
           setShowInspector(true);
         }}
         onImportFolder={handleImportFolder}
@@ -461,6 +473,7 @@ export default function App() {
             engine={engine}
             activeNode={activeNode}
             initialTab={inspectorTab}
+            tabRequest={inspectorTabRequest}
             onClose={() => setShowInspector(false)}
             onOpenImageDialog={() => setShowImageDialog(true)}
             onOpenFormulaDialog={() => setShowFormulaDialog(true)}
