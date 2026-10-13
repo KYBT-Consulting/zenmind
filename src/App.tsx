@@ -343,6 +343,9 @@ export default function App() {
     const res = await FolderImportService.importFolder();
     if (res.success && res.data) {
       openInNewTab(res.folderName ? `${res.folderName} Map` : 'Folder Map', res.data);
+      if (res.warning) alert(res.warning);
+    } else if (res.error) {
+      alert(`Could not import the folder: ${res.error}`);
     }
   }, [openInNewTab]);
 

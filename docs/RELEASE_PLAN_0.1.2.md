@@ -25,6 +25,8 @@ A stabilisation release: ship the fixes already on `main`, prove the desktop bui
 
 ### Should fix in 0.1.2 (the remaining data-loss and robustness items)
 
+**Status: S1–S6 are done** (commit following this plan; see `CODE_REVIEW.md` for details). The release gates G1–G4 and the release chores remain.
+
 | # | Item (CODE_REVIEW #) | Effort | Notes |
 |---|----------------------|--------|-------|
 | S1 | **FreeMind/OPML export drops notes, hyperlinks, tags and writes raw HTML into OPML notes** (#10) | M | Data loss on a core promise ("open formats, no lock-in"). Add the fields to `serializeNode`, strip HTML for OPML notes, add round-trip tests. |

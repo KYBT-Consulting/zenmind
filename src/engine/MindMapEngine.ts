@@ -12,6 +12,8 @@ import {
 import { MindMapFormatService } from '../services/mindMapFormatService';
 import { stripHtml } from '../lib/utils';
 import { isSafeLink, sanitizeMapData } from '../lib/sanitize';
+import { contentSignature } from '../lib/contentSignature';
+import { applyNumbering } from '../lib/numbering';
 
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
@@ -77,7 +79,7 @@ export class MindMapEngine {
   private isAutoNumbering: boolean = false;
   private active: boolean = true;
   private hasRenderedOnce: boolean = false;
-  private numberPrefixes = new Map<string, string>();
+  private numberPrefixes: Map<string, string> = new Map();
   private timers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(container: HTMLElement, callbacks: MindMapEngineCallbacks = {}, initialData?: any) {
@@ -624,43 +626,7 @@ export class MindMapEngine {
 
     const targetState = enable !== undefined ? enable : !this.isAutoNumbering;
     this.isAutoNumbering = targetState;
-
-    // Works on plain text and on rich-text HTML (the prefix goes after any leading tags)
-    const leadingTags = (text: string) => /^(?:\s*<[^>]+>)*/.exec(text)![0];
-    const addPrefix = (text: string, prefix: string) => {
-      const lead = leadingTags(text);
-      return `${lead}${prefix} ${text.slice(lead.length)}`;
-    };
-    const removePrefix = (text: string, prefix: string | undefined) => {
-      if (!prefix) return text;
-      const lead = leadingTags(text);
-      const rest = text.slice(lead.length);
-      return rest.startsWith(`${prefix} `) ? lead + rest.slice(prefix.length + 1) : text;
-    };
-
-    const previous = this.numberPrefixes;
-    const applied = new Map<string, string>();
-    const applyNumbering = (node: any, prefix: string) => {
-      if (!node.data) node.data = {};
-      const uid: string | undefined = node.data.uid;
-      let text = removePrefix(node.data.text || '', uid ? previous.get(uid) : undefined);
-      if (targetState && prefix && uid) {
-        text = addPrefix(text, prefix);
-        applied.set(uid, prefix);
-      }
-      node.data.text = text;
-      if (Array.isArray(node.children)) {
-        node.children.forEach((child: any, idx: number) => {
-          applyNumbering(child, prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`);
-        });
-      }
-    };
-
-    if (Array.isArray(data.children)) {
-      data.children.forEach((child: any, idx: number) => applyNumbering(child, `${idx + 1}`));
-    }
-    this.numberPrefixes = applied;
-
+    this.numberPrefixes = applyNumbering(data, targetState, this.numberPrefixes);
     this.setData(data);
   }
 
@@ -745,18 +711,9 @@ export class MindMapEngine {
     return this.mindMap?.getData(false) || null;
   }
 
-  /**
-   * Stable string of the map content, for dirty checks. Ignores state the library adds on its own
-   * after rendering or editing: `dir` (which side of the root a branch sits on) and empty
-   * objects/arrays (e.g. `imgMap: {}`), so "absent" and "empty" compare equal.
-   */
+  /** Stable string of the map content for dirty checks (see `contentSignature`). */
   getContentSignature(): string {
-    return JSON.stringify(this.getTreeData(), function (this: any, key, value) {
-      if (key === 'dir') return undefined;
-      const isContainer = value !== null && typeof value === 'object';
-      const isEmpty = Array.isArray(value) ? value.length === 0 : isContainer && Object.keys(value).length === 0;
-      return isEmpty && !Array.isArray(this) && key !== '' ? undefined : value;
-    });
+    return contentSignature(this.getTreeData());
   }
 
   setData(data: any) {

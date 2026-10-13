@@ -133,6 +133,16 @@ export const Ribbon: React.FC<RibbonProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  /** Quick-export buttons: report failures the same way the Export dialog does. */
+  const runExport = async (format: 'png' | 'svg' | 'pdf' | 'md' | 'json') => {
+    try {
+      await engine?.export(format, docTitle || 'mind-map');
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    }
+  };
+
   const toggleLayoutMenu = () => {
     setShowLayoutMenu((prev) => !prev);
     setShowThemeMenu(false);
@@ -806,7 +816,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
         {activeTab === 'export' && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => engine?.export('png', docTitle || 'mind-map')}
+              onClick={() => runExport('png')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
             >
               <Download size={13} className="text-indigo-600" />
@@ -814,7 +824,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
-              onClick={() => engine?.export('svg', docTitle || 'mind-map')}
+              onClick={() => runExport('svg')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
             >
               <Download size={13} className="text-emerald-600" />
@@ -822,7 +832,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
-              onClick={() => engine?.export('pdf', docTitle || 'mind-map')}
+              onClick={() => runExport('pdf')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
             >
               <Download size={13} className="text-red-600" />
@@ -830,7 +840,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
-              onClick={() => engine?.export('md', docTitle || 'mind-map')}
+              onClick={() => runExport('md')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
             >
               <Download size={13} className="text-slate-600" />
@@ -838,7 +848,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
-              onClick={() => engine?.export('json', docTitle || 'mind-map')}
+              onClick={() => runExport('json')}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
             >
               <Download size={13} className="text-amber-600" />

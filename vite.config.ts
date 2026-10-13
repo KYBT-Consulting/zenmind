@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig} from 'vitest/config';
 
 export default defineConfig(() => {
   return {
@@ -14,6 +14,10 @@ export default defineConfig(() => {
         { find: /^deepmerge$/, replacement: path.resolve(__dirname, 'src/shims/deepmerge.js') },
         { find: /^(node:)?stream$/, replacement: path.resolve(__dirname, 'src/shims/stream.js') },
       ],
+    },
+    test: {
+      environment: 'jsdom',
+      include: ['src/**/*.test.ts'],
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

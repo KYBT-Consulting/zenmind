@@ -1,5 +1,5 @@
 import MindMap from 'simple-mind-map';
-import { stripHtml } from '../lib/utils';
+import { toPlainText } from '../lib/utils';
 
 export interface ParseResult {
   success: boolean;
@@ -19,6 +19,20 @@ export class MindMapFormatService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
+  }
+
+  /** Escapes a value for use inside an XML attribute, keeping line breaks (raw newlines would be normalised to spaces). */
+  private static escapeAttr(value: string): string {
+    return this.escapeXml(value).replace(/\r?\n/g, '&#10;');
+  }
+
+  /** Tags are plain strings in older data and `{ text }` objects in newer data. */
+  private static tagTexts(tags: any): string[] {
+    if (!Array.isArray(tags)) return [];
+    return tags
+      .map((t) => (typeof t === 'string' ? t : t?.text))
+      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+      .map((t) => t.replace(/,/g, ' ').trim());
   }
 
   /**
@@ -90,6 +104,7 @@ export class MindMapFormatService {
     }
 
     // 4. JSON / ZenMind (.zenmind, .json)
+    const looksLikeJson = /\.(zenmind|json)$/.test(lowerName) || /^[\[{]/.test(trimmed);
     try {
       const parsed = JSON.parse(trimmed);
       if (!parsed || typeof parsed !== 'object') {
@@ -109,8 +124,13 @@ export class MindMapFormatService {
           title: parsed.data.text || filenameHint.replace(/\.[^/.]+$/, ''),
         };
       }
-    } catch {
-      // If JSON parsing fails, fall back to checking if it's markdown text
+      return { success: false, error: 'Not a valid mind map file (no map content found).' };
+    } catch (err: any) {
+      // A file that is meant to be JSON but isn't must say so, not be imported as Markdown text
+      if (looksLikeJson) {
+        return { success: false, error: `The file is not valid JSON: ${err?.message || 'parse error'}` };
+      }
+      // Anything else (unknown extension) may be plain Markdown
       try {
         const mdData = await MindMap.markdown.transformMarkdownTo(trimmed);
         if (mdData && mdData.data) {
@@ -159,6 +179,13 @@ export class MindMapFormatService {
       };
 
       if (note) nodeData.data.note = note;
+      const url = el.getAttribute('url');
+      if (url) nodeData.data.hyperlink = url;
+      const category = el.getAttribute('category');
+      if (category) {
+        const tags = category.split(',').map((t) => t.trim()).filter(Boolean);
+        if (tags.length) nodeData.data.tag = tags;
+      }
       return nodeData;
     };
 
@@ -208,10 +235,29 @@ export class MindMapFormatService {
 
     const parseFreeMindNode = (el: Element): any => {
       const text = el.getAttribute('TEXT') || el.getAttribute('text') || 'Topic';
-      const noteEl = el.querySelector(':scope > richcontent[TYPE="NOTE"]');
-      const note = noteEl ? noteEl.textContent?.trim() : '';
+      const directChildren = Array.from(el.children);
 
-      const children = Array.from(el.children)
+      const noteEl = directChildren.find(
+        (c) => c.tagName.toLowerCase() === 'richcontent' && (c.getAttribute('TYPE') || '').toUpperCase() === 'NOTE'
+      );
+      let note = '';
+      if (noteEl) {
+        // Notes are <html><body><p>..</p></body></html>: keep paragraph breaks
+        const paragraphs = Array.from(noteEl.getElementsByTagName('p'))
+          .map((p) => p.textContent?.trim() || '')
+          .filter(Boolean);
+        note = paragraphs.length ? paragraphs.join('\n') : noteEl.textContent?.trim() || '';
+      }
+
+      const tagAttr = directChildren.find(
+        (c) => c.tagName.toLowerCase() === 'attribute' && (c.getAttribute('NAME') || '').toLowerCase() === 'tags'
+      );
+      const tags = (tagAttr?.getAttribute('VALUE') || '')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const children = directChildren
         .filter((child) => child.tagName.toUpperCase() === 'NODE')
         .map(parseFreeMindNode);
 
@@ -224,6 +270,9 @@ export class MindMapFormatService {
       };
 
       if (note) nodeData.data.note = note;
+      const link = el.getAttribute('LINK');
+      if (link) nodeData.data.hyperlink = link;
+      if (tags.length) nodeData.data.tag = tags;
       return nodeData;
     };
 
@@ -235,19 +284,25 @@ export class MindMapFormatService {
    */
   static exportOpml(treeData: any, title: string = 'ZenMind Map'): string {
     const serializeOutline = (node: any, indent: string = '      '): string => {
-      const text = this.escapeXml(stripHtml(node.data?.text || 'Topic'));
-      const noteAttr = node.data?.note ? ` _note="${this.escapeXml(node.data.note)}"` : '';
+      const text = this.escapeAttr(toPlainText(node.data?.text || 'Topic', node.data?.richText));
+      // _note is plain text by OPML convention; url and category carry the link and tags
+      const note = node.data?.note ? toPlainText(node.data.note) : '';
+      const tags = this.tagTexts(node.data?.tag);
+      const attrs =
+        (note ? ` _note="${this.escapeAttr(note)}"` : '') +
+        (node.data?.hyperlink ? ` url="${this.escapeAttr(node.data.hyperlink)}"` : '') +
+        (tags.length ? ` category="${this.escapeAttr(tags.join(','))}"` : '');
       const children = node.children || [];
 
       if (children.length === 0) {
-        return `${indent}<outline text="${text}"${noteAttr} />\n`;
+        return `${indent}<outline text="${text}"${attrs} />\n`;
       }
 
       let inner = '';
       for (const child of children) {
         inner += serializeOutline(child, indent + '  ');
       }
-      return `${indent}<outline text="${text}"${noteAttr}>\n${inner}${indent}</outline>\n`;
+      return `${indent}<outline text="${text}"${attrs}>\n${inner}${indent}</outline>\n`;
     };
 
     const rootNode = treeData.data ? treeData : { data: { text: title }, children: [] };
@@ -268,18 +323,30 @@ ${serializeOutline(rootNode)}  </body>
    */
   static exportFreeMind(treeData: any): string {
     const serializeNode = (node: any, indent: string = '  '): string => {
-      const text = this.escapeXml(stripHtml(node.data?.text || 'Topic'));
+      const text = this.escapeAttr(toPlainText(node.data?.text || 'Topic', node.data?.richText));
+      const link = node.data?.hyperlink ? ` LINK="${this.escapeAttr(node.data.hyperlink)}"` : '';
+      const note = node.data?.note ? toPlainText(node.data.note) : '';
+      const tags = this.tagTexts(node.data?.tag);
       const children = node.children || [];
 
-      if (children.length === 0) {
-        return `${indent}<node TEXT="${text}"/>\n`;
-      }
-
+      // Notes, tags and child nodes are nested elements
       let inner = '';
+      if (note) {
+        const paragraphs = note
+          .split(/\r?\n/)
+          .map((line) => `<p>${this.escapeXml(line)}</p>`)
+          .join('');
+        inner += `${indent}  <richcontent TYPE="NOTE"><html><head></head><body>${paragraphs}</body></html></richcontent>\n`;
+      }
+      if (tags.length) {
+        inner += `${indent}  <attribute NAME="tags" VALUE="${this.escapeAttr(tags.join(','))}"/>\n`;
+      }
       for (const child of children) {
         inner += serializeNode(child, indent + '  ');
       }
-      return `${indent}<node TEXT="${text}">\n${inner}${indent}</node>\n`;
+
+      if (!inner) return `${indent}<node TEXT="${text}"${link}/>\n`;
+      return `${indent}<node TEXT="${text}"${link}>\n${inner}${indent}</node>\n`;
     };
 
     const rootNode = treeData.data ? treeData : { data: { text: 'Central Topic' }, children: [] };

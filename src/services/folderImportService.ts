@@ -1,34 +1,28 @@
 import { DesktopFileService } from './desktopFileService';
+import {
+  buildTreeFromRelativePaths,
+  FolderNodeData,
+  IGNORED_NAMES,
+  joinNativePath,
+  MAX_FOLDER_ENTRIES,
+} from '../lib/folderTree';
 
-export interface FolderNodeData {
-  data: {
-    text: string;
-    expand?: boolean;
-    hyperlink?: string;
-    tag?: string[];
-  };
-  children?: FolderNodeData[];
+export type { FolderNodeData };
+
+export interface FolderImportResult {
+  success: boolean;
+  data?: FolderNodeData;
+  folderName?: string;
+  error?: string;
+  /** Set when the import succeeded but is incomplete (skipped folders, entry cap) */
+  warning?: string;
 }
-
-const IGNORED_NAMES = new Set([
-  'node_modules',
-  '.git',
-  '.svn',
-  '.vscode',
-  '.idea',
-  'dist',
-  'build',
-  'target',
-  '.tauri',
-  'coverage',
-  '.DS_Store',
-]);
 
 export class FolderImportService {
   /**
    * Imports a local folder and transforms its file/directory tree into a MindMap structure.
    */
-  static async importFolder(): Promise<{ success: boolean; data?: FolderNodeData; folderName?: string; error?: string }> {
+  static async importFolder(): Promise<FolderImportResult> {
     if (DesktopFileService.isTauri()) {
       return this.importFolderNative();
     } else {
@@ -39,7 +33,7 @@ export class FolderImportService {
   /**
    * Native Tauri v3 folder picker and recursive filesystem scanner.
    */
-  private static async importFolderNative(): Promise<{ success: boolean; data?: FolderNodeData; folderName?: string; error?: string }> {
+  private static async importFolderNative(): Promise<FolderImportResult> {
     try {
       const { open } = await import('@tauri-apps/plugin-dialog');
       const selected = await open({
@@ -59,10 +53,22 @@ export class FolderImportService {
 
       const { readDir } = await import('@tauri-apps/plugin-fs');
 
-      const scanDir = async (path: string, depth = 0, maxDepth = 4): Promise<FolderNodeData[]> => {
-        if (depth > maxDepth) return [];
+      const skipped: string[] = [];
+      let entryCount = 0;
+      let truncated = false;
 
-        const entries = await readDir(path);
+      const scanDir = async (path: string, depth = 0, maxDepth = 4): Promise<FolderNodeData[]> => {
+        if (depth > maxDepth || truncated) return [];
+
+        let entries;
+        try {
+          entries = await readDir(path);
+        } catch (err) {
+          // One unreadable folder (permissions, broken link) must not abort the whole import
+          console.warn('Folder import: skipping unreadable directory', path, err);
+          skipped.push(path);
+          return [];
+        }
         const children: FolderNodeData[] = [];
 
         // Sort: directories first, then files
@@ -74,8 +80,13 @@ export class FolderImportService {
 
         for (const entry of entries) {
           if (IGNORED_NAMES.has(entry.name)) continue;
+          if (entryCount >= MAX_FOLDER_ENTRIES) {
+            truncated = true;
+            break;
+          }
+          entryCount++;
 
-          const childPath = `${path}/${entry.name}`;
+          const childPath = joinNativePath(path, entry.name);
 
           if (entry.isDirectory) {
             const subChildren = await scanDir(childPath, depth + 1, maxDepth);
@@ -101,6 +112,12 @@ export class FolderImportService {
 
       const children = await scanDir(folderPath, 0, 4);
 
+      const warnings: string[] = [];
+      if (truncated) warnings.push(`The folder is large: only the first ${MAX_FOLDER_ENTRIES} entries were mapped.`);
+      if (skipped.length > 0) {
+        warnings.push(`${skipped.length} folder(s) could not be read and were skipped.`);
+      }
+
       const rootTree: FolderNodeData = {
         data: {
           text: `📁 ${folderName}`,
@@ -114,6 +131,7 @@ export class FolderImportService {
         success: true,
         data: rootTree,
         folderName,
+        warning: warnings.length ? warnings.join(' ') : undefined,
       };
     } catch (err: any) {
       console.error('Tauri folder import error:', err);
@@ -124,7 +142,7 @@ export class FolderImportService {
   /**
    * Web fallback using hidden file input with webkitdirectory attribute.
    */
-  private static async importFolderWeb(): Promise<{ success: boolean; data?: FolderNodeData; folderName?: string; error?: string }> {
+  private static async importFolderWeb(): Promise<FolderImportResult> {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
@@ -140,47 +158,18 @@ export class FolderImportService {
           return;
         }
 
-        // Build tree from relative paths
-        const rootName = files[0].webkitRelativePath.split('/')[0] || 'Imported Folder';
-        const root: FolderNodeData = {
-          data: { text: `📁 ${rootName}`, expand: true, tag: ['Directory Map'] },
-          children: [],
-        };
-
-        const map = new Map<string, FolderNodeData>();
-        map.set('', root);
-
-        for (let i = 0; i < files.length; i++) {
-          const pathParts = files[i].webkitRelativePath.split('/');
-          pathParts.shift(); // Remove root folder name
-
-          let currentPath = '';
-          for (let p = 0; p < pathParts.length; p++) {
-            const part = pathParts[p];
-            if (IGNORED_NAMES.has(part)) break;
-
-            const isFile = p === pathParts.length - 1;
-            const nextPath = currentPath ? `${currentPath}/${part}` : part;
-
-            if (!map.has(nextPath)) {
-              const node: FolderNodeData = {
-                data: {
-                  text: isFile ? `📄 ${part}` : `📁 ${part}`,
-                  expand: p < 2,
-                },
-                children: isFile ? undefined : [],
-              };
-              const parentNode = map.get(currentPath)!;
-              if (!parentNode.children) parentNode.children = [];
-              parentNode.children.push(node);
-              map.set(nextPath, node);
-            }
-            currentPath = nextPath;
-          }
-        }
+        const paths = Array.from(files, (f) => f.webkitRelativePath);
+        const { root, rootName, truncated } = buildTreeFromRelativePaths(paths);
 
         document.body.removeChild(input);
-        resolve({ success: true, data: root, folderName: rootName });
+        resolve({
+          success: true,
+          data: root,
+          folderName: rootName,
+          warning: truncated
+            ? `The folder is large: only the first ${MAX_FOLDER_ENTRIES} entries were mapped.`
+            : undefined,
+        });
       };
 
       input.oncancel = () => {

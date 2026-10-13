@@ -20,7 +20,7 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 7 | Services | Format sniffing uses `includes('<opml')` / `includes('<map version=')` on the whole text, so a `.zenmind`/`.md` file mentioning those strings fails to open. **Confirmed.** | Fixed (root-element/extension detection) |
 | 8 | Services | Desktop (Tauri) open reads `.xmind` with `readTextFile`; only the web path can parse the zip. Plausible. | Fixed (desktop open reads .xmind as bytes) |
 | 9 | Services | AI errors are swallowed and replaced with a generic template map, so users think the AI answered. **Confirmed.** | Fixed (Gemini/OpenAI errors now surface and responses are validated; the offline template remains only when no Gemini key is set) |
-| 10 | Services | FreeMind/OPML export drops notes, links and tags and writes raw HTML into OPML notes. **Confirmed.** | Open |
+| 10 | Services | FreeMind/OPML export drops notes, links and tags and writes raw HTML into OPML notes. **Confirmed.** | Fixed: notes, links and tags are exported to OPML (`_note`, `url`, `category`) and FreeMind (`richcontent` NOTE, `LINK`, `tags` attribute) and read back; plain-text topics are no longer stripped as if they were HTML. Covered by round-trip tests |
 | 11 | Security | Tauri `csp: null` and `fs:default`/`dialog:default` granted in full while API keys live in localStorage. Plausible. | Fixed: restrictive CSP (plus a looser `devCsp` for Vite) in `tauri.conf.json` and as nginx headers; capabilities narrowed to `dialog:allow-open/save` and `fs:allow-read-file/read-dir/write-file`. Corrects the original finding: `fs:default` only granted read access to app folders, but it did not include `write-file`, so desktop Save was probably being denied. Not yet run in a Tauri build |
 | 12 | Security | Hyperlinks accept `javascript:`/`data:` URLs (prompt input and imported files). Plausible. | Fixed: links limited to http(s)/mailto/tel; imported and AI-generated maps are sanitised (scripts, event handlers, unsafe URLs removed from node text and notes); KaTeX `trust:false` |
 
@@ -40,21 +40,21 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 22 | UI | AI dialog's reload effect depends on `activeNode` and can wipe unsaved config edits; AI "expand" may nest children instead of adding siblings. Plausible. | Fixed (effect keyed on uid; expand now inserts siblings under the topic via `addChildTopics`. The old code also overwrote the parent's text) |
 | 23 | UI | Image "max 5MB" not enforced; uploads inlined as base64 with no type/size/error handling. **Confirmed.** | Fixed (5MB and image-type checks, read errors) |
 | 24 | Tabs | Same file can be opened in two tabs (saves overwrite each other); the baseline snapshot uses a fixed 500 ms timer; replacing the pristine tab leaks engine/view/callback entries; title edits do not mark dirty; canvas `focus()` on tab activation steals focus; Ctrl+N is reserved in browsers and fires while typing. Plausible. | Fixed: same-path files focus the existing tab; baseline is taken at first render (not a timer) and ignores library-added empty objects such as `imgMap`; replaced tabs are cleaned up; title edits mark dirty; tab activation only takes focus when nothing else has it; the web build uses Alt+N (browsers reserve Ctrl+N), the desktop app Ctrl/Cmd+N. Same-file dedupe is by path, so it applies to desktop opens only |
-| 25 | Services | Folder import has no per-directory error handling or size cap; child paths joined with `/` onto native paths. Plausible. | Open |
+| 25 | Services | Folder import has no per-directory error handling or size cap; child paths joined with `/` onto native paths. Plausible. | Fixed: unreadable folders are skipped, a 5,000-entry cap is reported to the user, paths are joined with the native separator |
 | 26 | Engine | `insertFloatingNode` looked up the new node through `renderer.nodeList`, which does not exist in the library, so the new floating topic was never auto-selected (same class of bug as the outline selection). **Confirmed.** | Fixed |
 
 ## Low
 
-- Quick export buttons in the ribbon have no error handling (the Export dialog does). Plausible. **Open (skipped with import/export work).**
+- Quick export buttons in the ribbon have no error handling (the Export dialog does). Plausible. **Fixed.**
 - State update on every `node_tree_render_end`, and the minimap recomputes the full SVG every 400 ms. Plausible. **Fixed:** active-node updates are skipped when unchanged; the minimap redraws on map/view change events (coalesced) instead of polling.
 - Tabs and icon-only buttons lack roles/aria-labels; dialogs lack Escape-to-close and focus trap. **Confirmed. Fixed:** tablist/tab roles with arrow-key navigation, aria-labels on icon buttons, and `useDialogA11y` (role=dialog, Escape, focus trap, focus restore) on the four dialogs. Backdrop-click-to-close was not added.
 - `FloatingBubbleMenu` calls a hook after an early return. Works today (no crash observed in manual testing); a lint violation. **Fixed.**
 - Mobile bottom bar offers fewer actions than the ribbon. Plausible.
 - Web save fallback revokes the blob URL immediately after `click()`. Plausible. **Fixed** (delayed revoke, anchor attached to the DOM).
-- JSON import accepts anything with `.content`/`.data` and falls back to markdown on a parse failure. Plausible.
+- JSON import accepts anything with `.content`/`.data` and falls back to markdown on a parse failure. Plausible. **Fixed:** invalid JSON in `.zenmind`/`.json` (or JSON-looking content) now reports an error; non-object or non-map JSON is rejected.
 - `simple-mind-map.d.ts` omits most of the API used, hiding wrong calls behind `any`.
 - Engine timers are now cancelled in `destroy()`.
-- The minimap preview looks mis-scaled in the navigator (viewport box much larger than the map). Not investigated.
+- The minimap preview looked mis-scaled. **Fixed:** the preview is now placed at its own aspect ratio where the library's viewport-box maths expects it, and the SVG gets a `viewBox` so the whole map is scaled to fit (previously only a cropped corner showed).
 - Dev-only: destroyed engines log `appendChild of null` / `rbox` errors when a tab closes or React StrictMode remounts.
 
 ## Security notes
@@ -62,6 +62,10 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 - The minimap preview injects the library's rendered SVG with `dangerouslySetInnerHTML`. Imported text is sanitised at load and the CSP blocks inline handlers, but the SVG itself is not separately sanitised.
 - `style-src` allows `'unsafe-inline'` (the canvas library and Tailwind rely on inline styles) and `img-src`/`connect-src` allow any https origin (user-supplied image URLs and AI endpoints). Tightening those needs a product decision.
 - Capabilities and the CSP have been checked against the plugin sources and, for the CSP, a production build in Chrome. They have not been exercised in a built Tauri app.
+
+## Tests
+
+`npm test` (Vitest, jsdom) covers the sanitiser, content signature, numbering, folder tree building and the OPML/FreeMind/JSON import and export paths. It runs in CI. The tests found one real bug while being written: exporting a plain-text topic such as `a <b> c` stripped it as if it were HTML.
 
 ## Notes on reviewer accuracy
 

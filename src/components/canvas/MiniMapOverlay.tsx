@@ -8,6 +8,19 @@ interface MiniMapOverlayProps {
   onClose: () => void;
 }
 
+/**
+ * The library's minimap SVG has pixel width/height but no viewBox, so CSS scaling would only crop
+ * it. Derive a viewBox from the size so the whole map is scaled to fit.
+ */
+function withViewBox(svgHtml: string): string {
+  return svgHtml.replace(/<svg\b([^>]*)>/i, (tag, attrs: string) => {
+    if (/\bviewBox=/i.test(attrs)) return tag;
+    const w = /\bwidth="([\d.]+)(?:px)?"/i.exec(attrs)?.[1];
+    const h = /\bheight="([\d.]+)(?:px)?"/i.exec(attrs)?.[1];
+    return w && h ? `<svg${attrs} viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">` : tag;
+  });
+}
+
 const BOX_WIDTH = 200;
 const BOX_HEIGHT = 130;
 
@@ -25,6 +38,9 @@ export const MiniMapOverlay: React.FC<MiniMapOverlayProps> = ({
     bottom: '0px',
   });
   const [svgContent, setSvgContent] = useState<string>('');
+  // Where the map preview sits inside the box: the viewport-box maths assumes it is centred at
+  // its own aspect ratio (not stretched over the whole box).
+  const [svgBox, setSvgBox] = useState({ left: 0, top: 0, width: BOX_WIDTH, height: BOX_HEIGHT });
   const [isDraggingBox, setIsDraggingBox] = useState(false);
 
   const updateMiniMap = useCallback(() => {
@@ -33,10 +49,18 @@ export const MiniMapOverlay: React.FC<MiniMapOverlayProps> = ({
       const res = engine.calculateMiniMap(BOX_WIDTH, BOX_HEIGHT);
       if (res) {
         if (res.svgHTML) {
-          setSvgContent(res.svgHTML);
+          setSvgContent(withViewBox(res.svgHTML));
         }
         if (res.viewBoxStyle) {
           setViewBoxStyle(res.viewBoxStyle);
+        }
+        if (Number.isFinite(res.miniMapBoxLeft) && Number.isFinite(res.miniMapBoxTop)) {
+          setSvgBox({
+            left: res.miniMapBoxLeft,
+            top: res.miniMapBoxTop,
+            width: Math.max(1, BOX_WIDTH - 2 * res.miniMapBoxLeft),
+            height: Math.max(1, BOX_HEIGHT - 2 * res.miniMapBoxTop),
+          });
         }
       }
     } catch (err) {
@@ -127,7 +151,8 @@ export const MiniMapOverlay: React.FC<MiniMapOverlayProps> = ({
         {/* Rendered SVG Miniature */}
         <div
           ref={svgContainerRef}
-          className="absolute inset-0 pointer-events-none [&>svg]:w-full [&>svg]:h-full"
+          className="absolute pointer-events-none [&>svg]:w-full [&>svg]:h-full"
+          style={svgBox}
           dangerouslySetInnerHTML={{ __html: svgContent }}
         />
 

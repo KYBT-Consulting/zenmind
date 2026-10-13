@@ -20,3 +20,14 @@ export function stripHtml(input: string = ''): string {
     .replace(/&#39;/g, "'")
     .trim();
 }
+
+const HTML_START = /^\s*<(p|div|span|br|b|i|u|s|strong|em|a|ul|ol|li|h[1-6]|sub|sup|code)[\s>/]/i;
+
+/**
+ * Plain text of a topic's text or note. Rich-text topics are stored as HTML and are stripped to
+ * text; plain topics are returned as written, so a literal "<Co>" or "a < b" survives.
+ */
+export function toPlainText(value: string = '', isRich: boolean = false): string {
+  if (!value || typeof value !== 'string') return '';
+  return isRich || HTML_START.test(value) ? stripHtml(value) : value;
+}
