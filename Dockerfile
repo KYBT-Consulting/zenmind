@@ -17,18 +17,23 @@ RUN dnf -y --setopt=install_weak_deps=False --nodocs install \
     curl \
     wget \
     file \
+    tar \
+    gzip \
+    xz \
     openssl-devel \
     webkit2gtk4.1-devel \
     libappindicator-gtk3-devel \
     librsvg2-devel \
     libxdo-devel \
     rpm-build \
-    nodejs \
-    npm \
     cargo \
     rust && \
     dnf clean all && \
     rm -rf /var/cache/dnf /var/cache/yum
+
+# Install Node.js 26 (Current) from official distribution
+RUN curl -fsSL https://nodejs.org/dist/latest-v26.x/node-v26.11.1-linux-x64.tar.gz | tar -xzf - -C /usr/local --strip-components=1 --no-same-owner && \
+    node -v && npm -v
 
 WORKDIR /app
 

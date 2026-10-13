@@ -86,7 +86,7 @@ podman run --rm -v $(pwd)/dist:/out zenmind:fedora44 cp -r /dist/. /out/
 ## 🚀 Getting Started (Development)
 
 ### Prerequisites
-- Node.js (v18+)
+- Node.js (v22+ or v26 Current)
 - npm or pnpm
 
 ### Installation & Run
