@@ -76,11 +76,43 @@ jobs:
             - **Local & Cloud AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter).
             - **Task & Presentation Tools**: Todo checkboxes, progress tracking (0%-100%), priority badges (P1-P5), markdown notes drawer, and presentation mode.
             - **Multi-Format Interoperability**: Import and export PNG, crisp SVG, print PDF, XMind archives, OPML 2.0, FreeMind XML, and native `.zenmind` files.
-            - **Cross-Platform Native Desktop**: Built on Tauri for fast startup, low RAM footprint (~40MB), and direct filesystem access.
+            - **Cross-Platform Native Desktop**: Built on Tauri for fast startup, low RAM footprint (~40MB), and direct filesystem access (including standalone Windows Portable ZIP).
 
             ### 🌐 Live Web Demo
             - Try ZenMind online: [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/)
 
             ---
             Built with ❤️ by [KYBT Consulting](https://kybtconsulting.com) (makers of [Vertaxa EA](https://vertaxa.online)).
+
+      - name: Package and Upload Windows Portable ZIP
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ github.ref_name }}"
+          $portableDir = "ZenMind-${version}-windows-portable-x64"
+          New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
+
+          # Find compiled release executable
+          $exePath = "src-tauri/target/release/zenmind.exe"
+          if (-not (Test-Path $exePath)) {
+            $exePath = (Get-ChildItem -Path "src-tauri/target/release" -Filter "*.exe" -Recurse | Where-Object { $_.Name -match "zenmind|ZenMind" } | Select-Object -First 1).FullName
+          }
+
+          Copy-Item $exePath -Destination "$portableDir/ZenMind.exe" -Force
+          Copy-Item "README.md" -Destination "$portableDir/README.md" -Force
+          Copy-Item "LICENSE" -Destination "$portableDir/LICENSE" -Force
+          New-Item -ItemType Directory -Path "$portableDir/data" -Force | Out-Null
+          New-Item -ItemType File -Path "$portableDir/.portable" -Force | Out-Null
+
+          $zipName = "ZenMind-${version}-windows-x64-portable.zip"
+          Compress-Archive -Path "$portableDir/*" -DestinationPath $zipName -Force
+          Write-Host "Created portable archive: $zipName"
+
+          if ($env:GITHUB_REF -like "refs/tags/*") {
+            gh release upload $version $zipName --clobber
+            Write-Host "Uploaded $zipName to GitHub release $version"
+          }
+
 

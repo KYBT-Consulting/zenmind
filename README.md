@@ -52,7 +52,7 @@
 - **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
 - **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
 - **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
-- **Cross-Platform Ready**: Native desktop releases via **Tauri** (Linux Fedora 44 RPM, Ubuntu 24.04 DEB, AppImage, macOS Universal DMG, Windows MSI/EXE).
+- **Cross-Platform Ready**: Native desktop releases via **Tauri** (Linux Fedora 44 RPM, Ubuntu 24.04 DEB, AppImage, macOS Universal DMG, Windows MSI/EXE, and Windows Portable ZIP).
 
 ---
 
@@ -67,7 +67,8 @@ ZenMind binaries and installer bundles are published for every release under [Gi
 | **Universal Linux** | `.AppImage` | `chmod +x ./ZenMind_0.1.0_amd64.AppImage && ./ZenMind_0.1.0_amd64.AppImage` |
 | **Fedora 44 Container** | OCI / Docker | `podman build -f Dockerfile.fedora44 -t zenmind:fedora44 .` |
 | **macOS** | `.dmg` | Universal DMG (Apple Silicon M-Series & Intel x86_64) |
-| **Windows** | `.msi` / `.exe` | Windows 64-bit installer & standalone setup |
+| **Windows (Installer)** | `.msi` / `.exe` | Windows 64-bit installer & NSIS setup |
+| **Windows (Portable)** | `.zip` | Zero-install standalone ZIP (runs from USB or any folder with local data) |
 | **Web Demo** | Browser | [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/) |
 
 ### Running with Fedora 44 Container (Podman / Docker)
