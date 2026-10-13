@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Building ZenMind desktop binary for portable package..." -ForegroundColor Cyan
 npm run build
-npm run tauri build -- --bundles none
+npm run tauri build -- --no-bundle
 
 $exeSource = "src-tauri/target/release/zenmind.exe"
 if (-not (Test-Path $exeSource)) {

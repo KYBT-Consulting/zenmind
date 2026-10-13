@@ -12,6 +12,13 @@ Status: draft, 2026-10-13. Companion to [`CODE_REVIEW.md`](CODE_REVIEW.md), whic
 
 A stabilisation release: ship the fixes already on `main`, prove the desktop build still works with the new permissions and CSP, close the import/export data-loss items, and add a small test safety net. No new feature work beyond tabs.
 
+## Verification so far (Linux, Fedora 44)
+
+- `cargo check` passes, so the app crate compiled with the narrowed capabilities (the permission identifiers are validated at that step).
+- `npm run tauri build -- --no-bundle` produces a release binary, and it starts and runs for 15 s without errors or panics.
+- **Not yet verified:** anything interactive in the desktop app (Open, Save, Save As, Folder Import, `.xmind`, exports, AI calls) and the CSP in the desktop webview. G1/G2 stay open until someone clicks through them, ideally on Windows as well.
+- `scripts/package-portable.ps1` called `tauri build --bundles none`, which the CLI rejects; it now uses `--no-bundle`.
+
 ## Scope
 
 ### Release gates (must pass before tagging)
