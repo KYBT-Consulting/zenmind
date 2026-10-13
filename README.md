@@ -52,7 +52,7 @@
 - **Dedicated Topic Notes**: Docked split-screen Markdown notes editor for comprehensive documentation.
 - **Pitch Presentation Mode**: Instant fullscreen branch-by-branch slideshow presentations.
 - **Local Folder Tree Import**: Transform any directory structure into an interactive mind map tree.
-- **Cross-Platform Ready**: Native desktop releases via **Tauri** (Linux Fedora 44 RPM, Ubuntu 24.04 DEB, AppImage, macOS Universal DMG, Windows MSI/EXE, and Windows Portable ZIP).
+- **Cross-Platform Ready**: Native desktop releases via **Tauri v3** (Linux RPM, Ubuntu DEB, AppImage, macOS Universal DMG, Windows MSI/EXE, and Windows Portable ZIP).
 
 ---
 
