@@ -12,6 +12,7 @@ interface MindMapCanvasProps {
   onPresentationModeChange?: (isActive: boolean) => void;
   isFormatPainterActive?: boolean;
   initialData?: any;
+  isActive?: boolean;
 }
 
 export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
@@ -24,6 +25,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   onPresentationModeChange,
   isFormatPainterActive = false,
   initialData,
+  isActive = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<MindMapEngine | null>(null);
@@ -49,6 +51,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
 
     const engine = new MindMapEngine(containerRef.current, callbacks, initialData);
     engineRef.current = engine;
+    engine.setActive(isActive);
     onEngineReady(engine);
 
     const resizeObserver = new ResizeObserver(() => {
@@ -62,6 +65,17 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       engineRef.current = null;
     };
   }, []);
+
+  // Tabs stay mounted; only the active one takes keyboard shortcuts and needs a re-measure on show
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setActive(isActive);
+    if (isActive) {
+      engine.resize();
+      containerRef.current?.focus();
+    }
+  }, [isActive]);
 
   // Update cursor when Format Painter is active
   useEffect(() => {

@@ -16,17 +16,46 @@ import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { TabBar } from './components/tabs/TabBar';
 import { MobileBottomBar } from './components/mobile/MobileBottomBar';
 import { FolderArchive, SlidersHorizontal } from 'lucide-react';
 
+interface TabInfo {
+  id: string;
+  title: string;
+  filePath?: string;
+  initialData: any;
+  /** JSON of the engine data at last load/save; dirty = current data differs */
+  savedJson: string | null;
+  dirty: boolean;
+}
+
+interface TabView {
+  activeNode: ActiveNodeInfo | null;
+  canUndo: boolean;
+  canRedo: boolean;
+  scale: number;
+  data: any;
+}
+
+const EMPTY_VIEW: TabView = { activeNode: null, canUndo: false, canRedo: false, scale: 100, data: DEFAULT_INITIAL_DATA };
+const BLANK_MAP = () => ({ data: { text: 'Central Topic', expand: true }, children: [] });
+
+let tabCounter = 0;
+const makeTab = (title: string, initialData: any, filePath?: string): TabInfo => ({
+  id: `tab-${++tabCounter}`,
+  title,
+  filePath,
+  initialData,
+  savedJson: null,
+  dirty: false,
+});
+
 export default function App() {
-  const [engine, setEngine] = useState<MindMapEngine | null>(null);
-  const [activeNode, setActiveNode] = useState<ActiveNodeInfo | null>(null);
-  const [mindMapData, setMindMapData] = useState<any>(DEFAULT_INITIAL_DATA);
-  const [docTitle, setDocTitle] = useState('ZenMind Project');
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const [scale, setScale] = useState(100);
+  const [tabs, setTabs] = useState<TabInfo[]>(() => [makeTab('ZenMind Project', DEFAULT_INITIAL_DATA)]);
+  const [activeId, setActiveId] = useState(() => tabs[0].id);
+  const [engines, setEngines] = useState<Record<string, MindMapEngine>>({});
+  const [views, setViews] = useState<Record<string, TabView>>({});
   const [showOutline, setShowOutline] = useState(false);
   const [showInspector, setShowInspector] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
@@ -43,9 +72,66 @@ export default function App() {
     mode: 'generate',
   });
   const [showExportDialog, setShowExportDialog] = useState(false);
-
-  const [currentFilePath, setCurrentFilePath] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Active-tab derived values (everything below the tab bar keeps working against one engine)
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
+  const engine = engines[activeTab.id] ?? null;
+  const view = views[activeTab.id] ?? EMPTY_VIEW;
+  const { activeNode, canUndo, canRedo, scale, data: mindMapData } = view;
+  const docTitle = activeTab.title;
+  const currentFilePath = activeTab.filePath;
+
+  const updateTab = useCallback((id: string, patch: Partial<TabInfo>) => {
+    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }, []);
+
+  const updateView = useCallback((id: string, patch: Partial<TabView>) => {
+    setViews((prev) => ({ ...prev, [id]: { ...(prev[id] ?? EMPTY_VIEW), ...patch } }));
+  }, []);
+
+  const setDocTitle = useCallback((title: string) => updateTab(activeTab.id, { title }), [activeTab.id, updateTab]);
+
+  // Per-tab canvas callbacks (stable per tab id, since MindMapCanvas binds them once at mount)
+  const callbacksCache = useRef<Record<string, any>>({});
+  const getCallbacks = (id: string) => {
+    if (!callbacksCache.current[id]) {
+      callbacksCache.current[id] = {
+        onEngineReady: (eng: MindMapEngine) => {
+          setEngines((prev) => ({ ...prev, [id]: eng }));
+          // Baseline is taken once the library has finished its first render/normalisation;
+          // snapshotting at construction time would make every fresh tab look modified.
+          // (React StrictMode mounts twice in dev, so `eng` may already be destroyed: use the current engine.)
+          setTimeout(() => {
+            const current = enginesRef.current[id];
+            const data = current?.getData();
+            if (!data) return;
+            setTabs((prev) =>
+              prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: JSON.stringify(data) } : t))
+            );
+          }, 500);
+        },
+        onActiveNodeChange: (activeNode: ActiveNodeInfo | null) => updateView(id, { activeNode }),
+        onScaleChange: (scale: number) => updateView(id, { scale }),
+        onHistoryChange: ({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolean }) =>
+          updateView(id, { canUndo, canRedo }),
+        onDataChange: (data: any) => {
+          updateView(id, { data });
+          setTabs((prev) =>
+            prev.map((t) => {
+              if (t.id !== id || t.savedJson === null) return t;
+              const eng = enginesRef.current[id];
+              const dirty = eng ? JSON.stringify(eng.getData()) !== t.savedJson : t.dirty;
+              return dirty === t.dirty ? t : { ...t, dirty };
+            })
+          );
+        },
+      };
+    }
+    return callbacksCache.current[id];
+  };
+  const enginesRef = useRef(engines);
+  enginesRef.current = engines;
 
   // Calculate total topic count from data tree
   const countNodes = useCallback((node: any): number => {
@@ -61,15 +147,71 @@ export default function App() {
 
   const totalNodes = countNodes(mindMapData);
 
+  /** Opens a map in a new tab (replacing a pristine untitled one if it's the only tab). */
+  const openInNewTab = useCallback((title: string, data: any, filePath?: string) => {
+    const tab = makeTab(title, data, filePath);
+    setTabs((prev) => {
+      const only = prev.length === 1 ? prev[0] : null;
+      const replace = only && !only.dirty && !only.filePath && only.title === 'Untitled Mind Map';
+      return replace ? [tab] : [...prev, tab];
+    });
+    setActiveId(tab.id);
+  }, []);
+
+  const handleNewFile = useCallback(() => {
+    openInNewTab('Untitled Mind Map', BLANK_MAP());
+  }, [openInNewTab]);
+
+  const handleSelectTab = useCallback((id: string) => {
+    setActiveId(id);
+    setIsFormatPainterActive(false);
+  }, []);
+
+  const handleCloseTab = useCallback(
+    (id: string) => {
+      const tab = tabs.find((t) => t.id === id);
+      if (!tab) return;
+      if (tab.dirty && !window.confirm(`"${tab.title}" has unsaved changes. Close it anyway?`)) return;
+      delete callbacksCache.current[id];
+      setEngines((prev) => {
+        const { [id]: _gone, ...rest } = prev;
+        return rest;
+      });
+      setViews((prev) => {
+        const { [id]: _gone, ...rest } = prev;
+        return rest;
+      });
+      const remaining = tabs.filter((t) => t.id !== id);
+      if (remaining.length === 0) {
+        const fresh = makeTab('Untitled Mind Map', BLANK_MAP());
+        setTabs([fresh]);
+        setActiveId(fresh.id);
+        return;
+      }
+      setTabs(remaining);
+      if (id === activeId) {
+        const idx = tabs.findIndex((t) => t.id === id);
+        setActiveId(remaining[Math.min(idx, remaining.length - 1)].id);
+      }
+    },
+    [tabs, activeId]
+  );
+
   // File Save (.zenmind JSON) - Native Desktop & Web
   const handleSaveFile = useCallback(async () => {
     if (!engine) return;
     const data = engine.getData();
+    const id = activeTab.id;
     const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
-    if (result.success && result.filePath) {
-      setCurrentFilePath(result.filePath);
+    if (result.success) {
+      // Saved state is what was written, not whatever the user typed while the dialog was open
+      updateTab(id, {
+        savedJson: JSON.stringify(data),
+        dirty: JSON.stringify(enginesRef.current[id]?.getData()) !== JSON.stringify(data),
+        ...(result.filePath ? { filePath: result.filePath } : {}),
+      });
     }
-  }, [engine, docTitle, currentFilePath]);
+  }, [engine, activeTab.id, docTitle, currentFilePath, updateTab]);
 
   // File Open (.zenmind / .json / .xmind / .md / .opml / .mm) - Native Desktop & Web
   const handleOpenFile = useCallback(async () => {
@@ -79,9 +221,8 @@ export default function App() {
         try {
           const parsed = await MindMapFormatService.parseText(result.content, result.filePath || '');
           if (parsed.success && parsed.data) {
-            if (parsed.title) setDocTitle(parsed.title);
-            engine?.setData(parsed.data);
-            if (result.filePath) setCurrentFilePath(result.filePath);
+            const name = result.filePath?.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '');
+            openInNewTab(parsed.title || name || 'Untitled', parsed.data, result.filePath);
           } else {
             alert(parsed.error || 'Could not parse mind map file.');
           }
@@ -94,7 +235,7 @@ export default function App() {
     }
     // Web fallback
     fileInputRef.current?.click();
-  }, [engine]);
+  }, [openInNewTab]);
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,8 +244,7 @@ export default function App() {
     try {
       const res = await MindMapFormatService.parseFile(file);
       if (res.success && res.data) {
-        if (res.title) setDocTitle(res.title);
-        engine?.setData(res.data);
+        openInNewTab(res.title || file.name.replace(/\.[^.]+$/, ''), res.data);
       } else {
         alert(res.error || 'Could not parse mind map file.');
       }
@@ -132,20 +272,19 @@ export default function App() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDraggingFile(false);
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-
-    try {
-      const res = await MindMapFormatService.parseFile(file);
-      if (res.success && res.data) {
-        if (res.title) setDocTitle(res.title);
-        engine?.setData(res.data);
-      } else {
-        alert(res.error || 'Could not parse dropped file.');
+    const files = Array.from(e.dataTransfer.files ?? []);
+    for (const file of files) {
+      try {
+        const res = await MindMapFormatService.parseFile(file);
+        if (res.success && res.data) {
+          openInNewTab(res.title || file.name.replace(/\.[^.]+$/, ''), res.data);
+        } else {
+          alert(res.error || 'Could not parse dropped file.');
+        }
+      } catch (err: any) {
+        console.error('Drag drop error:', err);
+        alert('Failed to import dropped file: ' + err.message);
       }
-    } catch (err: any) {
-      console.error('Drag drop error:', err);
-      alert('Failed to import dropped file: ' + err.message);
     }
   };
 
@@ -153,10 +292,9 @@ export default function App() {
   const handleImportFolder = useCallback(async () => {
     const res = await FolderImportService.importFolder();
     if (res.success && res.data) {
-      if (res.folderName) setDocTitle(`${res.folderName} Map`);
-      engine?.setData(res.data);
+      openInNewTab(res.folderName ? `${res.folderName} Map` : 'Folder Map', res.data);
     }
-  }, [engine]);
+  }, [openInNewTab]);
 
   // Open Notes Tab in Inspector
   const handleOpenNotes = useCallback(() => {
@@ -183,6 +321,10 @@ export default function App() {
         e.preventDefault();
         handleSaveFile();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        handleNewFile();
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
         e.preventDefault();
         handleOpenFile();
@@ -191,7 +333,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSaveFile, handleOpenFile]);
+  }, [handleSaveFile, handleOpenFile, handleNewFile]);
 
   return (
     <div className="w-full h-screen flex flex-col font-sans text-slate-900 overflow-hidden bg-slate-50 select-none">
@@ -218,6 +360,7 @@ export default function App() {
         onToggleInspector={() => setShowInspector(!showInspector)}
         onOpenAIDialog={(mode) => setAiDialogState({ isOpen: true, mode })}
         onOpenExportDialog={() => setShowExportDialog(true)}
+        onNewFile={handleNewFile}
         onSaveFile={handleSaveFile}
         onOpenFile={handleOpenFile}
         isFormatPainterActive={isFormatPainterActive}
@@ -232,6 +375,14 @@ export default function App() {
         onImportFolder={handleImportFolder}
         onOpenImageDialog={() => setShowImageDialog(true)}
         onOpenFormulaDialog={() => setShowFormulaDialog(true)}
+      />
+
+      <TabBar
+        tabs={tabs.map(({ id, title, dirty }) => ({ id, title, dirty }))}
+        activeId={activeTab.id}
+        onSelect={handleSelectTab}
+        onClose={handleCloseTab}
+        onNew={handleNewFile}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
@@ -278,21 +429,22 @@ export default function App() {
             onOpenFormula={() => setShowFormulaDialog(true)}
           />
 
-          <ErrorBoundary fallbackTitle="Mind Map Canvas encountered an error">
-            <MindMapCanvas
-              onEngineReady={setEngine}
-              onActiveNodeChange={setActiveNode}
-              onDataChange={setMindMapData}
-              onScaleChange={setScale}
-              onHistoryChange={({ canUndo, canRedo }) => {
-                setCanUndo(canUndo);
-                setCanRedo(canRedo);
-              }}
-              onFormatPainterChange={setIsFormatPainterActive}
-              isFormatPainterActive={isFormatPainterActive}
-              initialData={DEFAULT_INITIAL_DATA}
-            />
-          </ErrorBoundary>
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={tab.id === activeId ? 'absolute inset-0' : 'absolute inset-0 invisible pointer-events-none'}
+            >
+              <ErrorBoundary fallbackTitle="Mind Map Canvas encountered an error">
+                <MindMapCanvas
+                  {...getCallbacks(tab.id)}
+                  onFormatPainterChange={tab.id === activeId ? setIsFormatPainterActive : undefined}
+                  isFormatPainterActive={isFormatPainterActive && tab.id === activeId}
+                  initialData={tab.initialData}
+                  isActive={tab.id === activeId}
+                />
+              </ErrorBoundary>
+            </div>
+          ))}
 
           {/* Navigator Mini-Map Overlay */}
           <MiniMapOverlay

@@ -72,6 +72,7 @@ export class MindMapEngine {
   private currentThemeId: string = 'ocean-breeze';
   private rainbowLinesEnabled: boolean = true;
   private isAutoNumbering: boolean = false;
+  private active: boolean = true;
 
   constructor(container: HTMLElement, callbacks: MindMapEngineCallbacks = {}, initialData?: any) {
     this.container = container;
@@ -99,6 +100,14 @@ export class MindMapEngine {
       isShowCreateChildBtnIcon: true,
       enableCtrlKeyNodeSelection: true,
       enableDragModifyNodeWidth: true,
+      // Several engines can be mounted at once (tabs); the library listens for
+      // keys on window, so only the active engine may react to shortcuts.
+      customCheckEnableShortcut: (e: KeyboardEvent) => {
+        if (!this.active || !this.mindMap) return false;
+        const target = e.target as HTMLElement;
+        if (target === document.body) return true;
+        return (this.mindMap as any).editNodeClassList?.some((c: string) => target.classList?.contains(c)) ?? false;
+      },
       enableFreeDrag: true, // Allows freely dragging nodes and floating topics anywhere on canvas
       errorHandler: (code: string, err: any) => {
         console.error('MindMap error:', code, err);
@@ -748,6 +757,10 @@ export class MindMapEngine {
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }
+  }
+
+  setActive(active: boolean) {
+    this.active = active;
   }
 
   resize() {

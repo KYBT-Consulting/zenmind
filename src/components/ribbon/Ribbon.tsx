@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FolderOpen,
+  FilePlus,
   Save,
   Undo2,
   Redo2,
@@ -65,6 +66,7 @@ interface RibbonProps {
   onToggleInspector: () => void;
   onOpenAIDialog: (mode: 'generate' | 'expand') => void;
   onOpenExportDialog: () => void;
+  onNewFile: () => void;
   onSaveFile: () => void;
   onOpenFile: () => void;
   isFormatPainterActive?: boolean;
@@ -91,6 +93,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onToggleInspector,
   onOpenAIDialog,
   onOpenExportDialog,
+  onNewFile,
   onSaveFile,
   onOpenFile,
   isFormatPainterActive = false,
@@ -210,6 +213,13 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
 
+          <button
+            onClick={onNewFile}
+            title="New Mind Map (Ctrl+N)"
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            <FilePlus size={15} />
+          </button>
           <button
             onClick={onSaveFile}
             title="Save Project (.zenmind)"
