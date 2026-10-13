@@ -497,38 +497,27 @@ export class MindMapEngine {
       y = (rootNode.top || rect.top) - 160;
     }
 
-    const newNodeData = {
-      data: {
-        text,
-        isFloating: true,
-        customLeft: x,
-        customTop: y,
-        shape: 'roundedRectangle',
-        fillColor: '#f8fafc',
-        color: '#1e293b',
-        borderColor: '#94a3b8',
-        borderWidth: 2,
-      },
-      children: [],
-    };
-
-    if (!rootNode.nodeData.children) {
-      rootNode.nodeData.children = [];
-    }
-    rootNode.nodeData.children.push(newNodeData);
-    this.mindMap.render(() => {
-      // Find the created node and activate it
-      const allNodes = this.mindMap?.renderer?.nodeList || [];
-      const added = allNodes.find((n: any) => n.getData('customLeft') === x && n.getData('customTop') === y);
-      if (added) {
-        this.mindMap?.renderer?.setNodeActive(added, true);
-      }
+    // One undoable command (gives undo, data_change and dirty tracking); explicit data, activated on insert
+    this.mindMap.execCommand('INSERT_CHILD_NODE', false, [rootNode], {
+      text,
+      isFloating: true,
+      isActive: true,
+      customLeft: x,
+      customTop: y,
+      shape: 'roundedRectangle',
+      fillColor: '#f8fafc',
+      color: '#1e293b',
+      borderColor: '#94a3b8',
+      borderWidth: 2,
     });
   }
 
+  /** Converts viewport client coordinates to graph (draw-space) coordinates, accounting for pan and zoom. */
   screenToCanvasPos(clientX: number, clientY: number): { x: number; y: number } {
     if (!this.mindMap) return { x: clientX, y: clientY };
-    return this.mindMap.toPos(clientX, clientY);
+    const local = this.mindMap.toPos(clientX, clientY);
+    const { x, y, scale } = this.getViewTransform();
+    return { x: (local.x - x) / scale, y: (local.y - y) / scale };
   }
 
   // --- Format Painter (Style Cloner) ---
@@ -574,11 +563,11 @@ export class MindMapEngine {
   }
 
   miniMapMouseDown(e: any) {
-    this.mindMap?.miniMap?.onMousedown?.(e);
+    this.mindMap?.miniMap?.onViewBoxMousedown?.(e);
   }
 
   miniMapMouseMove(e: any) {
-    this.mindMap?.miniMap?.onMousemove?.(e);
+    this.mindMap?.miniMap?.onViewBoxMousemove?.(e);
   }
 
   miniMapMouseUp(e: any) {
@@ -725,6 +714,14 @@ export class MindMapEngine {
   /** Just the node tree (root node with children). Use for exports and content comparison. */
   getTreeData(): any {
     return this.mindMap?.getData(false) || null;
+  }
+
+  /**
+   * Stable string of the map content, for dirty checks. Ignores layout-only state the library
+   * writes into node data after edits (`dir`: which side of the root a branch sits on).
+   */
+  getContentSignature(): string {
+    return JSON.stringify(this.getTreeData(), (key, value) => (key === 'dir' ? undefined : value));
   }
 
   setData(data: any) {

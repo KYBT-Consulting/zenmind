@@ -14,7 +14,7 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 3 | Engine | Rainbow-lines toggle set a nonexistent theme key; the plugin reads `opt.rainbowLinesConfig.open`. **Confirmed.** | Fixed |
 | 4 | Build | `vite.config.ts` inlined `GEMINI_API_KEY` into the client bundle; no `.dockerignore`, so a local `.env` entered the Docker build. **Confirmed.** | Fixed |
 | 5 | Services | Clearing the Gemini key in settings left the legacy `zenmind_gemini_api_key` in localStorage, and `getConfig` resurrected it. **Confirmed.** | Fixed |
-| 6 | Tabs | Dirty tracking compared the whole wrapper including pan/zoom, so panning could mark a tab dirty or keep it dirty after undo. | Fixed |
+| 6 | Tabs | Dirty tracking compared the whole wrapper including pan/zoom, so panning could mark a tab dirty or keep it dirty after undo. | Fixed (also: compares a content signature that ignores the layout-only `dir` field, and re-checks on undo/redo) |
 | 7 | Services | Format sniffing uses `includes('<opml')` / `includes('<map version=')` on the whole text, so a `.zenmind`/`.md` file mentioning those strings fails to open. **Confirmed.** | Fixed (root-element/extension detection) |
 | 8 | Services | Desktop (Tauri) open reads `.xmind` with `readTextFile`; only the web path can parse the zip. Plausible. | Fixed (desktop open reads .xmind as bytes) |
 | 9 | Services | AI errors are swallowed and replaced with a generic template map, so users think the AI answered. **Confirmed.** | Fixed (Gemini/OpenAI errors now surface and responses are validated; the offline template remains only when no Gemini key is set) |
@@ -26,9 +26,9 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 
 | # | Area | Finding | Status |
 |---|------|---------|--------|
-| 13 | Engine | Minimap viewport drag calls the background-pan handlers (5x sensitivity) instead of `onViewBox*`. **Confirmed.** | Open |
-| 14 | Engine | `screenToCanvasPos` ignores pan/zoom, so double-click floating topics land in the wrong place when zoomed/panned. **Confirmed.** | Open |
-| 15 | Engine | `insertFloatingNode` mutates data directly: no undo, no `data_change`, so the tab is not marked dirty. Plausible. | Open |
+| 13 | Engine | Minimap viewport drag calls the background-pan handlers (5x sensitivity) instead of `onViewBox*`. **Confirmed.** | Fixed |
+| 14 | Engine | `screenToCanvasPos` ignores pan/zoom, so double-click floating topics land in the wrong place when zoomed/panned. **Confirmed.** | Fixed |
+| 15 | Engine | `insertFloatingNode` mutates data directly: no undo, no `data_change`, so the tab is not marked dirty. Plausible. | Fixed (now an `INSERT_CHILD_NODE` command) |
 | 16 | Engine | `setNodeText` runs user text through `stripHtml` (drops `<b>`-like text, decodes entities) and re-wraps without escaping. Plausible. | Open |
 | 17 | Engine | Auto-numbering regex strips real leading words (`2024 roadmap`, `A plan`) and drops rich-text formatting. **Confirmed.** | Open |
 | 18 | Engine | Shortcut gate (`customCheckEnableShortcut`) only allows `document.body`/edit targets; keys may be ignored while the canvas container has focus. Plausible; Tab also failed on the original code in manual testing. | Open |
@@ -39,6 +39,7 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 23 | UI | Image "max 5MB" not enforced; uploads inlined as base64 with no type/size/error handling. **Confirmed.** | Fixed (5MB and image-type checks, read errors) |
 | 24 | Tabs | Same file can be opened in two tabs (saves overwrite each other); the baseline snapshot uses a fixed 500 ms timer; replacing the pristine tab leaks engine/view/callback entries; title edits do not mark dirty; canvas `focus()` on tab activation steals focus; Ctrl+N is reserved in browsers and fires while typing. Plausible. | Open |
 | 25 | Services | Folder import has no per-directory error handling or size cap; child paths joined with `/` onto native paths. Plausible. | Open |
+| 26 | Engine | `insertFloatingNode` looked up the new node through `renderer.nodeList`, which does not exist in the library, so the new floating topic was never auto-selected (same class of bug as the outline selection). **Confirmed.** | Fixed |
 
 ## Low
 

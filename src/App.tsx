@@ -93,6 +93,18 @@ export default function App() {
 
   const setDocTitle = useCallback((title: string) => updateTab(activeTab.id, { title }), [activeTab.id, updateTab]);
 
+  /** Re-derive a tab's dirty flag by comparing current map content with its saved snapshot. */
+  const recomputeDirty = (id: string) => {
+    setTabs((prev) =>
+      prev.map((t) => {
+        if (t.id !== id || t.savedJson === null) return t;
+        const eng = enginesRef.current[id];
+        const dirty = eng ? eng.getContentSignature() !== t.savedJson : t.dirty;
+        return dirty === t.dirty ? t : { ...t, dirty };
+      })
+    );
+  };
+
   // Per-tab canvas callbacks (stable per tab id, since MindMapCanvas binds them once at mount)
   const callbacksCache = useRef<Record<string, any>>({});
   const getCallbacks = (id: string) => {
@@ -105,27 +117,23 @@ export default function App() {
           // (React StrictMode mounts twice in dev, so `eng` may already be destroyed: use the current engine.)
           setTimeout(() => {
             const current = enginesRef.current[id];
-            const data = current?.getTreeData();
-            if (!data) return;
+            if (!current?.getTreeData()) return;
+            const signature = current.getContentSignature();
             setTabs((prev) =>
-              prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: JSON.stringify(data) } : t))
+              prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: signature } : t))
             );
           }, 500);
         },
         onActiveNodeChange: (activeNode: ActiveNodeInfo | null) => updateView(id, { activeNode }),
         onScaleChange: (scale: number) => updateView(id, { scale }),
-        onHistoryChange: ({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolean }) =>
-          updateView(id, { canUndo, canRedo }),
+        onHistoryChange: ({ canUndo, canRedo }: { canUndo: boolean; canRedo: boolean }) => {
+          updateView(id, { canUndo, canRedo });
+          // Undo/redo can return the map to its saved state without a data_change event
+          recomputeDirty(id);
+        },
         onDataChange: (data: any) => {
           updateView(id, { data });
-          setTabs((prev) =>
-            prev.map((t) => {
-              if (t.id !== id || t.savedJson === null) return t;
-              const eng = enginesRef.current[id];
-              const dirty = eng ? JSON.stringify(eng.getTreeData()) !== t.savedJson : t.dirty;
-              return dirty === t.dirty ? t : { ...t, dirty };
-            })
-          );
+          recomputeDirty(id);
         },
       };
     }
@@ -202,14 +210,14 @@ export default function App() {
   const handleSaveFile = useCallback(async () => {
     if (!engine) return;
     const data = engine.getData();
-    const savedTree = JSON.stringify(engine.getTreeData());
+    const savedTree = engine.getContentSignature();
     const id = activeTab.id;
     const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
     if (result.success) {
       // Saved state is what was written, not whatever the user typed while the dialog was open
       updateTab(id, {
         savedJson: savedTree,
-        dirty: JSON.stringify(enginesRef.current[id]?.getTreeData()) !== savedTree,
+        dirty: enginesRef.current[id]?.getContentSignature() !== savedTree,
         ...(result.filePath ? { filePath: result.filePath } : {}),
       });
     }

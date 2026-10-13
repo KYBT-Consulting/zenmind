@@ -127,6 +127,8 @@ declare module 'simple-mind-map' {
     miniMap?: {
       calculationMiniMap(boxWidth: number, boxHeight: number): any;
       onMousedown(e: any): void;
+    onViewBoxMousedown(e: any): void;
+    onViewBoxMousemove(e: any): void;
       onMousemove(e: any): void;
       onMouseup(e: any): void;
     };
