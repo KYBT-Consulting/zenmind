@@ -65,21 +65,26 @@ ZenMind binaries and installer bundles are published for every release under [Gi
 | **Fedora / RHEL / CentOS** | `.rpm` | `sudo dnf install ./ZenMind-0.1.0-1.x86_64.rpm` |
 | **Ubuntu 24.04+ / Debian** | `.deb` | `sudo dpkg -i ./ZenMind_0.1.0_amd64.deb` |
 | **Universal Linux** | `.AppImage` | `chmod +x ./ZenMind_0.1.0_amd64.AppImage && ./ZenMind_0.1.0_amd64.AppImage` |
-| **Fedora 44 Container** | OCI / Docker | `podman build -f Dockerfile.fedora44 -t zenmind:fedora44 .` |
+| **Docker (Self-Hosted Web)** | Container Image | `docker compose up -d` (Access via `http://localhost:3000`) |
 | **macOS** | `.dmg` | Universal DMG (Apple Silicon M-Series & Intel x86_64) |
 | **Windows (Installer)** | `.msi` / `.exe` | Windows 64-bit installer & NSIS setup |
 | **Windows (Portable)** | `.zip` | Zero-install standalone ZIP (runs from USB or any folder with local data) |
 | **Web Demo** | Browser | [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/) |
 
-### Running with Fedora 44 Container (Podman / Docker)
+### 🐳 Self-Hosting with Docker (Web Application)
+
+You can self-host ZenMind in your private home lab, NAS, or server using our lightweight, production-ready Nginx container (~25MB):
 
 ```bash
-# Build the native Fedora 44 image:
-podman build -f Dockerfile.fedora44 -t zenmind:fedora44 .
+# Option 1: Using Docker Compose (Recommended)
+docker compose up -d
 
-# Extract the compiled Fedora RPM directly from the container:
-podman run --rm -v $(pwd)/dist:/out zenmind:fedora44 cp -r /dist/. /out/
+# Option 2: Build and run with Docker CLI
+docker build -t zenmind:latest .
+docker run -d -p 3000:80 --name zenmind --restart unless-stopped zenmind:latest
 ```
+
+Open `http://localhost:3000` in your web browser. All brainstorming and AI capabilities (including local Ollama / LM Studio connections) function natively.
 
 ---
 

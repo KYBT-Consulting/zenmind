@@ -17,7 +17,7 @@ jobs:
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
           - platform: 'ubuntu-24.04'
-            args: ''
+            args: '--bundles deb,appimage,rpm'
           - platform: 'windows-latest'
             args: ''
 
@@ -114,5 +114,12 @@ jobs:
             gh release upload $version $zipName --clobber
             Write-Host "Uploaded $zipName to GitHub release $version"
           }
+
+      - name: Verify and Upload Linux RPM
+        if: matrix.platform == 'ubuntu-24.04' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          find src-tauri/target/release/bundle/rpm -name "*.rpm" -exec gh release upload ${{ github.ref_name }} {} --clobber \; || true
 
 

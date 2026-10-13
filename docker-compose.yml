@@ -1,0 +1,8 @@
+services:
+  zenmind:
+    build: .
+    image: zenmind:latest
+    container_name: zenmind
+    restart: unless-stopped
+    ports:
+      - "3000:80"
