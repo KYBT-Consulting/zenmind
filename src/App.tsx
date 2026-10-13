@@ -15,6 +15,7 @@ import { FormulaDialog } from './components/dialogs/FormulaDialog';
 import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
+import { sanitizeMapData } from './lib/sanitize';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TabBar } from './components/tabs/TabBar';
 import { MobileBottomBar } from './components/mobile/MobileBottomBar';
@@ -186,7 +187,7 @@ export default function App() {
       setActiveId(existing.id);
       return;
     }
-    const tab = makeTab(title, data, filePath);
+    const tab = makeTab(title, sanitizeMapData(data), filePath);
     const only = current.length === 1 ? current[0] : null;
     const replace = !!only && !isDirty(only) && !only.filePath && only.title === 'Untitled Mind Map';
     if (replace) forgetTab(only!.id);

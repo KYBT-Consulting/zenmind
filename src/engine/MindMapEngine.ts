@@ -11,6 +11,7 @@ import {
 } from '../types/mindmap';
 import { MindMapFormatService } from '../services/mindMapFormatService';
 import { stripHtml } from '../lib/utils';
+import { isSafeLink, sanitizeMapData } from '../lib/sanitize';
 
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
@@ -399,13 +400,17 @@ export class MindMapEngine {
     }
   }
 
-  setNodeHyperlink(link: string, title?: string) {
+  /** Returns false (and changes nothing) if the link uses a scheme other than http(s)/mailto/tel. */
+  setNodeHyperlink(link: string, title?: string): boolean {
+    link = link.trim();
+    if (!isSafeLink(link)) return false;
     const node = this.getActiveNode();
     if (node) {
       node.setHyperlink(link, title || link);
     } else {
       this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, title || link);
     }
+    return true;
   }
 
   setNodeTags(tags: string[]) {
@@ -739,7 +744,7 @@ export class MindMapEngine {
 
   setData(data: any) {
     if (!this.mindMap) return;
-    this.mindMap.setData(data);
+    this.mindMap.setData(sanitizeMapData(data));
     setTimeout(() => this.fitView(), 100);
   }
 

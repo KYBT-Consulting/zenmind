@@ -141,7 +141,9 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
       <button
         onClick={() => {
           const link = prompt('Add/Edit hyperlink URL:', activeNode.hyperlink || 'https://');
-          if (link) engine?.setNodeHyperlink(link);
+          if (link && engine && !engine.setNodeHyperlink(link)) {
+            alert('Only http, https, mailto and tel links are allowed.');
+          }
         }}
         title="Add Hyperlink"
         className={cn(

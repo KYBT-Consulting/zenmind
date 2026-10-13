@@ -655,7 +655,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
             <button
               onClick={() => {
                 const link = prompt('Enter URL hyperlink:', activeNode?.hyperlink || 'https://');
-                if (link) engine?.setNodeHyperlink(link);
+                if (link && engine && !engine.setNodeHyperlink(link)) {
+                  alert('Only http, https, mailto and tel links are allowed.');
+                }
               }}
               className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
             >

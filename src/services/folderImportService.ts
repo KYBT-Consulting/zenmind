@@ -45,6 +45,8 @@ export class FolderImportService {
       const selected = await open({
         directory: true,
         multiple: false,
+        // The scan reads subfolders, so the picked folder must be granted recursively
+        recursive: true,
         title: 'Select Folder to Map',
       });
 

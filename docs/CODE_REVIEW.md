@@ -19,8 +19,8 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 | 8 | Services | Desktop (Tauri) open reads `.xmind` with `readTextFile`; only the web path can parse the zip. Plausible. | Fixed (desktop open reads .xmind as bytes) |
 | 9 | Services | AI errors are swallowed and replaced with a generic template map, so users think the AI answered. **Confirmed.** | Fixed (Gemini/OpenAI errors now surface and responses are validated; the offline template remains only when no Gemini key is set) |
 | 10 | Services | FreeMind/OPML export drops notes, links and tags and writes raw HTML into OPML notes. **Confirmed.** | Open |
-| 11 | Security | Tauri `csp: null` and `fs:default`/`dialog:default` granted in full while API keys live in localStorage. Plausible. | Open |
-| 12 | Security | Hyperlinks accept `javascript:`/`data:` URLs (prompt input and imported files). Plausible. | Open |
+| 11 | Security | Tauri `csp: null` and `fs:default`/`dialog:default` granted in full while API keys live in localStorage. Plausible. | Fixed: restrictive CSP (plus a looser `devCsp` for Vite) in `tauri.conf.json` and as nginx headers; capabilities narrowed to `dialog:allow-open/save` and `fs:allow-read-file/read-dir/write-file`. Corrects the original finding: `fs:default` only granted read access to app folders, but it did not include `write-file`, so desktop Save was probably being denied. Not yet run in a Tauri build |
+| 12 | Security | Hyperlinks accept `javascript:`/`data:` URLs (prompt input and imported files). Plausible. | Fixed: links limited to http(s)/mailto/tel; imported and AI-generated maps are sanitised (scripts, event handlers, unsafe URLs removed from node text and notes); KaTeX `trust:false` |
 
 ## Medium
 
@@ -52,6 +52,12 @@ Status: **Fixed** = fixed in a later commit. **Open** = not yet addressed.
 - JSON import accepts anything with `.content`/`.data` and falls back to markdown on a parse failure. Plausible.
 - `simple-mind-map.d.ts` omits most of the API used, hiding wrong calls behind `any`.
 - Dev-only: destroyed engines log `appendChild of null` / `rbox` errors when a tab closes or React StrictMode remounts.
+
+## Security notes
+
+- The minimap preview injects the library's rendered SVG with `dangerouslySetInnerHTML`. Imported text is sanitised at load and the CSP blocks inline handlers, but the SVG itself is not separately sanitised.
+- `style-src` allows `'unsafe-inline'` (the canvas library and Tailwind rely on inline styles) and `img-src`/`connect-src` allow any https origin (user-supplied image URLs and AI endpoints). Tightening those needs a product decision.
+- Capabilities and the CSP have been checked against the plugin sources and, for the CSP, a production build in Chrome. They have not been exercised in a built Tauri app.
 
 ## Notes on reviewer accuracy
 

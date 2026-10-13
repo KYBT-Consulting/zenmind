@@ -50,6 +50,7 @@ export const FormulaDialog: React.FC<FormulaDialogProps> = ({
       const html = katex.renderToString(formula, {
         throwOnError: true,
         displayMode: true,
+        trust: false, // never allow \href/\includegraphics etc.
       });
       setRenderHtml(html);
       setErrorMsg(null);
@@ -60,6 +61,7 @@ export const FormulaDialog: React.FC<FormulaDialogProps> = ({
         const fallback = katex.renderToString(formula, {
           throwOnError: false,
           displayMode: true,
+          trust: false,
         });
         setRenderHtml(fallback);
       } catch {
