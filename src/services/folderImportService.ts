@@ -37,7 +37,7 @@ export class FolderImportService {
   }
 
   /**
-   * Native Tauri v3 folder picker and recursive filesystem scanner.
+   * Native Tauri folder picker and recursive filesystem scanner.
    */
   private static async importFolderNative(): Promise<{ success: boolean; data?: FolderNodeData; folderName?: string; error?: string }> {
     try {
