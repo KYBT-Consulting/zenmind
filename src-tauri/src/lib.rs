@@ -11,7 +11,10 @@ pub fn run() {
             let _ = std::fs::create_dir_all(&data_dir);
           }
           if std::env::var_os("WEBVIEW2_USER_DATA_FOLDER").is_none() {
-            std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
+            // SAFETY: Invoked early at process startup on the main thread before any background threads are spawned.
+            unsafe {
+              std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
+            }
           }
         }
       }
