@@ -90,13 +90,33 @@ export class MindMapEngine {
 
   private init(data: any) {
     const initialTheme = THEME_PRESETS[0];
+    const isFullDoc = data && typeof data === 'object' && data.root && typeof data.root === 'object';
+    const treeData = isFullDoc ? data.root : data;
+    if (isFullDoc && data.layout) {
+      this.currentLayout = data.layout;
+    }
+    const themeTemplate = (isFullDoc && data.theme?.template) || 'default';
+    const themeConfig =
+      isFullDoc && data.theme?.config && typeof data.theme.config === 'object'
+        ? { ...initialTheme.config, ...data.theme.config }
+        : initialTheme.config;
+    if (isFullDoc && data.theme?.config) {
+      const matchedPreset = THEME_PRESETS.find(
+        (p) =>
+          p.config.backgroundColor === data.theme.config.backgroundColor &&
+          p.config.lineColor === data.theme.config.lineColor
+      );
+      if (matchedPreset) {
+        this.currentThemeId = matchedPreset.id;
+      }
+    }
 
     this.mindMap = new MindMap({
       el: this.container,
-      data,
+      data: treeData,
       layout: this.currentLayout,
-      theme: 'default',
-      themeConfig: initialTheme.config,
+      theme: themeTemplate,
+      themeConfig,
       defaultInsertSecondLevelNodeText: 'Main Topic',
       defaultInsertBelowSecondLevelNodeText: 'Subtopic',
       defaultGeneralizationText: 'Summary',
@@ -126,6 +146,10 @@ export class MindMapEngine {
     });
 
     this.bindEvents();
+
+    if (isFullDoc && data.rainbowLines) {
+      this.toggleRainbowLines(true);
+    }
 
     // Trigger initial scale and layout fit
     this.later(() => {
@@ -244,6 +268,7 @@ export class MindMapEngine {
       fontStyle: data.fontStyle || node.getStyle?.('fontStyle'),
       note: data.note || '',
       hyperlink: data.hyperlink || '',
+      hyperlinkTitle: data.hyperlinkTitle || '',
       tag: data.tag || [],
       icon: data.icon || [],
       customLeft: data.customLeft,
@@ -407,15 +432,17 @@ export class MindMapEngine {
     }
   }
 
-  /** Returns false (and changes nothing) if the link uses a scheme other than http(s)/mailto/tel. */
+  /** Returns false (and changes nothing) if the link uses a scheme other than http(s)/mailto/tel. Empty string clears the link. */
   setNodeHyperlink(link: string, title?: string): boolean {
     link = link.trim();
-    if (!isSafeLink(link)) return false;
+    if (link && !isSafeLink(link)) return false;
+    const resolvedTitle = link ? title?.trim() || link : '';
     const node = this.getActiveNode();
     if (node) {
-      node.setHyperlink(link, title || link);
+      node.setHyperlink(link, resolvedTitle);
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     } else {
-      this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, title || link);
+      this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, resolvedTitle);
     }
     return true;
   }
@@ -635,6 +662,7 @@ export class MindMapEngine {
   setLayout(layout: LayoutType) {
     this.currentLayout = layout;
     this.mindMap?.setLayout(layout);
+    this.callbacks.onDataChange?.(this.getTreeData());
   }
 
   getLayout(): LayoutType {
@@ -644,8 +672,9 @@ export class MindMapEngine {
   setThemePreset(themeId: string) {
     const preset = THEME_PRESETS.find((t) => t.id === themeId);
     if (!preset || !this.mindMap) return;
-    this.currentThemeId = themeId;
+     this.currentThemeId = themeId;
     this.mindMap.setThemeConfig({ ...preset.config });
+    this.callbacks.onDataChange?.(this.getTreeData());
   }
 
   getThemeId(): string {
@@ -656,15 +685,77 @@ export class MindMapEngine {
     if (!this.mindMap) return;
     // setThemeConfig replaces the whole config, so merge into the current one
     this.mindMap.setThemeConfig({ ...this.mindMap.getCustomThemeConfig(), lineStyle: style });
+    this.callbacks.onDataChange?.(this.getTreeData());
   }
 
-  toggleRainbowLines(enable: boolean) {
-    this.rainbowLinesEnabled = enable;
+  getBranchLineStyle(): BranchLineStyle {
+    return (this.mindMap?.getCustomThemeConfig()?.lineStyle as BranchLineStyle) || 'curve';
+  }
+
+  toggleRainbowLines(enable?: boolean) {
+    const next = enable !== undefined ? enable : !this.rainbowLinesEnabled;
+    this.rainbowLinesEnabled = next;
     const mm = this.mindMap as any;
     if (!mm?.rainbowLines) return;
     // The plugin reads opt.rainbowLinesConfig (not the theme config); an empty colour list uses its defaults
-    mm.opt.rainbowLinesConfig = { open: enable, colorsList: [] };
-    mm.rainbowLines.updateRainLinesConfig({ open: enable });
+    mm.opt.rainbowLinesConfig = { open: next, colorsList: [] };
+    mm.rainbowLines.updateRainLinesConfig({ open: next });
+    this.callbacks.onDataChange?.(this.getTreeData());
+  }
+
+  isRainbowLinesEnabled(): boolean {
+    return this.rainbowLinesEnabled;
+  }
+
+  // --- Search & Replace ---
+
+  search(query: string) {
+    const s = (this.mindMap as any)?.search;
+    if (!s) return;
+    if (!query) {
+      s.endSearch();
+      return;
+    }
+    s.search(query);
+  }
+
+  searchNext() {
+    const s = (this.mindMap as any)?.search;
+    if (!s || !s.isSearching) return;
+    s.searchNext(() => {});
+    s.emitEvent?.();
+  }
+
+  searchPrev() {
+    const s = (this.mindMap as any)?.search;
+    if (!s || !s.isSearching || !s.matchNodeList?.length) return;
+    const total = s.matchNodeList.length;
+    const prevIdx = (s.currentIndex - 1 + total) % total;
+    s.jump(prevIdx);
+    s.emitEvent?.();
+  }
+
+  replaceCurrent(replacement: string) {
+    const s = (this.mindMap as any)?.search;
+    if (!s || !s.isSearching) return;
+    s.replace(replacement, true);
+  }
+
+  replaceAll(replacement: string) {
+    const s = (this.mindMap as any)?.search;
+    if (!s || !s.isSearching) return;
+    s.replaceAll(replacement);
+  }
+
+  endSearch() {
+    (this.mindMap as any)?.search?.endSearch?.();
+  }
+
+  onSearchInfoChange(cb: (info: { currentIndex: number; total: number }) => void): () => void {
+    const mm = this.mindMap as any;
+    if (!mm) return () => {};
+    mm.on('search_info_change', cb);
+    return () => mm.off('search_info_change', cb);
   }
 
   // --- View & Navigation ---
@@ -703,7 +794,11 @@ export class MindMapEngine {
 
   /** Full document: {layout, root, theme, view}. Use for saving .zenmind files. */
   getData(): any {
-    return this.mindMap?.getData(true) || null;
+    const data = this.mindMap?.getData(true) || null;
+    if (data && this.rainbowLinesEnabled) {
+      data.rainbowLines = true;
+    }
+    return data;
   }
 
   /** Just the node tree (root node with children). Use for exports and content comparison. */
@@ -711,14 +806,25 @@ export class MindMapEngine {
     return this.mindMap?.getData(false) || null;
   }
 
-  /** Stable string of the map content for dirty checks (see `contentSignature`). */
+  /** Stable string of the map content (including layout and theme) for dirty checks (see `contentSignature`). */
   getContentSignature(): string {
-    return contentSignature(this.getTreeData());
+    return contentSignature({
+      root: this.getTreeData(),
+      layout: this.currentLayout,
+      themeConfig: this.mindMap?.getCustomThemeConfig?.(),
+      rainbowLines: this.rainbowLinesEnabled,
+    });
   }
 
   setData(data: any) {
     if (!this.mindMap) return;
-    this.mindMap.setData(sanitizeMapData(data));
+    const clean = sanitizeMapData(data);
+    if (clean && typeof clean === 'object' && clean.root && typeof clean.root === 'object') {
+      if (clean.layout) this.currentLayout = clean.layout;
+      this.mindMap.setFullData(clean);
+    } else {
+      this.mindMap.setData(clean);
+    }
     this.later(() => this.fitView(), 100);
   }
 

@@ -117,7 +117,32 @@ describe('JSON import errors', () => {
   it('rejects JSON that is not a mind map', async () => {
     expect((await MindMapFormatService.parseText('null', 'a.json')).success).toBe(false);
     expect((await MindMapFormatService.parseText('{"hello": 1}', 'a.json')).success).toBe(false);
+    expect((await MindMapFormatService.parseText('{"content": {"hello": 1}}', 'a.zenmind')).success).toBe(false);
     expect((await MindMapFormatService.parseText('42', 'a.json')).success).toBe(false);
+  });
+
+  it('parses saved .zenmind files with full {layout, root, theme, view} content and exported .json files', async () => {
+    const fullDoc = {
+      layout: 'logicalStructure',
+      root: { data: { text: '<p>Saved Root</p>', richText: true, expand: true }, children: [] },
+      theme: { template: 'default', config: {} },
+      view: {},
+    };
+    const zenmindFile = JSON.stringify({
+      version: '1.0.0',
+      title: 'My Project',
+      savedAt: '2026-10-16T00:00:00.000Z',
+      content: fullDoc,
+    });
+    const parsedZen = await MindMapFormatService.parseText(zenmindFile, 'My Project.zenmind');
+    expect(parsedZen.success).toBe(true);
+    expect(parsedZen.title).toBe('My Project');
+    expect(parsedZen.data.root.data.text).toBe('<p>Saved Root</p>');
+
+    const parsedJson = await MindMapFormatService.parseText(JSON.stringify(fullDoc), 'exported.json');
+    expect(parsedJson.success).toBe(true);
+    expect(parsedJson.title).toBe('Saved Root');
+    expect(parsedJson.data.root.data.text).toBe('<p>Saved Root</p>');
   });
 
   it('still falls back to Markdown for unknown plain-text files', async () => {

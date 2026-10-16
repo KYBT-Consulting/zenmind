@@ -1069,7 +1069,8 @@ export const generateColorByContent = str => {
 
 //  html转义
 export const htmlEscape = str => {
-  [
+  str = isUndef(str) ? '' : String(str)
+  ;[
     ['&', '&amp;'],
     ['<', '&lt;'],
     ['>', '&gt;']

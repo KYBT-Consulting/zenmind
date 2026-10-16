@@ -771,6 +771,15 @@ class MindMap {
 
   // 销毁
   destroy() {
+    this.isDestroyed = true
+    if (this.renderer) {
+      clearTimeout(this.renderer.renderTimer)
+      clearTimeout(this.renderer.emitNodeActiveEventTimer)
+    }
+    if (this.batchExecution) {
+      this.batchExecution.queue = []
+      this.batchExecution.has = {}
+    }
     this.emit('beforeDestroy')
     // 清除节点编辑框
     this.renderer.textEdit.hideEditTextBox()

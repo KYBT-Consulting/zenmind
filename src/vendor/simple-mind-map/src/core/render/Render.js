@@ -560,6 +560,7 @@ class Render {
 
   // 真正的渲染
   _render() {
+    if (!this.mindMap || this.mindMap.isDestroyed || !this.mindMap.el) return
     // 切换主题时，被收起的节点需要添加样式复位的标注
     if (this.checkHasRenderSource(CONSTANTS.CHANGE_THEME)) {
       this.resetUnExpandNodeStyle()
@@ -587,6 +588,7 @@ class Render {
     // 计算布局
     this.root = null
     this.layout.doLayout(root => {
+      if (!this.mindMap || this.mindMap.isDestroyed || !this.mindMap.el) return
       // 删除本次渲染时不再需要的节点
       Object.keys(this.lastNodeCache).forEach(uid => {
         if (!this.nodeCache[uid]) {
@@ -601,6 +603,7 @@ class Render {
       this.root = root
       // 渲染节点
       this.root.render(() => {
+        if (!this.mindMap || this.mindMap.isDestroyed || !this.mindMap.el) return
         this.isRendering = false
         if (this.hasWaitRendering) {
           this.hasWaitRendering = false

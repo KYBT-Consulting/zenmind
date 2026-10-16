@@ -40,6 +40,7 @@ import {
   Image as ImageIcon,
   Sigma,
   Layers,
+  Search,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -79,6 +80,8 @@ interface RibbonProps {
   onImportFolder?: () => void;
   onOpenImageDialog?: () => void;
   onOpenFormulaDialog?: () => void;
+  onOpenHyperlinkDialog?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -106,6 +109,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onImportFolder,
   onOpenImageDialog,
   onOpenFormulaDialog,
+  onOpenHyperlinkDialog,
+  onOpenSearch,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -663,12 +668,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                const link = prompt('Enter URL hyperlink:', activeNode?.hyperlink || 'https://');
-                if (link && engine && !engine.setNodeHyperlink(link)) {
-                  alert('Only http, https, mailto and tel links are allowed.');
-                }
-              }}
+              onClick={() => onOpenHyperlinkDialog?.()}
               className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
             >
               <Link2 size={18} className="text-emerald-600" />
@@ -694,8 +694,13 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Rainbow Lines Toggle */}
             <div className="flex items-center gap-2 pr-6 border-r border-slate-200">
               <button
-                onClick={() => engine?.toggleRainbowLines(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-lg text-xs font-semibold text-slate-700 shadow-xs"
+                onClick={() => engine?.toggleRainbowLines()}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-semibold shadow-xs transition-colors',
+                  engine?.isRainbowLinesEnabled()
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-700'
+                )}
               >
                 <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-red-500 via-green-500 to-blue-500" />
                 <span>Rainbow Branches</span>
@@ -707,24 +712,29 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
                 Line Style:
               </span>
-              <button
-                onClick={() => engine?.setBranchLineStyle('curve')}
-                className="px-3 py-1 bg-white border border-slate-200 hover:border-indigo-400 rounded-md text-xs font-medium text-slate-700"
-              >
-                Curved
-              </button>
-              <button
-                onClick={() => engine?.setBranchLineStyle('straight')}
-                className="px-3 py-1 bg-white border border-slate-200 hover:border-indigo-400 rounded-md text-xs font-medium text-slate-700"
-              >
-                Straight
-              </button>
-              <button
-                onClick={() => engine?.setBranchLineStyle('direct')}
-                className="px-3 py-1 bg-white border border-slate-200 hover:border-indigo-400 rounded-md text-xs font-medium text-slate-700"
-              >
-                Direct
-              </button>
+              {(
+                [
+                  { id: 'curve', label: 'Curved' },
+                  { id: 'straight', label: 'Straight' },
+                  { id: 'direct', label: 'Direct' },
+                ] as const
+              ).map((item) => {
+                const isActive = (engine?.getBranchLineStyle() || 'curve') === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => engine?.setBranchLineStyle(item.id)}
+                    className={cn(
+                      'px-3 py-1 border rounded-md text-xs font-medium transition-colors',
+                      isActive
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-semibold'
+                        : 'bg-white border-slate-200 hover:border-indigo-400 text-slate-700'
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -753,6 +763,16 @@ export const Ribbon: React.FC<RibbonProps> = ({
             >
               <Eye size={14} className={showMiniMap ? 'text-indigo-600' : 'text-slate-600'} />
               <span>Navigator (Mini-Map)</span>
+            </button>
+
+            {/* Find & Replace */}
+            <button
+              onClick={() => onOpenSearch?.()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+              title="Find and Replace (Ctrl+F)"
+            >
+              <Search size={14} className="text-indigo-600" />
+              <span>Find & Replace</span>
             </button>
 
             <div className="h-6 w-px bg-slate-200 mx-1" />

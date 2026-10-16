@@ -306,6 +306,7 @@ export interface ActiveNodeInfo {
   fontStyle?: string;
   note?: string;
   hyperlink?: string;
+  hyperlinkTitle?: string;
   tag?: string[];
   icon?: string[];
   customLeft?: number;

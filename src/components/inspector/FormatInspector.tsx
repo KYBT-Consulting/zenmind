@@ -614,16 +614,36 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                 Branch Line Style
               </label>
               <div className="grid grid-cols-3 gap-1.5">
-                {(['curve', 'straight', 'direct'] as BranchLineStyle[]).map((style) => (
-                  <button
-                    key={style}
-                    onClick={() => engine?.setBranchLineStyle(style)}
-                    className="px-2 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-400 font-medium capitalize text-center text-slate-700 bg-white"
-                  >
-                    {style}
-                  </button>
-                ))}
+                {(['curve', 'straight', 'direct'] as BranchLineStyle[]).map((style) => {
+                  const isActive = (engine?.getBranchLineStyle() || 'curve') === style;
+                  return (
+                    <button
+                      key={style}
+                      onClick={() => engine?.setBranchLineStyle(style)}
+                      className={cn(
+                        'px-2 py-1.5 rounded-lg border font-medium capitalize text-center transition-colors',
+                        isActive
+                          ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 font-semibold'
+                          : 'border-slate-200 hover:border-indigo-400 text-slate-700 bg-white'
+                      )}
+                    >
+                      {style}
+                    </button>
+                  );
+                })}
               </div>
+              <button
+                onClick={() => engine?.toggleRainbowLines()}
+                className={cn(
+                  'mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 border rounded-lg text-xs font-semibold transition-colors',
+                  engine?.isRainbowLinesEnabled()
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-700'
+                )}
+              >
+                <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-red-500 via-green-500 to-blue-500" />
+                <span>Rainbow Branches</span>
+              </button>
             </div>
 
             {/* Themes */}

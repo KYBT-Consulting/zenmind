@@ -110,14 +110,23 @@ export class MindMapFormatService {
       if (!parsed || typeof parsed !== 'object') {
         return { success: false, error: 'Not a valid mind map file (expected a JSON object).' };
       }
-      if (parsed.content) {
+      if (parsed.content && typeof parsed.content === 'object' && (parsed.content.root || parsed.content.data)) {
         return {
           success: true,
           data: parsed.content,
           title: parsed.title || filenameHint.replace(/\.[^/.]+$/, ''),
         };
       }
-      if (parsed.data) {
+      if (parsed.root && typeof parsed.root === 'object' && parsed.root.data) {
+        return {
+          success: true,
+          data: parsed,
+          title:
+            toPlainText(parsed.root.data.text || '', parsed.root.data.richText) ||
+            filenameHint.replace(/\.[^/.]+$/, ''),
+        };
+      }
+      if (parsed.data && typeof parsed.data === 'object') {
         return {
           success: true,
           data: parsed,

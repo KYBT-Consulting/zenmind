@@ -12,6 +12,8 @@ import { AIDialog } from './components/dialogs/AIDialog';
 import { ExportDialog } from './components/dialogs/ExportDialog';
 import { ImageDialog } from './components/dialogs/ImageDialog';
 import { FormulaDialog } from './components/dialogs/FormulaDialog';
+import { HyperlinkDialog } from './components/dialogs/HyperlinkDialog';
+import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
@@ -19,7 +21,7 @@ import { sanitizeMapData } from './lib/sanitize';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TabBar } from './components/tabs/TabBar';
 import { MobileBottomBar } from './components/mobile/MobileBottomBar';
-import { FolderArchive, SlidersHorizontal } from 'lucide-react';
+import { AlertCircle, FolderArchive, SlidersHorizontal, X } from 'lucide-react';
 
 interface TabInfo {
   id: string;
@@ -46,6 +48,7 @@ interface TabView {
 
 const EMPTY_VIEW: TabView = { activeNode: null, canUndo: false, canRedo: false, scale: 100, data: DEFAULT_INITIAL_DATA };
 const BLANK_MAP = () => ({ data: { text: 'Central Topic', expand: true }, children: [] });
+const SESSION_STORAGE_KEY = 'zenmind_session_v1';
 
 let tabCounter = 0;
 const makeTab = (title: string, initialData: any, filePath?: string): TabInfo => ({
@@ -58,9 +61,40 @@ const makeTab = (title: string, initialData: any, filePath?: string): TabInfo =>
   dirty: false,
 });
 
+function loadInitialSession(): { tabs: TabInfo[]; activeId: string } {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
+        const loaded: TabInfo[] = parsed.tabs
+          .filter((t: any) => t && t.data && typeof t.data === 'object' && (t.data.root || t.data.data))
+          .map((t: any) => ({
+            id: `tab-${++tabCounter}`,
+            title: typeof t.title === 'string' && t.title ? t.title : 'Untitled Mind Map',
+            filePath: typeof t.filePath === 'string' ? t.filePath : undefined,
+            initialData: sanitizeMapData(t.data),
+            savedJson: typeof t.savedJson === 'string' ? t.savedJson : null,
+            savedTitle: typeof t.savedTitle === 'string' ? t.savedTitle : t.title || 'Untitled Mind Map',
+            dirty: !!t.dirty,
+          }));
+        if (loaded.length > 0) {
+          const idx = typeof parsed.activeIndex === 'number' && loaded[parsed.activeIndex] ? parsed.activeIndex : 0;
+          return { tabs: loaded, activeId: loaded[idx].id };
+        }
+      }
+    }
+  } catch {
+    // ignore invalid or unavailable localStorage
+  }
+  const first = makeTab('ZenMind Project', DEFAULT_INITIAL_DATA);
+  return { tabs: [first], activeId: first.id };
+}
+
 export default function App() {
-  const [tabs, setTabs] = useState<TabInfo[]>(() => [makeTab('ZenMind Project', DEFAULT_INITIAL_DATA)]);
-  const [activeId, setActiveId] = useState(() => tabs[0].id);
+  const [initialSession] = useState(loadInitialSession);
+  const [tabs, setTabs] = useState<TabInfo[]>(initialSession.tabs);
+  const [activeId, setActiveId] = useState<string>(initialSession.activeId);
   const [engines, setEngines] = useState<Record<string, MindMapEngine>>({});
   const [views, setViews] = useState<Record<string, TabView>>({});
   const [showOutline, setShowOutline] = useState(false);
@@ -73,6 +107,9 @@ export default function App() {
   const [isFormatPainterActive, setIsFormatPainterActive] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showFormulaDialog, setShowFormulaDialog] = useState(false);
+  const [showHyperlinkDialog, setShowHyperlinkDialog] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const [aiDialogState, setAiDialogState] = useState<{ isOpen: boolean; mode: 'generate' | 'expand' }>({
@@ -123,8 +160,10 @@ export default function App() {
         },
         // Baseline = the map as first rendered (before any possible user edit)
         onFirstRender: (eng: MindMapEngine) => {
-          if (!eng.getTreeData()) return; // engine was destroyed (React StrictMode double mount)
+          const tree = eng.getTreeData();
+          if (!tree) return; // engine was destroyed (React StrictMode double mount)
           const signature = eng.getContentSignature();
+          updateView(id, { data: tree });
           setTabs((prev) =>
             prev.map((t) => (t.id === id && t.savedJson === null ? { ...t, savedJson: signature } : t))
           );
@@ -260,7 +299,9 @@ export default function App() {
     if (DesktopFileService.isTauri()) {
       const result = await DesktopFileService.openZenMindFile();
       if (!result.success) {
-        if (!result.canceled && result.error) alert('Could not open file: ' + (result.error.message || result.error));
+        if (!result.canceled && result.error) {
+          setToastMessage('Could not open file: ' + (result.error.message || result.error));
+        }
         return;
       }
       try {
@@ -275,11 +316,11 @@ export default function App() {
         if (parsed?.success && parsed.data) {
           openInNewTab(parsed.title || baseName, parsed.data, result.filePath);
         } else {
-          alert(parsed?.error || 'Could not parse mind map file.');
+          setToastMessage(parsed?.error || 'Could not parse mind map file.');
         }
       } catch (err: any) {
         console.error('File parsing error:', err);
-        alert('Could not open mind map file.');
+        setToastMessage('Could not open mind map file.');
       }
       return;
     }
@@ -296,11 +337,11 @@ export default function App() {
       if (res.success && res.data) {
         openInNewTab(res.title || file.name.replace(/\.[^.]+$/, ''), res.data);
       } else {
-        alert(res.error || 'Could not parse mind map file.');
+        setToastMessage(res.error || 'Could not parse mind map file.');
       }
     } catch (err: any) {
       console.error('File parsing error:', err);
-      alert('Could not open mind map file: ' + err.message);
+      setToastMessage('Could not open mind map file: ' + err.message);
     } finally {
       e.target.value = '';
     }
@@ -329,11 +370,11 @@ export default function App() {
         if (res.success && res.data) {
           openInNewTab(res.title || file.name.replace(/\.[^.]+$/, ''), res.data);
         } else {
-          alert(res.error || 'Could not parse dropped file.');
+          setToastMessage(res.error || 'Could not parse dropped file.');
         }
       } catch (err: any) {
         console.error('Drag drop error:', err);
-        alert('Failed to import dropped file: ' + err.message);
+        setToastMessage('Failed to import dropped file: ' + err.message);
       }
     }
   };
@@ -343,9 +384,9 @@ export default function App() {
     const res = await FolderImportService.importFolder();
     if (res.success && res.data) {
       openInNewTab(res.folderName ? `${res.folderName} Map` : 'Folder Map', res.data);
-      if (res.warning) alert(res.warning);
+      if (res.warning) setToastMessage(res.warning);
     } else if (res.error) {
-      alert(`Could not import the folder: ${res.error}`);
+      setToastMessage(`Could not import the folder: ${res.error}`);
     }
   }, [openInNewTab]);
 
@@ -363,16 +404,64 @@ export default function App() {
     setShowInspector(true);
   }, []);
 
+  // Auto-dismiss toast notifications
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
+  // Persist open tabs & session state to localStorage for crash/refresh recovery
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const payload = {
+          activeIndex: Math.max(0, tabs.findIndex((t) => t.id === activeId)),
+          tabs: tabs.map((t) => ({
+            title: t.title,
+            filePath: t.filePath,
+            data: enginesRef.current[t.id]?.getData() ?? t.initialData,
+            savedJson: t.savedJson,
+            savedTitle: t.savedTitle,
+            dirty: t.dirty,
+          })),
+        };
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // Ignore storage quota or private-mode errors
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [tabs, activeId, views]);
+
+  // Warn before closing/reloading browser tab if any document has unsaved edits
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (tabsRef.current.some(isDirty)) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Keyboard shortcut listener (global hotkeys)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
+        return;
+      }
+
       // Don't intercept when user is actively editing text in an input or textarea
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSaveFile();
       }
@@ -380,7 +469,7 @@ export default function App() {
         e.preventDefault();
         handleNewFile();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
         e.preventDefault();
         handleOpenFile();
       }
@@ -431,6 +520,8 @@ export default function App() {
         onImportFolder={handleImportFolder}
         onOpenImageDialog={() => setShowImageDialog(true)}
         onOpenFormulaDialog={() => setShowFormulaDialog(true)}
+        onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
+        onOpenSearch={() => setShowSearch((v) => !v)}
       />
 
       <TabBar
@@ -460,6 +551,13 @@ export default function App() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* In-Canvas Find & Replace Bar (Ctrl+F) */}
+          <SearchBar
+            isOpen={showSearch}
+            engine={engine}
+            onClose={() => setShowSearch(false)}
+          />
+
           {/* Drag & Drop Visual Target Overlay */}
           {isDraggingFile && (
             <div className="absolute inset-0 z-50 bg-indigo-600/10 backdrop-blur-xs border-3 border-dashed border-indigo-500 rounded-2xl m-4 flex flex-col items-center justify-center pointer-events-none animate-in fade-in zoom-in-95 duration-150">
@@ -536,6 +634,24 @@ export default function App() {
         )}
       </div>
 
+      {/* Non-blocking Toast Notification */}
+      {toastMessage && (
+        <div
+          role="alert"
+          className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-medium shadow-xl border border-slate-700 max-w-md animate-in fade-in slide-in-from-bottom-2 duration-150"
+        >
+          <AlertCircle size={15} className="text-amber-400 shrink-0" />
+          <span className="flex-1">{toastMessage}</span>
+          <button
+            aria-label="Dismiss notification"
+            onClick={() => setToastMessage(null)}
+            className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Bottom Status Bar (Desktop) */}
       <div className="hidden md:block">
         <StatusBar
@@ -590,6 +706,13 @@ export default function App() {
         engine={engine}
         activeNode={activeNode}
         onClose={() => setShowFormulaDialog(false)}
+      />
+
+      <HyperlinkDialog
+        isOpen={showHyperlinkDialog}
+        engine={engine}
+        activeNode={activeNode}
+        onClose={() => setShowHyperlinkDialog(false)}
       />
     </div>
   );

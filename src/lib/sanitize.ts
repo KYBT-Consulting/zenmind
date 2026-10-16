@@ -45,6 +45,7 @@ export function sanitizeHtml(html: string): string {
 function sanitizeNodeData(data: any) {
   if (!data || typeof data !== 'object') return;
   if (typeof data.text === 'string') data.text = sanitizeHtml(data.text);
+  else if (data.text == null) data.text = '';
   if (typeof data.note === 'string') data.note = sanitizeHtml(data.note);
   if (typeof data.hyperlink === 'string' && !isSafeLink(data.hyperlink)) {
     delete data.hyperlink;
