@@ -14,6 +14,14 @@ import { stripHtml } from '../lib/utils';
 import { isSafeLink, sanitizeMapData } from '../lib/sanitize';
 import { contentSignature } from '../lib/contentSignature';
 import { applyNumbering } from '../lib/numbering';
+import {
+  applyInlineMarkdown,
+  applyTextHighlightTint,
+  CALLOUT_PRESETS,
+  CalloutType,
+  HIGHLIGHT_TINTS,
+  HighlightTint,
+} from '../lib/inlineMarkdown';
 
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
@@ -128,6 +136,8 @@ export class MindMapEngine {
       isShowCreateChildBtnIcon: true,
       enableCtrlKeyNodeSelection: true,
       enableDragModifyNodeWidth: true,
+      enableEditFormulaInRichTextEdit: true,
+      transformRichTextOnExitEdit: (html: string) => applyInlineMarkdown(html),
       // Several engines can be mounted at once (tabs); the library listens for
       // keys on window, so only the active engine may react to shortcuts.
       customCheckEnableShortcut: (e: KeyboardEvent) => {
@@ -524,6 +534,42 @@ export class MindMapEngine {
     const node = this.getActiveNode();
     if (!node) return;
     this.mindMap?.execCommand('INSERT_FORMULA', formula, [node]);
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  /** Applies (or clears when null) a text highlighter tint span to the active node. */
+  setNodeHighlightTint(tint: HighlightTint | null) {
+    const node = this.getActiveNode();
+    if (!node || !this.mindMap) return;
+    const currentText = String(node.getData('text') || '');
+    const nextHtml = applyTextHighlightTint(currentText, tint);
+    this.mindMap.execCommand('SET_NODE_TEXT', node, nextHtml, true);
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+  }
+
+  /** Applies (or clears when null) a callout badge tag and matching callout colors to the active node. */
+  applyCalloutBadge(calloutType: CalloutType | null) {
+    const node = this.getActiveNode();
+    if (!node || !this.mindMap) return;
+    const existingTags: string[] = (node.getData('tag') || [])
+      .map((t: any) => (typeof t === 'string' ? t : t?.text || ''))
+      .filter((t: string) => t && !CALLOUT_PRESETS.some((c) => c.type === t.toUpperCase()));
+
+    if (!calloutType) {
+      node.setTag(existingTags);
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+      return;
+    }
+
+    const preset = CALLOUT_PRESETS.find((c) => c.type === calloutType);
+    if (!preset) return;
+    node.setTag([preset.type, ...existingTags]);
+    this.mindMap.execCommand('SET_NODE_STYLES', node, {
+      fillColor: preset.nodeFill,
+      borderColor: preset.nodeBorder,
+      borderWidth: 2,
+      color: preset.nodeText,
+    });
     this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
   }
 

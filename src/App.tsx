@@ -722,6 +722,7 @@ export default function App() {
             onOpenNotes={handleOpenNotes}
             onOpenImage={() => setShowImageDialog(true)}
             onOpenFormula={() => setShowFormulaDialog(true)}
+            onOpenHyperlink={() => setShowHyperlinkDialog(true)}
           />
 
           {tabs.map((tab) => (

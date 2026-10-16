@@ -79,7 +79,7 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
   - Spatial arrow key navigation across parent, sibling, and child nodes (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`).
   - Optional **Vim Mode** navigation (`h`, `j`, `k`, `l`, `o` for new child, `O` for sibling).
   - Configurable keyboard shortcut mapping dialog.
-* [ ] **Inline Rich Text Upgrades**:
+* [x] **Inline Rich Text Upgrades**:
   - Direct canvas Markdown shortcuts (e.g. `**bold**`, `*italic*`, `` `code` ``).
   - Live preview popover for KaTeX mathematical formulas.
   - Text highlighter tints and callout badges.

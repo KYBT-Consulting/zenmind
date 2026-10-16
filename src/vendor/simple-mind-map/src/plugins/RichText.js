@@ -379,11 +379,14 @@ class RichText {
     if (!this.showTextEdit) {
       return
     }
-    const { beforeHideRichTextEdit } = this.mindMap.opt
+    const { beforeHideRichTextEdit, transformRichTextOnExitEdit } = this.mindMap.opt
     if (typeof beforeHideRichTextEdit === 'function') {
       beforeHideRichTextEdit(this)
     }
-    const html = this.getEditText()
+    let html = this.getEditText()
+    if (typeof transformRichTextOnExitEdit === 'function') {
+      html = transformRichTextOnExitEdit(html, this)
+    }
     const list = nodes && nodes.length > 0 ? nodes : [this.node]
     const node = this.node
     this.textEditNode.style.display = 'none'
