@@ -94,7 +94,7 @@ Open `http://localhost:3000` in your web browser. All brainstorming and AI capab
 ## 🚀 Getting Started (Development)
 
 ### Prerequisites
-- Node.js (v22+ or v26 Current)
+- Node.js (v26.x)
 - npm or pnpm
 
 ### Installation & Run

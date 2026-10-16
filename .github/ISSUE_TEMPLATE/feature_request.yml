@@ -1,28 +1,36 @@
-name: '💡 Feature Request'
-description: Suggest an idea, new layout, or improvement for ZenMind
-title: '[Feature]: '
-labels: ['enhancement']
+name: Feature Request
+description: Suggest an idea, template, layout, or enhancement for ZenMind
+title: "[Feature]: "
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        We love new ideas! Please let us know what features or workflows you'd like to see in ZenMind.
+        Have an idea to make **ZenMind** even better? Tell us about it below!
   - type: textarea
     id: problem
     attributes:
-      label: Is your feature request related to a problem?
-      description: A clear and concise description of the limitation or workflow gap.
+      label: Problem or Use Case
+      description: What workflow or problem would this feature solve?
+      placeholder: I often need to...
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: solution
     attributes:
-      label: Proposed Solution / Feature
-      description: Describe what you would like ZenMind to do and how it should look or function.
+      label: Proposed Solution
+      description: How should this feature work in ZenMind?
     validations:
       required: true
-  - type: textarea
-    id: alternatives
+  - type: dropdown
+    id: area
     attributes:
-      label: Alternatives Considered
-      description: Any alternative solutions or workarounds you've thought about (e.g. how EdrawMind, XMind, or MindNode handles it).
+      label: Feature Area
+      options:
+        - Canvas & Layouts
+        - Templates & Styling
+        - Keyboard & Vim Navigation
+        - Import / Export Formats
+        - AI Brainstorming Assistant
+        - Desktop App (Tauri)
+        - Other

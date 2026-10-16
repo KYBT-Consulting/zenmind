@@ -68,15 +68,15 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
 **Target**: Q2 2026
 
 ### 1. Starter Template Gallery
-* [ ] 1-click starter template library with visual previews:
+* [x] 1-click starter template library with visual previews:
   - **Strategic Planning**: SWOT Analysis, PESTEL, Porter's Five Forces.
   - **Project Management**: Eisenhower Priority Matrix, Sprint Roadmap, Risk Assessment.
   - **Engineering & Systems**: Root Cause (5 Whys), Fishbone Ishikawa, System Architecture.
   - **Organization & Team**: Org Chart with avatars and job titles.
-* [ ] Ability to save any custom mind map as a reusable personal template.
+* [x] Ability to save any custom mind map as a reusable personal template.
 
 ### 2. Canvas Ergonomics & Keyboard Mastery
-* [ ] **Full Keyboard Navigation**:
+* [x] **Full Keyboard Navigation**:
   - Spatial arrow key navigation across parent, sibling, and child nodes (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`).
   - Optional **Vim Mode** navigation (`h`, `j`, `k`, `l`, `o` for new child, `O` for sibling).
   - Configurable keyboard shortcut mapping dialog.
@@ -86,8 +86,8 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
   - Text highlighter tints and callout badges.
 
 ### 3. Map Versioning & Undo Tree
-* [ ] **Autosave Snapshots**: Periodic non-destructive project snapshots stored locally.
-* [ ] **History Timeline Drawer**: Visual slider to inspect earlier revision states and roll back changes.
+* [x] **Autosave Snapshots**: Periodic non-destructive project snapshots stored locally.
+* [x] **History Timeline Drawer**: Visual slider to inspect earlier revision states and roll back changes.
 
 ---
 

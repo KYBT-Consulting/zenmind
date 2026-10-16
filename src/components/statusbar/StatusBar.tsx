@@ -9,6 +9,8 @@ import {
   Eye,
   Play,
   X,
+  Terminal,
+  Keyboard,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { LAYOUT_OPTIONS } from '../../types/mindmap';
@@ -25,6 +27,8 @@ interface StatusBarProps {
   showInspector?: boolean;
   onToggleInspector?: () => void;
   onOpenAIDialog: () => void;
+  vimMode?: boolean;
+  onOpenShortcuts?: () => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -37,6 +41,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   showInspector = false,
   onToggleInspector,
   onOpenAIDialog,
+  vimMode = false,
+  onOpenShortcuts,
 }) => {
   const currentLayoutId = engine?.getLayout() || 'mindMap';
   const layoutObj = LAYOUT_OPTIONS.find((l) => l.id === currentLayoutId);
@@ -66,6 +72,20 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <Sparkles size={11} />
           <span>AI Assisted</span>
         </button>
+
+        {vimMode && (
+          <>
+            <span className="h-3 w-px bg-slate-200" />
+            <button
+              onClick={onOpenShortcuts}
+              title="Vim Navigation Active — Click to configure"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+            >
+              <Terminal size={10} />
+              <span>VIM</span>
+            </button>
+          </>
+        )}
 
         {/* Format Painter Active Pill */}
         {isFormatPainterActive && (
@@ -169,21 +189,18 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
         <span className="h-3 w-px bg-slate-200" />
 
-        {/* Shortcuts Hints */}
-        <div className="flex items-center gap-1 text-slate-400">
+        {/* Shortcuts Button */}
+        <button
+          onClick={onOpenShortcuts}
+          title="Keyboard Shortcuts & Vim Mode (?)"
+          className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 transition-colors px-1 py-0.5 rounded hover:bg-slate-100"
+        >
+          <Keyboard size={12} />
           <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono font-bold">
-            Space
+            ?
           </kbd>
-          <span className="text-[10px]">Pan</span>
-          <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono font-bold ml-1">
-            Tab
-          </kbd>
-          <span className="text-[10px]">Child</span>
-          <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono font-bold ml-1">
-            Enter
-          </kbd>
-          <span className="text-[10px]">Sibling</span>
-        </div>
+          <span className="text-[10px]">Shortcuts</span>
+        </button>
       </div>
     </footer>
   );

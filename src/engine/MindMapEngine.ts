@@ -794,7 +794,7 @@ export class MindMapEngine {
 
   /** Full document: {layout, root, theme, view}. Use for saving .zenmind files. */
   getData(): any {
-    const data = this.mindMap?.getData(true) || null;
+    const data: any = this.mindMap?.getData(true) || null;
     if (data && this.rainbowLinesEnabled) {
       data.rainbowLines = true;
     }
@@ -906,6 +906,35 @@ export class MindMapEngine {
     const events = ['view_data_change', 'node_tree_render_end', 'data_change'];
     events.forEach((e) => mm.on(e, cb));
     return () => events.forEach((e) => mm.off(e, cb));
+  }
+
+  /** Spatial keyboard navigation ('Left' | 'Up' | 'Right' | 'Down'). */
+  navigateByDirection(dir: 'Left' | 'Up' | 'Right' | 'Down') {
+    const mm = this.mindMap as any;
+    if (!mm) return;
+    if (mm.keyboardNavigation && typeof mm.keyboardNavigation.onKeyup === 'function') {
+      mm.keyboardNavigation.onKeyup(dir);
+    }
+  }
+
+  /** Returns true when the in-canvas rich text editor is open. */
+  isEditingText(): boolean {
+    const mm = this.mindMap as any;
+    return Boolean(mm?.renderer?.textEdit?.isShowTextEdit?.());
+  }
+
+  /** Opens the in-place text editor for the active node (or selects root first if none active). */
+  editActiveNode() {
+    const mm = this.mindMap as any;
+    if (!mm) return;
+    let active = this.getActiveNode();
+    if (!active && mm.renderer?.root) {
+      mm.execCommand('GO_TARGET_NODE', mm.renderer.root);
+      active = mm.renderer.root;
+    }
+    if (active && mm.renderer?.textEdit?.show) {
+      mm.renderer.textEdit.show({ node: active });
+    }
   }
 
   destroy() {

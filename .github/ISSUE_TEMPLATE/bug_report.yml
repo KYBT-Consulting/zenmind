@@ -1,47 +1,49 @@
-name: '🐛 Bug Report'
-description: Report a reproducible problem or unexpected behavior in ZenMind
-title: '[Bug]: '
-labels: ['bug', 'triage']
+name: Bug Report
+description: Report a bug, crash, or unexpected behavior in ZenMind
+title: "[Bug]: "
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report an issue! Please check existing issues first to avoid duplicates.
-  - type: input
-    id: version
-    attributes:
-      label: ZenMind Version / Environment
-      description: What version of ZenMind are you using? (e.g. Web Demo, Desktop Linux .AppImage, Windows .msi)
-      placeholder: e.g. Web demo on Chrome 124 / Linux Ubuntu 24.04
-    validations:
-      required: true
+        Thanks for taking the time to report an issue in **ZenMind**!
   - type: textarea
     id: description
     attributes:
-      label: Bug Description
-      description: A clear and concise description of what the bug is.
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: Describe what went wrong...
     validations:
       required: true
   - type: textarea
-    id: reproduction
+    id: steps
     attributes:
       label: Steps to Reproduce
-      description: Detailed steps to reproduce the issue.
+      description: How can we reproduce the issue?
       placeholder: |
-        1. Open ZenMind
-        2. Insert a topic
-        3. ...
+        1. Open ZenMind and click '...'
+        2. Select topic '...'
+        3. See error
     validations:
       required: true
-  - type: textarea
-    id: expected
+  - type: dropdown
+    id: environment
     attributes:
-      label: Expected Behavior
-      description: What you expected to happen instead.
+      label: Runtime Environment
+      options:
+        - Web Browser (Vite / Hosted)
+        - Windows Desktop (.msi / .exe)
+        - macOS Desktop (.dmg / .app)
+        - Linux Desktop (.AppImage / .deb)
     validations:
       required: true
-  - type: textarea
-    id: additional
+  - type: input
+    id: os_browser
     attributes:
-      label: Additional Context
-      description: Screenshots, console logs, or exported `.zenmind` files to help diagnose the issue.
+      label: OS & Browser / Version
+      placeholder: e.g. Windows 11, Chrome 131 / ZenMind v0.2.0
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Logs or Screenshots
+      description: If applicable, paste any error message or attach a sample `.zenmind` file.

@@ -13,10 +13,14 @@ import { ExportDialog } from './components/dialogs/ExportDialog';
 import { ImageDialog } from './components/dialogs/ImageDialog';
 import { FormulaDialog } from './components/dialogs/FormulaDialog';
 import { HyperlinkDialog } from './components/dialogs/HyperlinkDialog';
+import { TemplateGalleryDialog } from './components/dialogs/TemplateGalleryDialog';
+import { HistorySnapshotsDialog } from './components/dialogs/HistorySnapshotsDialog';
+import { ShortcutsDialog } from './components/dialogs/ShortcutsDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
+import { SnapshotService } from './services/snapshotService';
 import { sanitizeMapData } from './lib/sanitize';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TabBar } from './components/tabs/TabBar';
@@ -49,6 +53,7 @@ interface TabView {
 const EMPTY_VIEW: TabView = { activeNode: null, canUndo: false, canRedo: false, scale: 100, data: DEFAULT_INITIAL_DATA };
 const BLANK_MAP = () => ({ data: { text: 'Central Topic', expand: true }, children: [] });
 const SESSION_STORAGE_KEY = 'zenmind_session_v1';
+const VIM_MODE_STORAGE_KEY = 'zenmind_vim_mode_v1';
 
 let tabCounter = 0;
 const makeTab = (title: string, initialData: any, filePath?: string): TabInfo => ({
@@ -108,6 +113,16 @@ export default function App() {
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [showFormulaDialog, setShowFormulaDialog] = useState(false);
   const [showHyperlinkDialog, setShowHyperlinkDialog] = useState(false);
+  const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [vimMode, setVimMode] = useState<boolean>(() => {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(VIM_MODE_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [showSearch, setShowSearch] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -404,6 +419,26 @@ export default function App() {
     setShowInspector(true);
   }, []);
 
+  const handleToggleVimMode = useCallback((enabled: boolean) => {
+    setVimMode(enabled);
+    try {
+      localStorage.setItem(VIM_MODE_STORAGE_KEY, String(enabled));
+    } catch {
+      // ignore storage errors
+    }
+    setToastMessage(enabled ? 'Vim Navigation Mode enabled (h/j/k/l, o/O, i, x, u, f)' : 'Vim Navigation Mode disabled');
+  }, []);
+
+  const handleRestoreSnapshot = useCallback(
+    (data: any, label: string) => {
+      if (!engine) return;
+      engine.setData(data);
+      recomputeDirty(activeTab.id);
+      setToastMessage(`Restored snapshot: "${label}"`);
+    },
+    [engine, activeTab.id]
+  );
+
   // Auto-dismiss toast notifications
   useEffect(() => {
     if (!toastMessage) return;
@@ -434,6 +469,23 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [tabs, activeId, views]);
 
+  // Periodic automatic version history snapshot (every 15s of settled edits per active tab)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const eng = enginesRef.current[activeTab.id];
+      if (!eng) return;
+      const data = eng.getData();
+      if (!data) return;
+      SnapshotService.createSnapshot({
+        docId: activeTab.id,
+        docTitle: activeTab.title,
+        isAuto: true,
+        data,
+      });
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [activeTab.id, activeTab.title, mindMapData]);
+
   // Warn before closing/reloading browser tab if any document has unsaved edits
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -446,7 +498,7 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  // Keyboard shortcut listener (global hotkeys)
+  // Keyboard shortcut listener (global hotkeys + Vim navigation mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
@@ -455,29 +507,115 @@ export default function App() {
         return;
       }
 
-      // Don't intercept when user is actively editing text in an input or textarea
+      // Don't intercept when user is actively editing text in an input, textarea, or canvas node
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        engine?.isEditingText()
+      ) {
         return;
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSaveFile();
+        return;
       }
       if (DesktopFileService.newMapShortcut().matches(e)) {
         e.preventDefault();
         handleNewFile();
+        return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
         e.preventDefault();
         handleOpenFile();
+        return;
+      }
+
+      // Single-key shortcuts only when no modifier key is held and no modal dialog is open
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const anyModalOpen =
+        showTemplatesDialog ||
+        showHistoryDialog ||
+        showShortcutsDialog ||
+        showExportDialog ||
+        showImageDialog ||
+        showFormulaDialog ||
+        showHyperlinkDialog ||
+        aiDialogState.isOpen;
+
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsDialog((v) => !v);
+        return;
+      }
+
+      if (anyModalOpen || !vimMode || !engine) return;
+
+      switch (e.key) {
+        case 'h':
+          e.preventDefault();
+          engine.navigateByDirection('Left');
+          break;
+        case 'j':
+          e.preventDefault();
+          engine.navigateByDirection('Down');
+          break;
+        case 'k':
+          e.preventDefault();
+          engine.navigateByDirection('Up');
+          break;
+        case 'l':
+          e.preventDefault();
+          engine.navigateByDirection('Right');
+          break;
+        case 'o':
+          e.preventDefault();
+          engine.insertChildNode();
+          break;
+        case 'O':
+          e.preventDefault();
+          engine.insertSiblingNode();
+          break;
+        case 'i':
+        case 'e':
+          e.preventDefault();
+          engine.editActiveNode();
+          break;
+        case 'x':
+          e.preventDefault();
+          engine.deleteNode();
+          break;
+        case 'u':
+          e.preventDefault();
+          engine.undo();
+          break;
+        case 'f':
+          e.preventDefault();
+          engine.fitView();
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSaveFile, handleOpenFile, handleNewFile]);
+  }, [
+    handleSaveFile,
+    handleOpenFile,
+    handleNewFile,
+    engine,
+    vimMode,
+    showTemplatesDialog,
+    showHistoryDialog,
+    showShortcutsDialog,
+    showExportDialog,
+    showImageDialog,
+    showFormulaDialog,
+    showHyperlinkDialog,
+    aiDialogState.isOpen,
+  ]);
 
   return (
     <div className="w-full h-screen flex flex-col font-sans text-slate-900 overflow-hidden bg-slate-50 select-none">
@@ -522,6 +660,9 @@ export default function App() {
         onOpenFormulaDialog={() => setShowFormulaDialog(true)}
         onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
         onOpenSearch={() => setShowSearch((v) => !v)}
+        onOpenTemplates={() => setShowTemplatesDialog(true)}
+        onOpenHistory={() => setShowHistoryDialog(true)}
+        onOpenShortcuts={() => setShowShortcutsDialog(true)}
       />
 
       <TabBar
@@ -664,6 +805,8 @@ export default function App() {
           showInspector={showInspector}
           onToggleInspector={() => setShowInspector(!showInspector)}
           onOpenAIDialog={() => setAiDialogState({ isOpen: true, mode: 'generate' })}
+          vimMode={vimMode}
+          onOpenShortcuts={() => setShowShortcutsDialog(true)}
         />
       </div>
 
@@ -713,6 +856,31 @@ export default function App() {
         engine={engine}
         activeNode={activeNode}
         onClose={() => setShowHyperlinkDialog(false)}
+      />
+
+      <TemplateGalleryDialog
+        isOpen={showTemplatesDialog}
+        engine={engine}
+        currentDocTitle={docTitle}
+        onSelectTemplate={(title, data) => openInNewTab(title, data)}
+        onClose={() => setShowTemplatesDialog(false)}
+      />
+
+      <HistorySnapshotsDialog
+        isOpen={showHistoryDialog}
+        docId={activeTab.id}
+        docTitle={docTitle}
+        engine={engine}
+        onRestoreToActive={handleRestoreSnapshot}
+        onOpenInNewTab={(title, data) => openInNewTab(title, data)}
+        onClose={() => setShowHistoryDialog(false)}
+      />
+
+      <ShortcutsDialog
+        isOpen={showShortcutsDialog}
+        vimMode={vimMode}
+        onToggleVimMode={handleToggleVimMode}
+        onClose={() => setShowShortcutsDialog(false)}
       />
     </div>
   );

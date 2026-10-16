@@ -26,7 +26,7 @@ We are committed to providing a welcoming, inclusive, and harassment-free enviro
 
 ## 🛠️ Prerequisites
 
-- **Node.js**: `v22.x+` or `v26.x Current`
+- **Node.js**: `v26.x`
 - **npm** or **pnpm**
 - **Rust Toolchain** *(Optional, only needed for native desktop development)*:
   - Rust `1.85+` (`rustup default stable`)

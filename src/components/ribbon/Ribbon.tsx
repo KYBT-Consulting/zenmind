@@ -41,6 +41,9 @@ import {
   Sigma,
   Layers,
   Search,
+  LayoutTemplate,
+  History,
+  Keyboard,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -82,6 +85,9 @@ interface RibbonProps {
   onOpenFormulaDialog?: () => void;
   onOpenHyperlinkDialog?: () => void;
   onOpenSearch?: () => void;
+  onOpenTemplates?: () => void;
+  onOpenHistory?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -111,6 +117,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenFormulaDialog,
   onOpenHyperlinkDialog,
   onOpenSearch,
+  onOpenTemplates,
+  onOpenHistory,
+  onOpenShortcuts,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -249,6 +258,31 @@ export const Ribbon: React.FC<RibbonProps> = ({
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
           >
             <FolderOpen size={15} />
+          </button>
+
+          <button aria-label="Starter Template Gallery"
+            onClick={() => onOpenTemplates?.()}
+            title="Starter Template Gallery"
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs font-medium transition-colors"
+          >
+            <LayoutTemplate size={14} className="text-indigo-600" />
+            <span>Templates</span>
+          </button>
+
+          <button aria-label="Version History & Snapshots"
+            onClick={() => onOpenHistory?.()}
+            title="Version History & Snapshots"
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            <History size={15} />
+          </button>
+
+          <button aria-label="Keyboard Shortcuts & Vim Mode (?)"
+            onClick={() => onOpenShortcuts?.()}
+            title="Keyboard Shortcuts & Vim Mode (?)"
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            <Keyboard size={15} />
           </button>
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
@@ -773,6 +807,26 @@ export const Ribbon: React.FC<RibbonProps> = ({
             >
               <Search size={14} className="text-indigo-600" />
               <span>Find & Replace</span>
+            </button>
+
+            {/* Version History */}
+            <button
+              onClick={() => onOpenHistory?.()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+              title="Version History & Snapshots"
+            >
+              <History size={14} className="text-indigo-600" />
+              <span>Version History</span>
+            </button>
+
+            {/* Keyboard & Vim Mode */}
+            <button
+              onClick={() => onOpenShortcuts?.()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+              title="Keyboard Shortcuts & Vim Mode (?)"
+            >
+              <Keyboard size={14} className="text-indigo-600" />
+              <span>Shortcuts & Vim</span>
             </button>
 
             <div className="h-6 w-px bg-slate-200 mx-1" />
