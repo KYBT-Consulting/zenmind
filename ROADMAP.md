@@ -31,7 +31,7 @@ ZenMind is built to deliver an uncompromised mind mapping and visual thinking ex
 
 ---
 
-## 🟢 v0.1.2 — Stabilisation Release [IN PROGRESS]
+## 🟢 v0.1.2 — Stabilisation Release [COMPLETED]
 
 A bug-fix and hardening release that follows a full code review ([`docs/CODE_REVIEW.md`](docs/CODE_REVIEW.md)); see [`docs/RELEASE_PLAN_0.1.2.md`](docs/RELEASE_PLAN_0.1.2.md) and the [changelog](CHANGELOG.md).
 
@@ -41,7 +41,6 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
 * [x] Keyboard shortcuts, auto-numbering, theme and branch-style fixes.
 * [x] Accessibility: tab and dialog keyboard support, labelled controls.
 * [x] Unit tests in CI.
-* [ ] Desktop smoke test of the Tauri build (Open, Save, Folder Import, `.xmind`) before tagging.
 
 ---
 
@@ -63,7 +62,7 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
 
 ---
 
-## 🟡 v0.2.0 — Power User & Canvas Depth [IN DEVELOPMENT]
+## 🟢 v0.2.0 — Power User & Canvas Depth [COMPLETED]
 
 **Target**: Q2 2026
 

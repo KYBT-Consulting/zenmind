@@ -4,6 +4,22 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.2.0] - 2026-10-16
+
+### Added
+- **Starter Template Gallery & Custom Templates:** 10 built-in templates across Strategic Planning (SWOT, PESTEL, Porter's Five Forces), Project Management (Eisenhower Matrix, Sprint Roadmap, Risk Assessment), Engineering & Systems (5 Whys, Fishbone Ishikawa, System Architecture), and Organization & Team (Org Chart), plus saving/deleting custom personal templates in `localStorage`.
+- **Map Versioning & History Snapshots:** Periodic non-destructive automatic snapshots and manual named checkpoints per document, with a timeline dialog to preview hierarchy and restore to the active map or open in a new tab.
+- **Keyboard Mastery & Optional Vim Navigation Mode:** Press `?` to open the Keyboard Shortcuts & Vim Mode cheat-sheet and toggle single-key Vim navigation (`h`/`j`/`k`/`l` spatial movement, `o`/`O` child/sibling creation, `i`/`e` inline edit, `x` delete, `u` undo, `f` fit view).
+- **In-Canvas Find & Replace (`Ctrl+F`):** Search topics and notes with match counter, next/previous navigation, single replace, and undoable replace-all.
+- **Accessible Hyperlink Dialog & Toast Notifications:** Replaced blocking browser `window.prompt` and `alert` calls with a keyboard-accessible modal dialog and dismissible toast notifications.
+- **Session Recovery & Unsaved-Changes Guard:** Automatically persists open tabs to `localStorage` (`zenmind_session_v1`) and warns on `beforeunload` when any tab has unsaved changes.
+- **GitHub Issue Templates:** Structured YAML forms for bug reports and feature requests.
+
+### Fixed
+- **Opening saved `.zenmind` files:** Fixed `Cannot read properties of undefined (reading 'replace')` crash when opening full-document `.zenmind` files (`{ layout, root, theme, view }`), restoring saved layout, theme, and rainbow lines and guarding `htmlEscape` against missing `data.text`.
+- **Dirty tracking & UI synchronization:** Changing layout, theme, branch line style, or rainbow lines now updates dirty state and refreshes the Ribbon and Format Inspector immediately.
+- **Destroyed canvas cleanup:** Closing a tab now cancels pending `requestAnimationFrame` and render callbacks in the underlying engine.
+
 ## [0.1.2] - 2026-10-13
 
 A stabilisation release following a full code review. Details and status of every finding are in
