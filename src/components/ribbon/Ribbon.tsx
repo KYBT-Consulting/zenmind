@@ -44,7 +44,11 @@ import {
   LayoutTemplate,
   History,
   Keyboard,
+  Info,
+  UnfoldVertical,
+  FoldVertical,
 } from 'lucide-react';
+import { APP_VERSION } from '../dialogs/AboutDialog';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
   ActiveNodeInfo,
@@ -88,6 +92,7 @@ interface RibbonProps {
   onOpenTemplates?: () => void;
   onOpenHistory?: () => void;
   onOpenShortcuts?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -120,6 +125,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenTemplates,
   onOpenHistory,
   onOpenShortcuts,
+  onOpenAbout,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -192,12 +198,20 @@ export const Ribbon: React.FC<RibbonProps> = ({
       {/* Top Brand & Quick Access Bar */}
       <div className="h-10 px-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/70">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenAbout?.()}
+            title={`About ZenMind v${APP_VERSION}`}
+            className="flex items-center gap-2 px-1.5 py-0.5 rounded-md hover:bg-slate-200/70 transition-colors cursor-pointer"
+          >
             <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center shadow-sm">
               <Share2 size={13} className="text-white" />
             </div>
             <span className="font-bold text-sm tracking-tight text-slate-800">ZenMind</span>
-          </div>
+            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-600 border border-indigo-200/70">
+              v{APP_VERSION}
+            </span>
+          </button>
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
 
@@ -283,6 +297,14 @@ export const Ribbon: React.FC<RibbonProps> = ({
             className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
           >
             <Keyboard size={15} />
+          </button>
+
+          <button aria-label={`About ZenMind v${APP_VERSION}`}
+            onClick={() => onOpenAbout?.()}
+            title={`About ZenMind v${APP_VERSION}`}
+            className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            <Info size={15} />
           </button>
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
@@ -522,7 +544,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               )}
             </div>
 
-            {/* Auto Numbering & Align */}
+            {/* Auto Numbering, Expand/Collapse & Align */}
             <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
               <button aria-label="Toggle Hierarchical Numbering (1, 1.1, 1.1.1)"
                 onClick={() => engine?.toggleAutoNumbering()}
@@ -532,6 +554,26 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <ListOrdered size={18} className="text-indigo-600" />
                 <span className="text-[10px] font-semibold mt-0.5">Numbering</span>
                 <span className="text-[9px] text-slate-400 font-mono">1.1.1</span>
+              </button>
+
+              <button aria-label="Expand All Branches"
+                onClick={() => engine?.expandAll()}
+                title="Expand All Branches"
+                className="flex flex-col items-center justify-center px-2.5 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+              >
+                <UnfoldVertical size={18} className="text-sky-600" />
+                <span className="text-[10px] font-semibold mt-0.5">Expand</span>
+                <span className="text-[9px] text-slate-400 font-mono">All</span>
+              </button>
+
+              <button aria-label="Collapse All Branches"
+                onClick={() => engine?.collapseAll()}
+                title="Collapse All Branches"
+                className="flex flex-col items-center justify-center px-2.5 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+              >
+                <FoldVertical size={18} className="text-amber-600" />
+                <span className="text-[10px] font-semibold mt-0.5">Collapse</span>
+                <span className="text-[9px] text-slate-400 font-mono">All</span>
               </button>
 
               <button aria-label="Reset Layout & Tidy Branch Alignment"
@@ -828,6 +870,41 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <Keyboard size={14} className="text-indigo-600" />
               <span>Shortcuts & Vim</span>
             </button>
+
+            <div className="h-6 w-px bg-slate-200 mx-1" />
+
+            {/* Expand All / Collapse All / Level */}
+            <button
+              onClick={() => engine?.expandAll()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+              title="Expand All Branches"
+            >
+              <UnfoldVertical size={14} className="text-sky-600" />
+              <span>Expand All</span>
+            </button>
+
+            <button
+              onClick={() => engine?.collapseAll()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+              title="Collapse All Branches"
+            >
+              <FoldVertical size={14} className="text-amber-600" />
+              <span>Collapse All</span>
+            </button>
+
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+              {[1, 2, 3].map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => engine?.expandToLevel(lvl)}
+                  title={`Expand to Level ${lvl}`}
+                  className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                >
+                  L{lvl}
+                </button>
+              ))}
+            </div>
 
             <div className="h-6 w-px bg-slate-200 mx-1" />
 

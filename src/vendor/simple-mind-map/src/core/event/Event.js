@@ -54,7 +54,7 @@ class Event extends EventEmitter {
     window.addEventListener('mousemove', this.onMousemove)
     window.addEventListener('mouseup', this.onMouseup)
     this.on('node_mouseup', this.onNodeMouseup)
-    this.mindMap.el.addEventListener('wheel', this.onMousewheel)
+    this.mindMap.el.addEventListener('wheel', this.onMousewheel, { passive: false })
     this.mindMap.svg.on('contextmenu', this.onContextmenu)
     this.mindMap.svg.on('mouseenter', this.onMouseenter)
     this.mindMap.svg.on('mouseleave', this.onMouseleave)
@@ -163,7 +163,7 @@ class Event extends EventEmitter {
     if (typeof customCheckIsTouchPad === 'function') {
       isTouchPad = customCheckIsTouchPad(e)
     } else {
-      isTouchPad = Math.abs(e.deltaY) <= 10
+      isTouchPad = Math.abs(e.deltaY) <= 10 || (e.ctrlKey && Math.abs(e.deltaY) < 50)
     }
     this.emit('mousewheel', e, dirs, this, isTouchPad)
   }

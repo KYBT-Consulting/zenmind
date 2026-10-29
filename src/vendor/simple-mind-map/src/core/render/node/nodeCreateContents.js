@@ -95,35 +95,38 @@ function createIconNode() {
     return []
   }
   let iconSize = this.mindMap.themeConfig.iconSize
-  return _data.icon.map(item => {
-    let src = iconsSvg.getNodeIconListIcon(
-      item,
-      this.mindMap.opt.iconList || []
-    )
-    let node = null
-    // svg图标
-    if (/^<svg/.test(src)) {
-      node = SVG(src)
-    } else {
-      // 图片图标
-      node = new SVGImage().load(src)
-    }
-    node.size(iconSize, iconSize)
-    node.on('click', e => {
-      this.mindMap.emit('node_icon_click', this, item, e, node)
+  return _data.icon
+    .map(item => {
+      let src = iconsSvg.getNodeIconListIcon(
+        item,
+        this.mindMap.opt.iconList || []
+      )
+      if (!src) return null
+      let node = null
+      // svg图标
+      if (/^<svg/.test(src)) {
+        node = SVG(src)
+      } else {
+        // 图片图标
+        node = new SVGImage().load(src)
+      }
+      node.size(iconSize, iconSize).attr('cursor', 'pointer')
+      node.on('click', e => {
+        this.mindMap.emit('node_icon_click', this, item, e, node)
+      })
+      node.on('mouseenter', e => {
+        this.mindMap.emit('node_icon_mouseenter', this, item, e, node)
+      })
+      node.on('mouseleave', e => {
+        this.mindMap.emit('node_icon_mouseleave', this, item, e, node)
+      })
+      return {
+        node,
+        width: iconSize,
+        height: iconSize
+      }
     })
-    node.on('mouseenter', e => {
-      this.mindMap.emit('node_icon_mouseenter', this, item, e, node)
-    })
-    node.on('mouseleave', e => {
-      this.mindMap.emit('node_icon_mouseleave', this, item, e, node)
-    })
-    return {
-      node,
-      width: iconSize,
-      height: iconSize
-    }
-  })
+    .filter(Boolean)
 }
 
 // 创建富文本节点

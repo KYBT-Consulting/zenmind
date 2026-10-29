@@ -119,8 +119,8 @@ class View {
         let stepY = 0
         if (isTouchPad) {
           // 如果是触控板，那么直接使用触控板滑动距离
-          stepX = Math.abs(e.wheelDeltaX)
-          stepY = Math.abs(e.wheelDeltaY)
+          stepX = Math.abs(e.wheelDeltaX !== undefined ? e.wheelDeltaX : e.deltaX)
+          stepY = Math.abs(e.wheelDeltaY !== undefined ? e.wheelDeltaY : e.deltaY)
         } else {
           stepX = stepY = mousewheelMoveStep
         }

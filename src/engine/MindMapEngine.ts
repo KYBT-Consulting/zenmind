@@ -23,6 +23,13 @@ import {
   HighlightTint,
 } from '../lib/inlineMarkdown';
 
+export interface ContextMenuEventInfo {
+  type: 'node' | 'canvas';
+  clientX: number;
+  clientY: number;
+  node: ActiveNodeInfo | null;
+}
+
 export interface MindMapEngineCallbacks {
   onActiveNodeChange?: (node: ActiveNodeInfo | null) => void;
   onDataChange?: (data: any) => void;
@@ -30,6 +37,7 @@ export interface MindMapEngineCallbacks {
   onHistoryChange?: (state: { canUndo: boolean; canRedo: boolean }) => void;
   onFormatPainterChange?: (isActive: boolean) => void;
   onPresentationModeChange?: (isActive: boolean) => void;
+  onContextMenu?: (event: ContextMenuEventInfo) => void;
   /** Fired once, after the first tree render completes (the map is laid out and stable). */
   onFirstRender?: (engine: MindMapEngine) => void;
   onError?: (error: any) => void;
@@ -252,6 +260,30 @@ export class MindMapEngine {
         this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
       }
     });
+
+    // Right-click context menu on a topic node
+    this.mindMap.on('node_contextmenu', (e: MouseEvent, node: any) => {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      const info = node ? this.extractActiveNodeInfo(node) : null;
+      this.callbacks.onContextMenu?.({
+        type: 'node',
+        clientX: e?.clientX ?? 0,
+        clientY: e?.clientY ?? 0,
+        node: info,
+      });
+    });
+
+    // Right-click context menu on empty canvas background
+    this.mindMap.on('contextmenu', (e: MouseEvent) => {
+      e?.preventDefault?.();
+      this.callbacks.onContextMenu?.({
+        type: 'canvas',
+        clientX: e?.clientX ?? 0,
+        clientY: e?.clientY ?? 0,
+        node: null,
+      });
+    });
   }
 
   private extractActiveNodeInfo(node: any): ActiveNodeInfo {
@@ -313,6 +345,66 @@ export class MindMapEngine {
 
   deleteNode() {
     this.mindMap?.execCommand('REMOVE_NODE');
+  }
+
+  deleteOnlyCurrentNode() {
+    this.mindMap?.execCommand('REMOVE_CURRENT_NODE');
+  }
+
+  expandAll() {
+    this.mindMap?.execCommand('EXPAND_ALL');
+  }
+
+  collapseAll() {
+    this.mindMap?.execCommand('UNEXPAND_ALL');
+  }
+
+  expandToLevel(level: number) {
+    this.mindMap?.execCommand('UNEXPAND_TO_LEVEL', level);
+  }
+
+  toggleNodeExpand() {
+    const renderer = this.mindMap?.renderer as any;
+    if (renderer?.toggleActiveExpand) {
+      renderer.toggleActiveExpand();
+    } else {
+      const node = this.getActiveNode();
+      if (node) {
+        const current = node.getData?.('expand') !== false;
+        this.mindMap?.execCommand('SET_NODE_EXPAND', node, !current);
+      }
+    }
+  }
+
+  copyNode() {
+    (this.mindMap?.renderer as any)?.copy?.();
+  }
+
+  cutNode() {
+    (this.mindMap?.renderer as any)?.cut?.();
+  }
+
+  pasteNode() {
+    (this.mindMap?.renderer as any)?.paste?.();
+  }
+
+  duplicateNode() {
+    const renderer = this.mindMap?.renderer as any;
+    if (!this.mindMap || !renderer) return;
+    const active = this.getActiveNode();
+    if (!active || active.isRoot) return;
+    const copied = renderer.copyNode?.();
+    if (copied && copied.length > 0) {
+      this.mindMap.execCommand('INSERT_MULTI_NODE', [active], copied);
+    }
+  }
+
+  moveNodeUp() {
+    this.mindMap?.execCommand('UP_NODE');
+  }
+
+  moveNodeDown() {
+    this.mindMap?.execCommand('DOWN_NODE');
   }
 
   addSummary(text: string = 'Summary') {
@@ -816,6 +908,30 @@ export class MindMapEngine {
 
   setScale(percent: number) {
     this.mindMap?.view.setScale(percent / 100);
+  }
+
+  /** Sets canvas zoom scale (e.g. 1.0 = 100%) anchored around viewport client coordinates. */
+  setZoomAt(scale: number, clientX?: number, clientY?: number) {
+    const mm = this.mindMap as any;
+    if (!mm?.view) return;
+    const minScale = (mm.opt?.minZoomRatio ?? 20) / 100;
+    const maxScale = (mm.opt?.maxZoomRatio ?? 400) / 100;
+    const clamped = Math.min(maxScale, Math.max(minScale, scale));
+    if (clientX !== undefined && clientY !== undefined && typeof mm.toPos === 'function') {
+      const { x: cx, y: cy } = mm.toPos(clientX, clientY);
+      mm.view.setScale(clamped, cx, cy);
+    } else {
+      mm.view.setScale(clamped);
+    }
+  }
+
+  /** Zooms the canvas smoothly in response to a trackpad pinch wheel delta. */
+  zoomByWheelDelta(deltaY: number, clientX?: number, clientY?: number) {
+    const mm = this.mindMap as any;
+    if (!mm?.view || deltaY === 0) return;
+    const currentScale = mm.view.scale || 1;
+    const factor = Math.exp(-deltaY * 0.01);
+    this.setZoomAt(currentScale * factor, clientX, clientY);
   }
 
   fitView() {

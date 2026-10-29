@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MindMapEngine, MindMapEngineCallbacks } from '../../engine/MindMapEngine';
+import {
+  MindMapEngine,
+  MindMapEngineCallbacks,
+  ContextMenuEventInfo,
+} from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
 
 interface MindMapCanvasProps {
@@ -11,6 +15,7 @@ interface MindMapCanvasProps {
   onHistoryChange: (state: { canUndo: boolean; canRedo: boolean }) => void;
   onFormatPainterChange?: (isActive: boolean) => void;
   onPresentationModeChange?: (isActive: boolean) => void;
+  onContextMenu?: (event: ContextMenuEventInfo) => void;
   isFormatPainterActive?: boolean;
   initialData?: any;
   isActive?: boolean;
@@ -25,6 +30,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   onHistoryChange,
   onFormatPainterChange,
   onPresentationModeChange,
+  onContextMenu,
   isFormatPainterActive = false,
   initialData,
   isActive = true,
@@ -48,6 +54,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       onHistoryChange,
       onFormatPainterChange,
       onPresentationModeChange,
+      onContextMenu,
       onFirstRender,
       onError: (err) => console.error('ZenMind Engine Error:', err),
     };
@@ -94,6 +101,71 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       setCursorStyle('default');
     }
   }, [isFormatPainterActive]);
+
+  // Prevent whole-app browser/WebView pinch-zoom and route trackpad pinch gestures to the active canvas
+  useEffect(() => {
+    if (!isActive) return;
+
+    let pinchStartScale: number | null = null;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        // If wheel event originated outside the mind map container (which already stops propagation),
+        // route the zoom directly to the canvas engine.
+        if (engineRef.current && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+          engineRef.current.zoomByWheelDelta(e.deltaY, e.clientX, e.clientY);
+        }
+      }
+    };
+
+    const handleGestureStart = (e: any) => {
+      e.preventDefault();
+      if (engineRef.current) {
+        pinchStartScale = engineRef.current.getViewTransform().scale;
+      }
+    };
+
+    const handleGestureChange = (e: any) => {
+      e.preventDefault();
+      if (engineRef.current && typeof e.scale === 'number') {
+        const baseScale = pinchStartScale ?? engineRef.current.getViewTransform().scale;
+        engineRef.current.setZoomAt(baseScale * e.scale, e.clientX, e.clientY);
+      }
+    };
+
+    const handleGestureEnd = (e: any) => {
+      e.preventDefault();
+      pinchStartScale = null;
+    };
+
+    const handleNativeTrackpadPinch = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || !engineRef.current) return;
+      if (detail.phase === 'begin') {
+        pinchStartScale = engineRef.current.getViewTransform().scale;
+      } else if (detail.phase === 'change' && typeof detail.scale === 'number') {
+        const baseScale = pinchStartScale ?? engineRef.current.getViewTransform().scale;
+        engineRef.current.setZoomAt(baseScale * detail.scale, detail.clientX, detail.clientY);
+      } else if (detail.phase === 'end') {
+        pinchStartScale = null;
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('gesturestart', handleGestureStart, { passive: false });
+    window.addEventListener('gesturechange', handleGestureChange, { passive: false });
+    window.addEventListener('gestureend', handleGestureEnd, { passive: false });
+    window.addEventListener('zenmind:trackpad-pinch', handleNativeTrackpadPinch);
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('gesturestart', handleGestureStart);
+      window.removeEventListener('gesturechange', handleGestureChange);
+      window.removeEventListener('gestureend', handleGestureEnd);
+      window.removeEventListener('zenmind:trackpad-pinch', handleNativeTrackpadPinch);
+    };
+  }, [isActive]);
 
   // Spacebar Quick-Pan listeners
   useEffect(() => {
@@ -181,6 +253,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
+      onContextMenu={(e) => e.preventDefault()}
       className="w-full h-full relative select-none overflow-hidden bg-slate-50 focus:outline-none"
       tabIndex={0}
       id="zenmind-canvas-container"

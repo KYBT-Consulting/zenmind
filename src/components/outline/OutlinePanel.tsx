@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   List,
   X,
   ChevronRight,
   ChevronDown,
   Plus,
-  Trash2,
-  FileText,
+  CheckCircle2,
+  Circle,
+  UnfoldVertical,
+  FoldVertical,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
@@ -17,6 +19,7 @@ interface OutlineItemProps {
   depth: number;
   engine: MindMapEngine | null;
   activeNode: ActiveNodeInfo | null;
+  forceCollapseState: { seq: number; collapsed: boolean } | null;
 }
 
 const OutlineItem: React.FC<OutlineItemProps> = ({
@@ -24,12 +27,32 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
   depth,
   engine,
   activeNode,
+  forceCollapseState,
 }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(node.data?.expand === false);
+
+  useEffect(() => {
+    if (forceCollapseState && depth > 0) {
+      setCollapsed(forceCollapseState.collapsed);
+    } else if (forceCollapseState && depth === 0) {
+      setCollapsed(false);
+    }
+  }, [forceCollapseState, depth]);
+
+  useEffect(() => {
+    if (node.data?.expand !== undefined) {
+      setCollapsed(node.data.expand === false);
+    }
+  }, [node.data?.expand]);
   const children = node.children || [];
   const hasChildren = children.length > 0;
   const uid: string | undefined = node.data?.uid;
   const isSelected = !!uid && uid === activeNode?.uid;
+  const icons: string[] = Array.isArray(node.data?.icon) ? node.data.icon : [];
+  const priorityIcon = icons.find((i) => typeof i === 'string' && i.startsWith('priority_'));
+  const progressIcon = icons.find((i) => typeof i === 'string' && i.startsWith('progress_'));
+  const priorityNum = priorityIcon ? parseInt(priorityIcon.replace('priority_', ''), 10) : null;
+  const progressNum = progressIcon ? parseInt(progressIcon.replace('progress_', ''), 10) : null;
 
   return (
     <div className="select-none">
@@ -63,6 +86,43 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
           <div className="w-3.5" />
         )}
 
+        {priorityNum !== null && !isNaN(priorityNum) && (
+          <span
+            className={cn(
+              'px-1 py-0.2 rounded text-[9px] font-bold leading-tight shrink-0 text-white',
+              priorityNum === 1
+                ? 'bg-rose-500'
+                : priorityNum === 2
+                ? 'bg-amber-500'
+                : priorityNum === 3
+                ? 'bg-blue-500'
+                : 'bg-slate-500'
+            )}
+          >
+            P{priorityNum}
+          </span>
+        )}
+
+        {progressNum !== null && !isNaN(progressNum) && (
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-bold leading-tight shrink-0',
+              progressNum === 100
+                ? 'bg-emerald-100 text-emerald-700'
+                : progressNum > 0
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-slate-100 text-slate-600'
+            )}
+          >
+            {progressNum === 100 ? (
+              <CheckCircle2 size={10} className="text-emerald-600" />
+            ) : (
+              <Circle size={10} className="text-current" />
+            )}
+            <span>{progressNum}%</span>
+          </span>
+        )}
+
         <span className="text-xs truncate flex-1 font-medium">
           {stripHtml(node.data?.text) || '(Untitled Topic)'}
         </span>
@@ -77,6 +137,7 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
               depth={depth + 1}
               engine={engine}
               activeNode={activeNode}
+              forceCollapseState={forceCollapseState}
             />
           ))}
         </div>
@@ -98,6 +159,11 @@ export const OutlinePanel: React.FC<OutlinePanelProps> = ({
   data,
   onClose,
 }) => {
+  const [forceCollapseState, setForceCollapseState] = useState<{
+    seq: number;
+    collapsed: boolean;
+  } | null>(null);
+
   return (
     <aside className="absolute md:relative inset-y-0 left-0 w-80 max-w-[90vw] bg-white border-r border-slate-200 flex flex-col z-40 shadow-2xl md:shadow-md select-none h-full animate-in slide-in-from-left duration-200 pb-12 md:pb-0">
       <div className="h-12 px-4 border-b border-slate-100 flex items-center justify-between">
@@ -105,12 +171,36 @@ export const OutlinePanel: React.FC<OutlinePanelProps> = ({
           <List size={14} className="text-indigo-600" />
           Mind Map Outline
         </h3>
-        <button aria-label="Close outline"
-          onClick={onClose}
-          className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            aria-label="Expand All Outline & Map"
+            title="Expand All Outline & Map"
+            onClick={() => {
+              setForceCollapseState((prev) => ({ seq: (prev?.seq ?? 0) + 1, collapsed: false }));
+              engine?.expandAll();
+            }}
+            className="p-1 hover:bg-slate-100 rounded-md text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            <UnfoldVertical size={14} />
+          </button>
+          <button
+            aria-label="Collapse All Outline & Map"
+            title="Collapse All Outline & Map"
+            onClick={() => {
+              setForceCollapseState((prev) => ({ seq: (prev?.seq ?? 0) + 1, collapsed: true }));
+              engine?.collapseAll();
+            }}
+            className="p-1 hover:bg-slate-100 rounded-md text-slate-500 hover:text-amber-600 transition-colors"
+          >
+            <FoldVertical size={14} />
+          </button>
+          <button aria-label="Close outline"
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
@@ -120,6 +210,7 @@ export const OutlinePanel: React.FC<OutlinePanelProps> = ({
             depth={0}
             engine={engine}
             activeNode={activeNode}
+            forceCollapseState={forceCollapseState}
           />
         ) : (
           <div className="p-4 text-center text-slate-400 text-xs">

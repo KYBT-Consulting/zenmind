@@ -22,10 +22,10 @@ ZenMind is built to deliver an uncompromised mind mapping and visual thinking ex
 ```
   v0.1.x (Stabilisation)      v0.2.0 (Near-Term)          v0.3.0 (Mid-Term)           v1.0.0 (Long-Term)
 ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-│ • Tabs, New Map      │    │ • Template Gallery   │    │ • P2P Real-Time Sync │    │ • Plugin Ecosystem   │
-│ • Security & a11y    │───▶│ • Keyboard Nav (Vim) │───▶│ • WebDAV / Cloud Sync│───▶│ • Tauri Mobile (iOS) │
-│ • Format fidelity    │    │ • History Snapshots  │    │ • Obsidian Vault Sync│    │ • Freehand Canvas    │
-│ • Unit tests         │    │ • Rich-Text Callouts │    │ • Voice-to-Map Audio │    │ • PPTX Slide Export  │
+│ • Tabs, New Map      │    │ • Template Gallery   │    │ • Obsidian Vault Link│    │ • Plugin Ecosystem   │
+│ • Security & a11y    │───▶│ • Keyboard Nav (Vim) │───▶│ • Voice-to-Map Audio │───▶│ • Tauri Mobile (iOS) │
+│ • Format fidelity    │    │ • History Snapshots  │    │ • Tag & Task Filters │    │ • Freehand Canvas    │
+│ • Unit tests         │    │ • Rich-Text Callouts │    │ • Focus & Zen Mode   │    │ • PPTX Slide Export  │
 └──────────────────────┘    └──────────────────────┘    └──────────────────────┘    └──────────────────────┘
 ```
 
@@ -88,30 +88,27 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
 * [x] **Autosave Snapshots**: Periodic non-destructive project snapshots stored locally.
 * [x] **History Timeline Drawer**: Visual slider to inspect earlier revision states and roll back changes.
 
+### 4. Context Menus, Tree Folding & Version Tracking
+* [x] **Right-Click Context Menus**: Full topic and canvas background right-click menus with clipboard, duplicate, reordering, task progress, priority, and branch folding.
+* [x] **Expand / Collapse Controls**: 1-click Expand All, Collapse All, and Level 1–3 folding across the Ribbon, Outline Panel, and Status Bar.
+* [x] **About & Version Diagnostics**: In-app version badge and About dialog with runtime/environment copy support.
+
 ---
 
-## 🔵 v0.3.0 — Sync, Collaboration & Knowledge Management
+## 🔵 v0.3.0 — Personal Knowledge Management (PKM) & Focus Workflows
 
 **Target**: Q3 2026
 
-### 1. Peer-to-Peer Real-Time Collaboration
-* [ ] Serverless peer-to-peer co-authoring powered by **Yjs** CRDTs over WebRTC.
-* [ ] Multi-cursor indicators showing team member selections and active edits in real time.
-* [ ] Optional self-hosted collaboration relay server for corporate intranet setups.
-
-### 2. Cloud & Storage Synchronization
-* [ ] **Self-Hosted Storage Connectors**:
-  - WebDAV / Nextcloud background synchronization.
-  - Local directory file watcher for direct disk auto-sync.
-  - GitHub Gist private repository sync.
-* [ ] Conflict resolution modal for out-of-sync multi-device edits.
-
-### 3. Personal Knowledge Management (PKM) Integration
-* [ ] **Bi-Directional Obsidian Sync**:
+### 1. Personal Knowledge Management (PKM) Integration
+* [ ] **Local Obsidian Vault Integration**:
   - Convert Obsidian note folders and tags into dynamic ZenMind visual branches.
   - Link individual topics directly to `.md` notes in local Obsidian vaults with URI scheme support (`obsidian://open?vault=...`).
 * [ ] **Voice-to-Map Audio Notes**:
   - Real-time voice dictation with automatic branch clustering powered by Web Speech API and local Whisper models.
+
+### 2. Focus Mode & Advanced Filtering
+* [ ] **Branch Hoisting / Focus Mode**: Drill down into any sub-branch as a temporary root to focus on complex subtrees without visual clutter.
+* [ ] **Tag, Priority & Task Filter View**: Filter or dim topics on the canvas and outline by priority (`P1`–`P5`), completion status (`0%`–`100%`), or custom tags.
 
 ---
 

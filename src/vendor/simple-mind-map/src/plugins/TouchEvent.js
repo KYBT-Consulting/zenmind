@@ -69,6 +69,7 @@ class TouchEvent {
       let { disableTouchZoom, minTouchZoomScale, maxTouchZoomScale } =
         this.mindMap.opt
       if (disableTouchZoom) return
+      e.preventDefault()
       minTouchZoomScale =
         minTouchZoomScale === -1 ? -Infinity : minTouchZoomScale / 100
       maxTouchZoomScale =

@@ -4,6 +4,20 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.2.5] - 2026-10-29
+
+### Added
+- **About & Version Dialog (`AboutDialog`):** Added clickable version badges (`v0.2.5`) in the Ribbon header and Status Bar, plus an About dialog showing version, runtime environment (`Tauri Native Desktop` vs `Web App`), license, release highlights, and 1-click **Copy Info** diagnostics.
+- **Right-Click Context Menus (`CanvasContextMenu`):**
+  - Right-click any topic node to edit text, add subtopic/sibling/parent, copy/cut/paste/clone (duplicate), move up/down, fold/unfold subtree, set task progress (`0%`–`100%`) or priority (`P1`–`P5`), attach summary/boundary/relationship/image/hyperlink/notes, or delete.
+  - Right-click the canvas background to spawn a floating topic at the cursor position, paste, expand/collapse all branches, expand to level (`L1`/`L2`/`L3`), fit to view, reset zoom, or tidy layout.
+- **Expand All, Collapse All & Level Folding Controls:** Added 1-click **Expand All**, **Collapse All**, and **`L1`/`L2`/`L3`** controls in the Ribbon (**Home** and **View** tabs), the **Outline Panel** header, and the **Status Bar**.
+- **Interactive Task Progress & Priority Indicators:** Surfaced task completion percentage (`0%`–`100%`) and priority badges (`P1`–`P5`) in the Outline Panel and Floating Bubble Menu, and enabled clicking the progress icon directly on a canvas node to cycle `0% → 25% → 50% → 75% → 100%`.
+
+### Fixed
+- **Task percentage & completion icons on canvas nodes:** Registered `0`, `25`, `50`, `75`, and `100` SVG icons under the `progress` icon group in `simple-mind-map` so `progress_0`–`progress_100` render and export properly, and guarded against empty icon sources.
+- **Trackpad pinch-to-zoom scaling the entire app:** Isolated trackpad pinch gestures to zoom only the mind map canvas around the pointer instead of scaling the entire application UI (including intercepting WebKitGTK's `"wk-view-zoom-gesture"` on Linux desktop and non-passive `wheel`/`gesture*` listeners).
+
 ## [0.2.0] - 2026-10-16
 
 ### Added

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BUILTIN_TEMPLATES, TemplateService } from './templateService';
+// @ts-ignore
+import iconsSvg from '../vendor/simple-mind-map/src/svg/icons.js';
 
 describe('TemplateService', () => {
   beforeEach(() => {
@@ -49,5 +51,16 @@ describe('TemplateService', () => {
     expect(instance1).not.toBe(instance2);
     instance1.root.data.text = 'Mutated Root';
     expect(instance2.root.data.text).toBe('SWOT Analysis');
+  });
+
+  it('resolves all task progress (0, 25, 50, 75, 100) and priority (1-5) icons to valid SVG markup', () => {
+    for (const progress of ['progress_0', 'progress_25', 'progress_50', 'progress_75', 'progress_100']) {
+      const svg = iconsSvg.getNodeIconListIcon(progress, []);
+      expect(svg).toMatch(/^<svg[\s\S]*<\/svg>$/);
+    }
+    for (const priority of ['priority_1', 'priority_2', 'priority_3', 'priority_4', 'priority_5']) {
+      const svg = iconsSvg.getNodeIconListIcon(priority, []);
+      expect(svg).toMatch(/^<svg[\s\S]*<\/svg>$/);
+    }
   });
 });

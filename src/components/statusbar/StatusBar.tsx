@@ -11,7 +11,11 @@ import {
   X,
   Terminal,
   Keyboard,
+  Info,
+  UnfoldVertical,
+  FoldVertical,
 } from 'lucide-react';
+import { APP_VERSION } from '../dialogs/AboutDialog';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { LAYOUT_OPTIONS } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
@@ -29,6 +33,7 @@ interface StatusBarProps {
   onOpenAIDialog: () => void;
   vimMode?: boolean;
   onOpenShortcuts?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -43,6 +48,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onOpenAIDialog,
   vimMode = false,
   onOpenShortcuts,
+  onOpenAbout,
 }) => {
   const currentLayoutId = engine?.getLayout() || 'mindMap';
   const layoutObj = LAYOUT_OPTIONS.find((l) => l.id === currentLayoutId);
@@ -146,6 +152,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <span>Fit</span>
         </button>
 
+        <button aria-label="Expand All Branches"
+          onClick={() => engine?.expandAll()}
+          title="Expand All Branches"
+          className="flex items-center gap-1 hover:text-slate-800 transition-colors px-1 py-0.5 rounded hover:bg-slate-100"
+        >
+          <UnfoldVertical size={12} />
+          <span>Expand</span>
+        </button>
+
+        <button aria-label="Collapse All Branches"
+          onClick={() => engine?.collapseAll()}
+          title="Collapse All Branches"
+          className="flex items-center gap-1 hover:text-slate-800 transition-colors px-1 py-0.5 rounded hover:bg-slate-100"
+        >
+          <FoldVertical size={12} />
+          <span>Collapse</span>
+        </button>
+
         <span className="h-3 w-px bg-slate-200" />
 
         {/* Format Inspector Toggle */}
@@ -200,6 +224,18 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             ?
           </kbd>
           <span className="text-[10px]">Shortcuts</span>
+        </button>
+
+        <span className="h-3 w-px bg-slate-200" />
+
+        {/* About & Version Pill */}
+        <button
+          onClick={onOpenAbout}
+          title={`About ZenMind v${APP_VERSION}`}
+          className="flex items-center gap-1 text-slate-500 hover:text-indigo-600 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-100 font-mono text-[10px] font-semibold cursor-pointer"
+        >
+          <Info size={11} className="text-indigo-500" />
+          <span>v{APP_VERSION}</span>
         </button>
       </div>
     </footer>

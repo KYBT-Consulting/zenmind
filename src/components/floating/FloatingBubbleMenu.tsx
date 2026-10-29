@@ -133,10 +133,24 @@ export const FloatingBubbleMenu: React.FC<FloatingBubbleMenuProps> = ({
             'p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold',
             currentProgress === 100
               ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              : currentProgress !== null
+              ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
               : 'text-slate-600 hover:bg-slate-100'
           )}
         >
-          <CheckSquare size={13} className={currentProgress === 100 ? 'text-emerald-600' : ''} />
+          <CheckSquare
+            size={13}
+            className={
+              currentProgress === 100
+                ? 'text-emerald-600'
+                : currentProgress !== null
+                ? 'text-indigo-600'
+                : ''
+            }
+          />
+          {currentProgress !== null && (
+            <span className="text-[10px] font-bold">{currentProgress}%</span>
+          )}
         </button>
 
         {/* Format Painter */}

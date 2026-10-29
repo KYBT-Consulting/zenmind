@@ -1,6 +1,6 @@
 [package]
 name = "zenmind"
-version = "0.2.0"
+version = "0.2.5"
 description = "Open-source EdrawMind alternative for cross-platform mind mapping"
 authors = ["ZenMind Contributors"]
 license = "MIT"
@@ -15,14 +15,18 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "3.0.0-alpha.3" }
+tauri-build = { version = "3.0.0-alpha.3", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "3.0.0-alpha.4" }
+tauri = { version = "3.0.0-alpha.4", features = [] }
 tauri-runtime-wry = { version = "3.0.0-alpha.4" }
 tauri-plugin-log = "3.0.0-alpha.2"
 tauri-plugin-dialog = "3.0.0-alpha.3"
 tauri-plugin-fs = "3.0.0-alpha.2"
+
+[target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
+gtk = "0.18"
+webkit2gtk = "=2.0.2"

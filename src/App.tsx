@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MindMapEngine, DEFAULT_INITIAL_DATA } from './engine/MindMapEngine';
+import { MindMapEngine, DEFAULT_INITIAL_DATA, ContextMenuEventInfo } from './engine/MindMapEngine';
 import { ActiveNodeInfo } from './types/mindmap';
 import { Ribbon } from './components/ribbon/Ribbon';
 import { MindMapCanvas } from './components/canvas/MindMapCanvas';
+import { CanvasContextMenu } from './components/canvas/CanvasContextMenu';
 import { MiniMapOverlay } from './components/canvas/MiniMapOverlay';
 import { FormatInspector, InspectorTab } from './components/inspector/FormatInspector';
 import { OutlinePanel } from './components/outline/OutlinePanel';
@@ -16,6 +17,7 @@ import { HyperlinkDialog } from './components/dialogs/HyperlinkDialog';
 import { TemplateGalleryDialog } from './components/dialogs/TemplateGalleryDialog';
 import { HistorySnapshotsDialog } from './components/dialogs/HistorySnapshotsDialog';
 import { ShortcutsDialog } from './components/dialogs/ShortcutsDialog';
+import { AboutDialog } from './components/dialogs/AboutDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
 import { FolderImportService } from './services/folderImportService';
@@ -116,6 +118,8 @@ export default function App() {
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuEventInfo | null>(null);
   const [vimMode, setVimMode] = useState<boolean>(() => {
     try {
       return typeof localStorage !== 'undefined' && localStorage.getItem(VIM_MODE_STORAGE_KEY) === 'true';
@@ -199,6 +203,9 @@ export default function App() {
         onDataChange: (data: any) => {
           updateView(id, { data });
           recomputeDirty(id);
+        },
+        onContextMenu: (event: ContextMenuEventInfo) => {
+          setContextMenu(event);
         },
       };
     }
@@ -540,6 +547,7 @@ export default function App() {
         showTemplatesDialog ||
         showHistoryDialog ||
         showShortcutsDialog ||
+        showAboutDialog ||
         showExportDialog ||
         showImageDialog ||
         showFormulaDialog ||
@@ -610,6 +618,7 @@ export default function App() {
     showTemplatesDialog,
     showHistoryDialog,
     showShortcutsDialog,
+    showAboutDialog,
     showExportDialog,
     showImageDialog,
     showFormulaDialog,
@@ -663,6 +672,7 @@ export default function App() {
         onOpenTemplates={() => setShowTemplatesDialog(true)}
         onOpenHistory={() => setShowHistoryDialog(true)}
         onOpenShortcuts={() => setShowShortcutsDialog(true)}
+        onOpenAbout={() => setShowAboutDialog(true)}
       />
 
       <TabBar
@@ -713,6 +723,16 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* Right-Click Context Menu for Nodes and Canvas */}
+          <CanvasContextMenu
+            menu={contextMenu}
+            engine={engine}
+            onClose={() => setContextMenu(null)}
+            onOpenNotes={handleOpenNotes}
+            onOpenImageDialog={() => setShowImageDialog(true)}
+            onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
+          />
 
           {/* Context Floating Bubble Menu over selected topic */}
           <FloatingBubbleMenu
@@ -808,6 +828,7 @@ export default function App() {
           onOpenAIDialog={() => setAiDialogState({ isOpen: true, mode: 'generate' })}
           vimMode={vimMode}
           onOpenShortcuts={() => setShowShortcutsDialog(true)}
+          onOpenAbout={() => setShowAboutDialog(true)}
         />
       </div>
 
@@ -882,6 +903,11 @@ export default function App() {
         vimMode={vimMode}
         onToggleVimMode={handleToggleVimMode}
         onClose={() => setShowShortcutsDialog(false)}
+      />
+
+      <AboutDialog
+        isOpen={showAboutDialog}
+        onClose={() => setShowAboutDialog(false)}
       />
     </div>
   );
