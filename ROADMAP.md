@@ -1,6 +1,6 @@
 # ZenMind Product & Technical Roadmap 🗺️
 
-Welcome to the **ZenMind** strategic product and technical roadmap. This document outlines our product vision, milestones delivered, and the upcoming feature pipeline for our open-source, modern EdrawMind alternative.
+Welcome to the **ZenMind** strategic product and technical roadmap. This document outlines our product vision, milestones delivered, and the upcoming feature pipeline for our open-source, modern mind mapping app.
 
 ZenMind is maintained by **[KYBT Consulting](https://kybtconsulting.com)**, creators of **[Vertaxa EA](https://vertaxa.online)**.
 
@@ -13,7 +13,7 @@ ZenMind is built to deliver an uncompromised mind mapping and visual thinking ex
 1. **Local-First & Zero Vendor Lock-in**: Your mind maps and notes belong to you. We use open, human-readable formats (`.zenmind`, Markdown, OPML) and never gate your data behind proprietary clouds.
 2. **Private & Pluggable AI Copilot**: First-class support for 100% local, offline LLMs (Ollama, LM Studio, vLLM) as well as cloud providers (Gemini, OpenAI, Groq, DeepSeek). Your ideas remain private.
 3. **Ultra-Lightweight Native Performance**: Built on **Tauri** and native web standards. Fast launch times, under ~40MB RAM usage, and instant responsiveness without Electron bloat.
-4. **EdrawMind & Office Ergonomics**: A familiar, productive ribbon interface paired with an infinite, fluid SVG canvas.
+4. **Office-Style Ergonomics**: A familiar, productive ribbon interface paired with an infinite, fluid SVG canvas.
 
 ---
 
@@ -48,7 +48,7 @@ A bug-fix and hardening release that follows a full code review ([`docs/CODE_REV
 
 * [x] **Headless Mathematical SVG Engine**: Dynamic layout trees, logic charts, org charts, fishbone diagrams, and timelines.
 * [x] **Unbounded Floating Ideas**: Double-click free placement and custom coordinates anywhere on canvas.
-* [x] **EdrawMind UI Suite**: Ribbon toolbar (Home, Insert, Page Style, View, AI), synchronized Outline drawer, and docked Format Inspector.
+* [x] **Ribbon UI Suite**: Ribbon toolbar (Home, Insert, Page Style, View, AI), synchronized Outline drawer, and docked Format Inspector.
 * [x] **Task & Visual Metadata**: Checkbox completion tracking, progress meters (0%–100%), priority badges (P1–P5), and Markdown notes drawer.
 * [x] **Structural Annotations**: Curved bezier relationship lines, boundary frames, summary brackets, and auto-numbering schemes.
 * [x] **AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio).

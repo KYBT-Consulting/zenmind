@@ -1,6 +1,6 @@
 # ZenMind 🧠
 
-> An open-source, modern EdrawMind alternative built for cross-platform productivity (Linux, Windows, macOS, and Mobile).
+> An open-source, modern mind mapping app built for cross-platform productivity (Linux, Windows, macOS, and Mobile).
 > 
 > **[🌐 Try Live Demo](https://kybt-consulting.github.io/zenmind/)** · **[🗺️ Product Roadmap](./ROADMAP.md)** · **[Contributing Guidelines](./CONTRIBUTING.md)** · **[Architecture Spec](./NEXT_STEPS.md)**
 >
@@ -26,7 +26,7 @@
   - **.mm**: FreeMind & Freeplane open XML standard
   - **PNG / SVG / PDF**: High-res raster, infinite vector graphics, and print-ready PDFs
   - **Canvas Drag & Drop**: Drop any supported file directly onto the canvas to load instantly
-- **EdrawMind Structural Annotations**:
+- **Structural Annotations**:
   - **Boundary Frames**: Highlight node clusters with custom background tints, border dash styles, and titles.
   - **Relationship Lines**: Connect arbitrary nodes across branches with interactive bezier curves and editable labels.
   - **Summary Brackets**: Group sibling branches with curly braces (`{`) and conclusion topics.

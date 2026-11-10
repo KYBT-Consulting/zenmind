@@ -681,7 +681,7 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
               </div>
             </div>
 
-            {/* Grouping & Annotations (EdrawMind Style) */}
+            {/* Grouping & Annotations */}
             <div className="pt-4 border-t border-slate-200">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-3">
                 Grouping & Annotations

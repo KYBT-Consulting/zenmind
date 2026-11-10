@@ -17,7 +17,7 @@ FROM nginx:alpine AS runner
 
 LABEL maintainer="KYBT Consulting <support@kybtconsulting.com>"
 LABEL org.opencontainers.image.title="ZenMind"
-LABEL org.opencontainers.image.description="Open-source EdrawMind alternative for cross-platform mind mapping"
+LABEL org.opencontainers.image.description="Open-source, cross-platform mind mapping app"
 LABEL org.opencontainers.image.url="https://github.com/KYBT-Consulting/zenmind"
 LABEL org.opencontainers.image.vendor="KYBT Consulting"
 LABEL org.opencontainers.image.licenses="MIT"
