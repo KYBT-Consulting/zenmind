@@ -14,7 +14,8 @@
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "desktop:portable": "powershell -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1"
+    "desktop:portable": "powershell -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1",
+    "icons": "tauri icon src/assets/zenmind-logo.svg"
   },
   "dependencies": {
     "@google/genai": "^3.0.0",

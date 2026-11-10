@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <title>ZenMind</title>
+  <defs>
+    <linearGradient id="zm-bg" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#zm-bg)"/>
+  <path d="M320 320 H704 C704 320 600 420 512 512 C424 604 320 704 320 704 H704" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="320" cy="320" r="68" fill="#fff"/>
+  <circle cx="704" cy="320" r="68" fill="#fff"/>
+  <circle cx="320" cy="704" r="68" fill="#fff"/>
+  <circle cx="704" cy="704" r="68" fill="#FBBF24"/>
+</svg>

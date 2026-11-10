@@ -26,7 +26,6 @@ import {
   Link2,
   FileText,
   Tag,
-  Share2,
   Braces,
   BoxSelect,
   Split,
@@ -59,6 +58,7 @@ import {
   THEME_PRESETS,
 } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
+import logoUrl from '../../assets/zenmind-logo.svg';
 
 export type RibbonTab = 'home' | 'insert' | 'pageStyle' | 'view' | 'ai' | 'export';
 
@@ -208,9 +208,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
             title={`About ZenMind v${APP_VERSION}`}
             className="flex items-center gap-2 px-1.5 py-0.5 rounded-md hover:bg-slate-200/70 transition-colors cursor-pointer"
           >
-            <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center shadow-sm">
-              <Share2 size={13} className="text-white" />
-            </div>
+            {/* The SVG tile has ~10% transparent padding, so render 28px in a 24px slot */}
+            <img src={logoUrl} alt="" aria-hidden="true" draggable={false} className="w-7 h-7 -m-0.5 shrink-0" />
             <span className="font-bold text-sm tracking-tight text-slate-800">ZenMind</span>
             <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-600 border border-indigo-200/70">
               v{APP_VERSION}
