@@ -64,18 +64,19 @@ jobs:
           # the public key lives in tauri.conf.json (plugins.updater.pubkey).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Signed updater artifacts are enabled only here, so local `tauri build`
-          # keeps working without the private key.
-          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":true}}'
         with:
-          uploadUpdaterJson: true
-          uploadUpdaterSignatures: true
+          # latest.json (tauri-action default); .sig files upload because the
+          # --config below enables createUpdaterArtifacts
+          includeUpdaterJson: true
           tagName: ${{ github.ref_name }}
           releaseName: 'ZenMind ${{ github.ref_name }}'
           releaseDraft: false
           prerelease: false
           retryAttempts: 3
-          args: ${{ matrix.args }}
+          # Signed updater artifacts are enabled only in CI, so local `tauri build` keeps
+          # working without the private key. Must be a --config file (not TAURI_CONFIG):
+          # tauri-action reads it too, to find and upload the .sig files and latest.json.
+          args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
           releaseBody: |
             ## ZenMind ${{ github.ref_name }} 🧘‍♂️
 
