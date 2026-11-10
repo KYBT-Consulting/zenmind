@@ -4,6 +4,26 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.2.6] - 2026-11-10
+
+### Fixed
+- **Desktop exports now ask where to save:** Every export format (PNG, SVG, PDF, XMind, Markdown, OPML, FreeMind, JSON, ZenMind) opens the native Save dialog and writes to the chosen location, instead of silently dropping files into `~/Downloads` with no feedback. A toast confirms the saved path, the Export dialog stays open if the Save dialog is cancelled, and exporter failures now show an error instead of failing silently. Document titles are sanitized before being used as file names.
+- **`npm run lint` after a local desktop build:** `tsconfig.json` now excludes `src-tauri/target`, `src-tauri/gen`, and `dist`, so type checking no longer trips over generated binary assets.
+
+### Security
+- **DOMPurify 3.4.17** (via jsPDF): fixes one critical, one high, and one low severity sanitizer bypass.
+- **Vite 6.4.6:** fixes a `server.fs.deny` bypass in the dev server.
+- **undici 8.12.4** (test-only, via jsdom): fixes five advisories, including TLS certificate validation bypass and cache poisoning.
+- **deepmerge prototype poisoning (GHSA-gcqx-w48m-w2h4):** No upstream fix exists, so the bundled `deepmerge` shim now strips `__proto__`, `constructor`, and `prototype` keys from all merge inputs.
+
+### Changed
+- **Tauri v3 alpha.6:** Updated `tauri` and `tauri-runtime-wry` to `3.0.0-alpha.6`, `tauri-build` to `alpha.4`, and the dialog, fs, and log plugins (Rust and JS) to their latest alphas.
+- **Minimum Rust version is now 1.95** (required by the new Tauri alphas). This only affects building from source.
+- Refreshed remaining npm dependencies within their semver ranges (React 19.3.1, Tailwind CSS 4.3.5, Vitest 5.1.0, and others).
+
+### Known Issues
+- `glib < 0.20` (RUSTSEC unsoundness in `VariantStrIter`) remains, pulled in by Tauri's GTK 0.18 stack on Linux; it will be resolved when upstream Tauri moves to newer GTK bindings.
+
 ## [0.2.5] - 2026-10-29
 
 ### Added
