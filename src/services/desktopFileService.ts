@@ -1,7 +1,8 @@
 import { confirm as nativeConfirm, open, save } from '@tauri-apps/plugin-dialog';
-import { readFile, readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readFile, readTextFile, rename, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
 import { fileFingerprint } from '../lib/fingerprint';
+import { extensionOf, isZenMindPath, siblingPath } from '../lib/filePaths';
 
 export interface FileSaveResult {
   success: boolean;
@@ -61,7 +62,8 @@ export class DesktopFileService {
   static async saveZenMindFile(
     data: any,
     suggestedName: string = 'Untitled',
-    existingFilePath?: string
+    existingFilePath?: string,
+    options: { saveAs?: boolean } = {}
   ): Promise<FileSaveResult> {
     const payload = JSON.stringify(
       {
@@ -76,13 +78,16 @@ export class DesktopFileService {
 
     if (this.isTauri()) {
       try {
-        let filePath = existingFilePath;
+        // Write in place only to a ZenMind file. Save As, a new map, or a map imported from
+        // another format (.md, .xmind, ...) asks where to save, starting in the same folder.
+        const writeInPlace = !options.saveAs && !!existingFilePath && isZenMindPath(existingFilePath);
+        let filePath = writeInPlace ? existingFilePath : undefined;
 
-        // If no existing path, prompt native save dialog
         if (!filePath) {
+          const defaultName = `${toSafeFilename(suggestedName, 'Untitled')}.zenmind`;
           const selected = await save({
-            title: 'Save ZenMind Project',
-            defaultPath: `${suggestedName}.zenmind`,
+            title: options.saveAs ? 'Save ZenMind Project As' : 'Save ZenMind Project',
+            defaultPath: existingFilePath ? siblingPath(existingFilePath, defaultName) : defaultName,
             filters: [
               {
                 name: 'ZenMind Mind Map',
@@ -157,6 +162,25 @@ export class DesktopFileService {
     // Revoking immediately can cancel the download in some browsers
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     return { success: true };
+  }
+
+  /**
+   * Rename (or move) a file on disk via the native save dialog, starting in its folder
+   * with the suggested name and its current extension. Uses a real rename, so nothing
+   * is deleted. Desktop only.
+   */
+  static async renameFile(currentPath: string, suggestedName: string): Promise<FileSaveResult> {
+    const ext = extensionOf(currentPath) || '.zenmind';
+    const selected = await save({
+      title: 'Rename File',
+      defaultPath: siblingPath(currentPath, `${toSafeFilename(suggestedName, 'Untitled')}${ext}`),
+      filters: [{ name: 'Mind Map', extensions: [ext.slice(1)] }],
+    });
+    if (!selected) return { success: false, canceled: true };
+    if (selected !== currentPath) {
+      await rename(currentPath, selected);
+    }
+    return { success: true, filePath: selected };
   }
 
   /**

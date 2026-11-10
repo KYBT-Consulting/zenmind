@@ -21,6 +21,7 @@ import { AboutDialog } from './components/dialogs/AboutDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
 import { detectConflict, planRestore, recoveredTitle, toPersistedTab } from './lib/session';
+import { baseNameOf, fileNameOf, isZenMindPath } from './lib/filePaths';
 import { UpdateBanner } from './components/floating/UpdateBanner';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
@@ -321,25 +322,65 @@ export default function App() {
     [tabs, activeId]
   );
 
-  // File Save (.zenmind JSON) - Native Desktop & Web
-  const handleSaveFile = useCallback(async () => {
+  // File Save / Save As (.zenmind JSON) - Native Desktop & Web
+  const saveActiveTab = useCallback(
+    async (options: { saveAs?: boolean; title?: string; filePath?: string } = {}) => {
+      if (!engine) return;
+      const data = engine.getData();
+      const savedTree = engine.getContentSignature();
+      const titleToSave = options.title ?? docTitle;
+      const id = activeTab.id;
+      const result = await DesktopFileService.saveZenMindFile(
+        data,
+        titleToSave,
+        options.filePath ?? currentFilePath,
+        { saveAs: options.saveAs }
+      );
+      if (result.success) {
+        // Saved state is what was written, not whatever the user typed while the dialog was open
+        updateTab(id, {
+          savedJson: savedTree,
+          savedTitle: titleToSave,
+          ...(options.title ? { title: options.title } : {}),
+          dirty: enginesRef.current[id]?.getContentSignature() !== savedTree,
+          ...(result.filePath ? { filePath: result.filePath } : {}),
+          ...(result.fingerprint ? { diskFingerprint: result.fingerprint } : {}),
+        });
+      } else if (!result.canceled && result.error) {
+        setToastMessage('Could not save: ' + ((result.error as any)?.message || result.error));
+      }
+      return result;
+    },
+    [engine, activeTab.id, docTitle, currentFilePath, updateTab]
+  );
+  const handleSaveFile = useCallback(() => void saveActiveTab(), [saveActiveTab]);
+  const handleSaveAs = useCallback(() => void saveActiveTab({ saveAs: true }), [saveActiveTab]);
+
+  // Rename the file on disk; the map title follows the new file name. A map with no file
+  // yet (or the web build) has nothing to rename, so this falls back to Save As.
+  const handleRenameFile = useCallback(async () => {
     if (!engine) return;
-    const data = engine.getData();
-    const savedTree = engine.getContentSignature();
-    const savedTitleAtSave = docTitle;
-    const id = activeTab.id;
-    const result = await DesktopFileService.saveZenMindFile(data, docTitle, currentFilePath);
-    if (result.success) {
-      // Saved state is what was written, not whatever the user typed while the dialog was open
-      updateTab(id, {
-        savedJson: savedTree,
-        savedTitle: savedTitleAtSave,
-        dirty: enginesRef.current[id]?.getContentSignature() !== savedTree,
-        ...(result.filePath ? { filePath: result.filePath } : {}),
-        ...(result.fingerprint ? { diskFingerprint: result.fingerprint } : {}),
-      });
+    if (!currentFilePath || !DesktopFileService.isTauri()) {
+      await saveActiveTab({ saveAs: true });
+      return;
     }
-  }, [engine, activeTab.id, docTitle, currentFilePath, updateTab]);
+    const id = activeTab.id;
+    try {
+      const renamed = await DesktopFileService.renameFile(currentFilePath, docTitle);
+      if (!renamed.success || !renamed.filePath) return;
+      const newPath = renamed.filePath;
+      const newTitle = baseNameOf(newPath);
+      if (isZenMindPath(newPath)) {
+        // Rewrite so the title stored inside the file matches its new name
+        await saveActiveTab({ title: newTitle, filePath: newPath });
+      } else {
+        updateTab(id, { filePath: newPath, title: newTitle, savedTitle: newTitle });
+      }
+      if (newPath !== currentFilePath) setToastMessage(`Renamed to ${fileNameOf(newPath)}`);
+    } catch (err: any) {
+      setToastMessage('Could not rename the file: ' + (err?.message || err));
+    }
+  }, [engine, currentFilePath, docTitle, activeTab.id, saveActiveTab, updateTab]);
 
   // File Open (.zenmind / .json / .xmind / .md / .opml / .mm) - Native Desktop & Web
   const handleOpenFile = useCallback(async () => {
@@ -673,7 +714,8 @@ export default function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        handleSaveFile();
+        if (e.shiftKey) handleSaveAs();
+        else handleSaveFile();
         return;
       }
       if (DesktopFileService.newMapShortcut().matches(e)) {
@@ -757,6 +799,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     handleSaveFile,
+    handleSaveAs,
     handleOpenFile,
     handleNewFile,
     engine,
@@ -799,6 +842,9 @@ export default function App() {
         onOpenExportDialog={() => setShowExportDialog(true)}
         onNewFile={handleNewFile}
         onSaveFile={handleSaveFile}
+        onSaveAs={handleSaveAs}
+        onRenameFile={handleRenameFile}
+        canRenameFile={!!currentFilePath && DesktopFileService.isTauri()}
         onOpenFile={handleOpenFile}
         isFormatPainterActive={isFormatPainterActive}
         showMiniMap={showMiniMap}

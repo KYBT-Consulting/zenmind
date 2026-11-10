@@ -4,6 +4,8 @@ import {
   FolderOpen,
   FilePlus,
   Save,
+  SaveAll,
+  FilePen,
   Undo2,
   Redo2,
   Plus,
@@ -77,6 +79,12 @@ interface RibbonProps {
   onOpenExportDialog: () => void;
   onNewFile: () => void;
   onSaveFile: () => void;
+  /** Save a copy under a new name/location; the tab switches to it (Ctrl+Shift+S) */
+  onSaveAs?: () => void;
+  /** Rename/move the open file on disk */
+  onRenameFile?: () => void;
+  /** Rename needs a file on disk (desktop) */
+  canRenameFile?: boolean;
   onOpenFile: () => void;
   isFormatPainterActive?: boolean;
   showMiniMap?: boolean;
@@ -112,6 +120,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenExportDialog,
   onNewFile,
   onSaveFile,
+  onSaveAs,
+  onRenameFile,
+  canRenameFile = false,
   onOpenFile,
   isFormatPainterActive = false,
   showMiniMap = false,
@@ -134,6 +145,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const fileMenuRef = useRef<HTMLDivElement>(null);
 
   const layoutMenuRef = useRef<HTMLDivElement>(null);
   const themeMenuRef = useRef<HTMLDivElement>(null);
@@ -150,6 +163,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
       }
       if (shapeMenuRef.current && !shapeMenuRef.current.contains(target)) {
         setShowShapeMenu(false);
+      }
+      if (fileMenuRef.current && !fileMenuRef.current.contains(target)) {
+        setShowFileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -254,6 +270,66 @@ export const Ribbon: React.FC<RibbonProps> = ({
           </button>
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
+
+          {/* File menu: New, Open, Save, Save As, Rename */}
+          <div ref={fileMenuRef} className="relative">
+            <button
+              aria-label="File menu"
+              aria-haspopup="menu"
+              aria-expanded={showFileMenu}
+              onClick={() => setShowFileMenu((v) => !v)}
+              title="File"
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-slate-600 transition-colors',
+                showFileMenu ? 'bg-slate-200' : 'hover:bg-slate-200'
+              )}
+            >
+              <FileText size={14} className="text-indigo-600" />
+              <span>File</span>
+              <ChevronDown size={11} className="text-slate-400" />
+            </button>
+            {showFileMenu && (
+              <div
+                role="menu"
+                className="absolute top-full mt-1 left-0 w-60 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+              >
+                {[
+                  { label: 'New Mind Map', shortcut: DesktopFileService.newMapShortcut().label, icon: FilePlus, onClick: onNewFile },
+                  { label: 'Open…', shortcut: 'Ctrl+O', icon: FolderOpen, onClick: onOpenFile },
+                  { divider: true },
+                  { label: 'Save', shortcut: 'Ctrl+S', icon: Save, onClick: onSaveFile },
+                  { label: 'Save As…', shortcut: 'Ctrl+Shift+S', icon: SaveAll, onClick: onSaveAs },
+                  {
+                    label: 'Rename…',
+                    icon: FilePen,
+                    onClick: onRenameFile,
+                    disabled: !canRenameFile,
+                    hint: canRenameFile ? undefined : 'Save the map to a file first',
+                  },
+                ].map((item, idx) =>
+                  'divider' in item ? (
+                    <div key={`d${idx}`} className="my-1 border-t border-slate-100" />
+                  ) : (
+                    <button
+                      key={item.label}
+                      role="menuitem"
+                      disabled={item.disabled || !item.onClick}
+                      title={item.hint}
+                      onClick={() => {
+                        setShowFileMenu(false);
+                        item.onClick?.();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {item.icon && <item.icon size={14} className="text-slate-500 shrink-0" />}
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.shortcut && <span className="text-[10px] text-slate-400 font-mono">{item.shortcut}</span>}
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+          </div>
 
           <button aria-label={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
             onClick={onNewFile}
