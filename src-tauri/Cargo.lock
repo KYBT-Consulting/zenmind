@@ -5149,6 +5149,7 @@ dependencies = [
  "tauri-plugin-process",
  "tauri-plugin-updater",
  "tauri-runtime-wry",
+ "tempfile",
  "webkit2gtk",
 ]
 

@@ -1,12 +1,17 @@
 import { check, type Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { invoke } from '@tauri-apps/api/core';
+import { Channel, invoke } from '@tauri-apps/api/core';
 import { DesktopFileService } from './desktopFileService';
 
 export const RELEASES_URL = 'https://github.com/KYBT-Consulting/zenmind/releases/latest';
 const AUTO_CHECK_KEY = 'zenmind_auto_update_check';
 /** Give up on an update check after this long; checks are always user-retryable. */
 export const UPDATE_CHECK_TIMEOUT_MS = 15_000;
+
+type UpdateDownloadEvent =
+  | { event: 'Started'; data: { contentLength?: number | null } }
+  | { event: 'Progress'; data: { chunkLength: number } }
+  | { event: 'Finished' };
 
 export interface UpdateInfo {
   version: string;
@@ -83,7 +88,7 @@ export class UpdateService {
 
     let total = 0;
     let received = 0;
-    await update.downloadAndInstall((event) => {
+    const onEvent = (event: UpdateDownloadEvent) => {
       switch (event.event) {
         case 'Started':
           total = event.data.contentLength ?? 0;
@@ -97,7 +102,18 @@ export class UpdateService {
           onProgress?.(1);
           break;
       }
-    });
+    };
+
+    // rpm installs: the plugin's `rpm -U` is rejected by RPM 6's default signature policy,
+    // so the app installs the (updater-verified) package itself; see src-tauri/src/rpm_update.rs
+    const strategy = await invoke<string>('update_install_strategy').catch(() => 'plugin');
+    if (strategy === 'rpm') {
+      const channel = new Channel<UpdateDownloadEvent>();
+      channel.onmessage = onEvent;
+      await invoke('install_rpm_update', { onEvent: channel });
+    } else {
+      await update.downloadAndInstall(onEvent);
+    }
     await relaunch();
   }
 }
