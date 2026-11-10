@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Share2,
   X,
   Info,
   Copy,
@@ -13,6 +12,7 @@ import {
 import pkg from '../../../package.json';
 import { DesktopFileService } from '../../services/desktopFileService';
 import { useDialogA11y } from '../../lib/useDialogA11y';
+import logoUrl from '../../assets/zenmind-logo.svg';
 
 export const APP_VERSION = pkg.version || '0.2.7';
 
@@ -79,9 +79,13 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => 
         {/* Header Banner */}
         <div className="relative px-6 py-5 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center shadow-lg shadow-indigo-500/30 border border-white/15">
-              <Share2 size={24} className="text-white" />
-            </div>
+            <img
+              src={logoUrl}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="w-14 h-14 -m-1 shrink-0 drop-shadow-lg"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="about-dialog-title" className="text-lg font-bold tracking-tight">
