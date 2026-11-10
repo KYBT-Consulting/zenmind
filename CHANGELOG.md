@@ -4,6 +4,24 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.3.1] - 2026-11-10
+
+### Added
+- **File tab:** A new **File** tab before **Home** groups **New**, **Open**, **Save**, **Save As** (Ctrl+Shift+S), **Rename**, **Export**, **Templates**, and **History**. Home is still the tab shown at startup.
+- **Save As** saves a copy under a new name or location, and the tab switches to the new file. **Rename** renames or moves the file on disk (nothing is deleted), and the map title follows.
+
+### Fixed
+- **Maps edited on another device now show up:** ZenMind no longer restores open files from its own saved copy at launch. Saved files are reopened from disk, so changes made elsewhere (another device, a sync folder like pCloud or Dropbox, another app) appear. Only maps with unsaved changes are restored from ZenMind's recovery copy.
+- **Unsaved edits are never lost to a newer file:** If a file changed elsewhere while you had unsaved edits (after a crash or quit), both open: the file as it is now, and your edits as **"<name> - recovered"**, which saves to a new file so it can't overwrite the newer one.
+- **Opening a file that's already open** rereads it if it changed on disk, and asks first if that tab has unsaved changes.
+- **Save no longer overwrites imported files:** Saving a map opened from Markdown, XMind, OPML, or FreeMind used to replace that file with ZenMind data. It now asks where to save a `.zenmind` copy.
+- **Automatic updates:** Releases now include the signed update files, so ZenMind 0.3.0 and later can update themselves.
+
+### Changed
+- The update notice's **What's new** and each GitHub release now show this changelog.
+
+> Files opened in 0.3.0 can't be reopened automatically the first time you start 0.3.1. Open them once with **File › Open**; after that they reopen on their own.
+
 ## [0.3.0] - 2026-11-10
 
 ### Added
