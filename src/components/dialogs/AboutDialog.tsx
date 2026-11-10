@@ -17,7 +17,7 @@ import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export const APP_VERSION = pkg.version || '0.3.1';
+export const APP_VERSION = pkg.version || '0.3.2';
 
 interface AboutDialogProps {
   isOpen: boolean;
