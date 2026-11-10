@@ -4,7 +4,7 @@
 
 ZenMind has completed **Phase 1**:
 - Headless mathematical SVG mind mapping engine internalized into `src/vendor/simple-mind-map/`.
-- EdrawMind UI Shell complete: Ribbon toolbar, Format Inspector, Synchronized Outline, Floating Bubble menu, and Status Bar.
+- Ribbon UI shell complete: Ribbon toolbar, Format Inspector, Synchronized Outline, Floating Bubble menu, and Status Bar.
 - AI integration via Google Gemini 2.5 Flash for topic generation and expansion.
 - Repository created and pushed to [github.com/KYBT-Consulting/zenmind](https://github.com/KYBT-Consulting/zenmind) under the MIT License.
 
@@ -23,11 +23,11 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 
 ---
 
-## 3. Milestone 2: EdrawMind Feature Depth & Visual Polish
+## 3. Milestone 2: Feature Depth & Visual Polish
 
-**Goal**: Elevate canvas interactions, formatting tools, and node capabilities to match EdrawMind's signature user experience (derived from EdrawMind changelog v6.0–v14.0 review).
+**Goal**: Elevate canvas interactions, formatting tools, and node capabilities to a polished, professional mind mapping experience.
 
-### 3.1 Core Topic Metadata & Task Management (EdrawMind v12.4 & v13.0)
+### 3.1 Core Topic Metadata & Task Management
 - [x] **Task / Todo Checkboxes & Progress Tracking**:
   - Add checkbox attribute to topics with completion states (`Not Started`, `In Progress`, `Completed`).
   - Progress markers (0%, 25%, 50%, 75%, 100%) and Priority badges (P1–P5) using built-in SVG icon sets.
@@ -39,19 +39,19 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
   - Image attachments with inline resizing handle via `ImageDialog` and `NodeImgAdjust`.
   - LaTeX mathematical formulas rendering via `FormulaDialog` and `katex`.
 
-### 3.2 Canvas Navigation & Ergonomics (EdrawMind v8.0, v9.0, v10.0)
+### 3.2 Canvas Navigation & Ergonomics
 - [x] **Format Painter (Style Cloner)**:
   - One-click copy/paste of topic styles (shape, fill color, border width, border color, font styling).
   - Powered by the built-in `Painter` engine plugin; accessible via Ribbon *Home* tab, Floating Bubble menu, and Status Bar.
 - [x] **Spacebar Quick-Pan**:
-  - Hold `Spacebar` + drag left mouse button to pan smoothly across the infinite canvas (Figma & EdrawMind standard).
+  - Hold `Spacebar` + drag left mouse button to pan smoothly across the infinite canvas (standard in design and diagramming tools).
 - [x] **Canvas Mini-Map (Bird's Eye Navigator)**:
   - Collapsible thumbnail preview overlay in bottom-right corner showing current viewport bounds over the entire diagram.
   - Powered by the built-in `MiniMap` engine plugin with interactive draggable viewport rectangle.
 - [x] **Floating Topics**:
   - Double-click on empty canvas area or click Floating Topic in Ribbon/Insert to spawn an independent "Floating Idea" node with its own branching hierarchy.
 
-### 3.3 Structural Annotations & Branch Grouping (EdrawMind v10.0, v11.0)
+### 3.3 Structural Annotations & Branch Grouping
 - [x] **Interactive Relationship Lines**:
   - Drag-and-drop bezier relationship arrows connecting any two arbitrary nodes across branches.
   - Midpoint handle dragging for curvature adjustment and inline editable label text.
@@ -62,7 +62,7 @@ This document outlines the concrete technical tasks for **Phase 2 through Phase 
 - [x] **Auto-Numbering Schemes**:
   - Toggle hierarchical numbering prefixes across the map or branches (e.g., `1.`, `1.1.`, `1.1.1.` or `A.`, `B.`, `C.`).
 
-### 3.4 Presentation Mode & Smart Import (EdrawMind v12.0, v12.3.18)
+### 3.4 Presentation Mode & Smart Import
 - [x] **Pitch / Fullscreen Presentation Mode**:
   - Turn mind maps into instant slideshows without exporting to PowerPoint.
   - Step-by-step traversal with `ArrowRight` / `Space` camera zooms smoothly into each branch.

@@ -1,7 +1,7 @@
 [package]
 name = "zenmind"
 version = "0.3.0"
-description = "Open-source EdrawMind alternative for cross-platform mind mapping"
+description = "Open-source, cross-platform mind mapping app"
 authors = ["ZenMind Contributors"]
 license = "MIT"
 repository = "https://github.com/KYBT-Consulting/zenmind"

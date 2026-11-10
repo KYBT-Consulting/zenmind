@@ -66,7 +66,7 @@ export const DEFAULT_INITIAL_DATA = {
         expand: true,
       },
       children: [
-        { data: { text: 'EdrawMind-style Ribbon' } },
+        { data: { text: 'Office-style Ribbon' } },
         { data: { text: 'Outline & Canvas Sync' } },
         { data: { text: 'AI Idea Generation' } },
       ],

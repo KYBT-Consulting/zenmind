@@ -79,13 +79,13 @@ jobs:
           releaseBody: |
             ## ZenMind ${{ github.ref_name }} 🧘‍♂️
 
-            Desktop release of **ZenMind**: an open-source, modern EdrawMind alternative built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
+            Desktop release of **ZenMind**: an open-source, modern app built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
 
             See the [changelog](https://github.com/KYBT-Consulting/zenmind/blob/main/CHANGELOG.md) for what is new in this release.
 
             ### 🌟 Key Highlights
             - **Interactive SVG Engine**: Dynamic layout trees, logic charts, timelines, fishbone diagrams, and free-floating topics with smooth drag-and-drop.
-            - **Modern Office/EdrawMind Ribbon UI**: Intuitive tabs (Home, Insert, Page Style, View, AI), synchronized outline editor, format painter, and docked format inspector.
+            - **Modern Office-Style Ribbon UI**: Intuitive tabs (Home, Insert, Page Style, View, AI), synchronized outline editor, format painter, and docked format inspector.
             - **Local & Cloud AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter).
             - **Multiple Maps in Tabs**: Work on several mind maps at once, each with its own undo history, zoom and unsaved-changes marker.
             - **Task & Presentation Tools**: Todo checkboxes, progress tracking (0%-100%), priority badges (P1-P5), markdown notes drawer, and presentation mode.

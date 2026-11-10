@@ -1,7 +1,7 @@
 {
   "name": "zenmind",
   "version": "0.3.0",
-  "description": "Open-source EdrawMind alternative for cross-platform mind mapping",
+  "description": "Open-source, cross-platform mind mapping app",
   "license": "MIT",
   "type": "module",
   "scripts": {
