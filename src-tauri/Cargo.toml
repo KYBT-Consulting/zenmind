@@ -6,7 +6,7 @@ authors = ["ZenMind Contributors"]
 license = "MIT"
 repository = "https://github.com/KYBT-Consulting/zenmind"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.95"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,17 +15,17 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "3.0.0-alpha.3", features = [] }
+tauri-build = { version = "3.0.0-alpha.4", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "3.0.0-alpha.4", features = [] }
-tauri-runtime-wry = { version = "3.0.0-alpha.4" }
-tauri-plugin-log = "3.0.0-alpha.2"
-tauri-plugin-dialog = "3.0.0-alpha.3"
-tauri-plugin-fs = "3.0.0-alpha.2"
+tauri = { version = "3.0.0-alpha.6", features = [] }
+tauri-runtime-wry = { version = "3.0.0-alpha.6" }
+tauri-plugin-log = "3.0.0-alpha.3"
+tauri-plugin-dialog = "3.0.0-alpha.4"
+tauri-plugin-fs = "3.0.0-alpha.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
 gtk = "0.18"
