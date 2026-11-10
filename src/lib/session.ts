@@ -62,6 +62,20 @@ export const hasUnsavedChanges = (t: Pick<SessionTabState, 'dirty' | 'title' | '
   t.dirty || t.title !== t.savedTitle;
 
 /**
+ * Opening a file that is already open in a tab:
+ * - `focus`: the file is unchanged since the tab read or saved it; switch to the tab (edits kept)
+ * - `reload`: the file changed elsewhere and the tab has no unsaved edits; show the new content
+ * - `confirm`: the file changed and the tab has unsaved edits; ask before replacing them
+ */
+export function decideReopen(
+  tab: Pick<SessionTabState, 'dirty' | 'title' | 'savedTitle' | 'diskFingerprint'>,
+  diskNow: string | undefined
+): 'focus' | 'reload' | 'confirm' {
+  if (diskNow !== undefined && tab.diskFingerprint === diskNow) return 'focus';
+  return hasUnsavedChanges(tab) ? 'confirm' : 'reload';
+}
+
+/**
  * Session entry for one tab, or null when there is nothing worth remembering
  * (a saved-to-nowhere tab without edits). `getData` is only called when needed.
  */

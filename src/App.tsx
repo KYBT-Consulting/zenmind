@@ -20,7 +20,7 @@ import { ShortcutsDialog } from './components/dialogs/ShortcutsDialog';
 import { AboutDialog } from './components/dialogs/AboutDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
-import { detectConflict, planRestore, recoveredTitle, toPersistedTab } from './lib/session';
+import { decideReopen, detectConflict, planRestore, recoveredTitle, toPersistedTab } from './lib/session';
 import { baseNameOf, fileNameOf, isZenMindPath } from './lib/filePaths';
 import { UpdateBanner } from './components/floating/UpdateBanner';
 import { FolderImportService } from './services/folderImportService';
@@ -273,7 +273,30 @@ export default function App() {
     const current = tabsRef.current;
     const existing = filePath ? current.find((t) => t.filePath === filePath) : undefined;
     if (existing) {
-      setActiveId(existing.id);
+      // Already open: never keep showing a stale copy of a file that changed elsewhere
+      const action = decideReopen(existing, diskFingerprint);
+      if (action === 'focus') {
+        setActiveId(existing.id);
+        return;
+      }
+      void (async () => {
+        if (
+          action === 'confirm' &&
+          !(await DesktopFileService.confirm(
+            `"${existing.title}" has unsaved changes, and the file has changed on disk.\n\nReload it from disk and discard your changes?`
+          ))
+        ) {
+          setActiveId(existing.id);
+          return;
+        }
+        // Swap in a fresh tab at the same position so the canvas mounts the file's new content
+        const fresh = { ...makeTab(title, sanitizeMapData(data), filePath), diskFingerprint };
+        forgetTab(existing.id);
+        const next = tabsRef.current.map((t) => (t.id === existing.id ? fresh : t));
+        tabsRef.current = next;
+        setTabs(next);
+        setActiveId(fresh.id);
+      })();
       return;
     }
     const tab = { ...makeTab(title, sanitizeMapData(data), filePath), diskFingerprint };

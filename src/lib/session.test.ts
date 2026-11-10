@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { detectConflict, planRestore, recoveredTitle, toPersistedTab } from './session';
+import { decideReopen, detectConflict, planRestore, recoveredTitle, toPersistedTab } from './session';
 import { fileFingerprint } from './fingerprint';
 
 const MAP = { root: { data: { text: 'Cached' }, children: [] } };
@@ -144,5 +144,31 @@ describe('fileFingerprint', () => {
     expect(fileFingerprint(bytes)).toBe(fileFingerprint(new Uint8Array(bytes)));
     expect(fileFingerprint(bytes)).not.toBe(fileFingerprint(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 254])));
     expect(fileFingerprint('')).toMatch(/^0-/);
+  });
+});
+
+describe('decideReopen (opening a file that is already open)', () => {
+  const open = { title: 'Plan', savedTitle: 'Plan', dirty: false, diskFingerprint: 'fp1' };
+
+  it('just focuses the tab when the file is unchanged', () => {
+    expect(decideReopen(open, 'fp1')).toBe('focus');
+  });
+
+  it('keeps unsaved edits when the file is unchanged', () => {
+    expect(decideReopen({ ...open, dirty: true }, 'fp1')).toBe('focus');
+  });
+
+  it('reloads a clean tab when the file changed elsewhere', () => {
+    expect(decideReopen(open, 'fp2')).toBe('reload');
+  });
+
+  it('asks before replacing unsaved edits with a changed file', () => {
+    expect(decideReopen({ ...open, dirty: true }, 'fp2')).toBe('confirm');
+    expect(decideReopen({ ...open, title: 'Plan v2' }, 'fp2')).toBe('confirm');
+  });
+
+  it('rereads when either fingerprint is unknown (no way to prove it is unchanged)', () => {
+    expect(decideReopen({ ...open, diskFingerprint: undefined }, 'fp1')).toBe('reload');
+    expect(decideReopen(open, undefined)).toBe('reload');
   });
 });
