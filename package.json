@@ -1,6 +1,6 @@
 {
   "name": "zenmind",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Open-source EdrawMind alternative for cross-platform mind mapping",
   "license": "MIT",
   "type": "module",
@@ -24,6 +24,8 @@
     "@tauri-apps/api": "^3.0.0-alpha.3",
     "@tauri-apps/plugin-dialog": "^3.0.0-alpha.4",
     "@tauri-apps/plugin-fs": "^3.0.0-alpha.3",
+    "@tauri-apps/plugin-process": "^3.0.0-alpha.3",
+    "@tauri-apps/plugin-updater": "^3.0.0-alpha.3",
     "@vitejs/plugin-react": "^6.3.0",
     "clsx": "^2.1.1",
     "deepmerge": "^4.3.1",

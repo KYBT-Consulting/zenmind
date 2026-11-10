@@ -59,7 +59,17 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing: every bundle gets a .sig, and latest.json lists them per
+          # {os}-{arch}-{bundle}. Generate the key pair with `npx tauri signer generate`;
+          # the public key lives in tauri.conf.json (plugins.updater.pubkey).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Signed updater artifacts are enabled only here, so local `tauri build`
+          # keeps working without the private key.
+          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":true}}'
         with:
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
           tagName: ${{ github.ref_name }}
           releaseName: 'ZenMind ${{ github.ref_name }}'
           releaseDraft: false

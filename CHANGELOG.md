@@ -4,6 +4,18 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.3.0] - 2026-11-10
+
+### Added
+- **Automatic updates (desktop):** ZenMind checks for a new release shortly after starting and shows an **Update available** notice with release notes, download progress, and **Install & restart**. It asks before restarting if any map has unsaved changes. The About dialog adds **Check for updates** and a setting to turn the startup check off. Updates are cryptographically signed and verified before installing, and work for the Windows installers, macOS, AppImage, `.rpm`, and `.deb` (which asks for your system password). The Windows portable ZIP shows a download link instead, so it never installs a second copy.
+- **New ZenMind logo:** A "Z" drawn as a connected node graph replaces the default Tauri icon on every installer, the taskbar/dock, and the window, and it now also appears in the app header, the About dialog, and as the web favicon (previously none).
+
+### Changed
+- Release builds are now signed for the updater and publish a `latest.json` alongside the installers.
+- `npm run icons` regenerates every platform icon from the single source logo, `src/assets/zenmind-logo.svg`.
+
+> **Upgrading:** 0.3.0 is the first version that can update itself, so this one update must be installed manually. Future versions will be offered automatically.
+
 ## [0.2.7] - 2026-11-10
 
 ### Fixed

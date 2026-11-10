@@ -1,6 +1,6 @@
 [package]
 name = "zenmind"
-version = "0.2.7"
+version = "0.3.0"
 description = "Open-source EdrawMind alternative for cross-platform mind mapping"
 authors = ["ZenMind Contributors"]
 license = "MIT"
@@ -26,6 +26,10 @@ tauri-runtime-wry = { version = "3.0.0-alpha.6" }
 tauri-plugin-log = "3.0.0-alpha.3"
 tauri-plugin-dialog = "3.0.0-alpha.4"
 tauri-plugin-fs = "3.0.0-alpha.3"
+tauri-plugin-process = "3.0.0-alpha.3"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "3.0.0-alpha.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
 gtk = "0.18"

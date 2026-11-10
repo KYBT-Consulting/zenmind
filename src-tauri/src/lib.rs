@@ -1,30 +1,54 @@
+/// Windows portable build: a `.portable` marker or `data/` folder next to the exe.
+/// Returns the exe directory when running portable.
+#[cfg(target_os = "windows")]
+fn portable_exe_dir() -> Option<std::path::PathBuf> {
+  let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+  (exe_dir.join("data").is_dir() || exe_dir.join(".portable").exists()).then_some(exe_dir)
+}
+
+/// Whether this is the Windows portable ZIP build. The portable exe is copied from the
+/// bundled build, so it carries the installer's bundle type; the updater must not run
+/// the installer for it (that would install a second copy instead of updating this one).
+#[tauri::command]
+fn is_portable_install() -> bool {
+  #[cfg(target_os = "windows")]
+  {
+    portable_exe_dir().is_some()
+  }
+  #[cfg(not(target_os = "windows"))]
+  {
+    false
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   #[cfg(target_os = "windows")]
-  {
-    if let Ok(exe_path) = std::env::current_exe() {
-      if let Some(exe_dir) = exe_path.parent() {
-        let data_dir = exe_dir.join("data");
-        let portable_marker = exe_dir.join(".portable");
-        if data_dir.is_dir() || portable_marker.exists() {
-          if !data_dir.exists() {
-            let _ = std::fs::create_dir_all(&data_dir);
-          }
-          if std::env::var_os("WEBVIEW2_USER_DATA_FOLDER").is_none() {
-            // SAFETY: Invoked early at process startup on the main thread before any background threads are spawned.
-            unsafe {
-              std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
-            }
-          }
-        }
+  if let Some(exe_dir) = portable_exe_dir() {
+    let data_dir = exe_dir.join("data");
+    if !data_dir.exists() {
+      let _ = std::fs::create_dir_all(&data_dir);
+    }
+    if std::env::var_os("WEBVIEW2_USER_DATA_FOLDER").is_none() {
+      // SAFETY: Invoked early at process startup on the main thread before any background threads are spawned.
+      unsafe {
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", &data_dir);
       }
     }
   }
 
-  tauri::Builder::default()
+  let builder = tauri::Builder::default()
     .runtime(tauri_runtime_wry::Wry::default())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
+    .plugin(tauri_plugin_process::init())
+    .invoke_handler(tauri::generate_handler![is_portable_install]);
+
+  // Self-update (desktop only): checks the signed latest.json on GitHub Releases
+  #[cfg(desktop)]
+  let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+
+  builder
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
