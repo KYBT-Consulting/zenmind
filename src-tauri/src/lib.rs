@@ -1,3 +1,17 @@
+#[cfg(target_os = "linux")]
+mod rpm_update;
+
+/// How this build installs updates: `"rpm"` for rpm installs (see `rpm_update`), otherwise
+/// `"plugin"` (the updater plugin's own installer: Windows, macOS, AppImage, deb).
+#[tauri::command]
+fn update_install_strategy() -> &'static str {
+  #[cfg(target_os = "linux")]
+  if rpm_update::is_rpm_install() {
+    return "rpm";
+  }
+  "plugin"
+}
+
 /// Windows portable build: a `.portable` marker or `data/` folder next to the exe.
 /// Returns the exe directory when running portable.
 #[cfg(target_os = "windows")]
@@ -42,7 +56,12 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_process::init())
-    .invoke_handler(tauri::generate_handler![is_portable_install]);
+    .invoke_handler(tauri::generate_handler![
+      is_portable_install,
+      update_install_strategy,
+      #[cfg(target_os = "linux")]
+      rpm_update::install_rpm_update
+    ]);
 
   // Self-update (desktop only): checks the signed latest.json on GitHub Releases
   #[cfg(desktop)]

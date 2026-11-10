@@ -144,9 +144,19 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({ hasUnsavedChanges })
       )}
 
       {phase.kind === 'error' && (
-        <p role="alert" className="mt-3 rounded-lg bg-red-50 border border-red-200 text-red-700 p-2 text-[11px]">
-          Update failed: {phase.message}
-        </p>
+        <div role="alert" className="mt-3 rounded-lg bg-red-50 border border-red-200 text-red-700 p-2 text-[11px] space-y-1.5">
+          <p>Update failed: {phase.message}</p>
+          <p className="text-red-600/90">
+            You can try again, or install it yourself from the releases page.{' '}
+            <button
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:text-red-800 cursor-pointer"
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+              {copied ? 'Link copied' : 'Copy download link'}
+            </button>
+          </p>
+        </div>
       )}
 
       {!installing && update.canInstall && (

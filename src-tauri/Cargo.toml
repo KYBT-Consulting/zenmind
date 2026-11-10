@@ -1,6 +1,6 @@
 [package]
 name = "zenmind"
-version = "0.3.1"
+version = "0.3.2"
 description = "Open-source, cross-platform mind mapping app"
 authors = ["ZenMind Contributors"]
 license = "MIT"
@@ -33,5 +33,6 @@ tauri-plugin-updater = "3.0.0-alpha.3"
 tauri-plugin-persisted-scope = "3.0.0-alpha.3"
 
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
+tempfile = "3"
 gtk = "0.18"
 webkit2gtk = "=2.0.2"

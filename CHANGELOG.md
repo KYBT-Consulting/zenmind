@@ -4,6 +4,14 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.3.2] - 2026-11-10
+
+### Fixed
+- **Automatic updates on Fedora and other RPM 6 systems:** Installing an update from the `.rpm` failed with "failed to install package" after asking for your password twice, because RPM 6 rejects packages without an OpenPGP signature by default. ZenMind now verifies the update with its own update signature and then installs it, asking for your password once.
+- **Easier recovery when an update can't install:** The update notice now offers a **Copy download link** so you can install the new version yourself.
+
+> **Fedora / `.rpm` users on 0.3.0 or 0.3.1:** those versions can't install this update themselves. Download `ZenMind-0.3.2-1.x86_64.rpm` and install it once with `sudo dnf install ./ZenMind-0.3.2-1.x86_64.rpm`; updates after that install automatically. Windows, macOS, AppImage, and `.deb` users are offered this update as usual.
+
 ## [0.3.1] - 2026-11-10
 
 ### Added
