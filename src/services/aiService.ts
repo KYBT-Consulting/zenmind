@@ -31,6 +31,9 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
 /** Gemini API version. v1beta serves both pinned model IDs and the `-latest` aliases. */
 export const GEMINI_API_VERSION = 'v1beta';
 
+/** Test Connection gives up after this long so the user can simply try again. */
+export const TEST_CONNECTION_TIMEOUT_MS = 15_000;
+
 /** Former built-in defaults that Google has since retired; saved configs are migrated off them. */
 const RETIRED_GEMINI_DEFAULTS = new Set(['gemini-2.5-flash']);
 
@@ -212,7 +215,8 @@ export class AIService {
    */
   private static async callOpenAI(
     messages: { role: string; content: string }[],
-    config: AIConfig
+    config: AIConfig,
+    signal?: AbortSignal
   ): Promise<string> {
     const baseUrl = (
       config.openaiEndpoint || 'https://api.openai.com/v1'
@@ -236,6 +240,7 @@ export class AIService {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
+      signal,
     });
 
     if (!res.ok) {
@@ -266,7 +271,8 @@ export class AIService {
   /** Like callGemini, but also reports the concrete model version that served an alias. */
   private static async generateGemini(
     prompt: string,
-    config: AIConfig
+    config: AIConfig,
+    signal?: AbortSignal
   ): Promise<{ text: string; modelVersion?: string }> {
     const apiKey = config.geminiApiKey || '';
     if (!apiKey) {
@@ -278,6 +284,7 @@ export class AIService {
     const response = await ai.models.generateContent({
       model: resolveGeminiModel(config.geminiModel),
       contents: prompt,
+      ...(signal ? { config: { abortSignal: signal } } : {}),
     });
     return { text: response.text || '', modelVersion: response.modelVersion };
   }
@@ -417,8 +424,14 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
    * Quick connection diagnostic to test API reachable status and model responsiveness.
    */
   static async testConnection(
-    config: AIConfig
+    config: AIConfig,
+    timeoutMs: number = TEST_CONNECTION_TIMEOUT_MS
   ): Promise<{ success: boolean; message: string }> {
+    // No automatic retry: on a timeout or transient error (e.g. 503 high demand)
+    // the button re-enables and the user can test again.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const { signal } = controller;
     try {
       if (config.provider === 'gemini') {
         if (!config.geminiApiKey) {
@@ -426,7 +439,8 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         }
         const { text, modelVersion } = await this.generateGemini(
           'Ping test. Reply with: OK',
-          config
+          config,
+          signal
         );
         const model = resolveGeminiModel(config.geminiModel);
         // For an alias like gemini-flash-latest, show which model actually answered
@@ -438,7 +452,8 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
       } else {
         const text = await this.callOpenAI(
           [{ role: 'user', content: 'Ping test. Reply with: OK' }],
-          config
+          config,
+          signal
         );
         return {
           success: true,
@@ -446,10 +461,18 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         };
       }
     } catch (err: any) {
+      if (signal.aborted) {
+        return {
+          success: false,
+          message: `No response after ${Math.round(timeoutMs / 1000)} seconds. The service may be busy; try again.`,
+        };
+      }
       return {
         success: false,
         message: err.message || 'Connection failed.',
       };
+    } finally {
+      clearTimeout(timer);
     }
   }
 

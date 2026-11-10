@@ -69,3 +69,69 @@ describe('Gemini client setup', () => {
     vi.doUnmock('@google/genai');
   });
 });
+
+describe('testConnection timeout', () => {
+  /** A request that never settles on its own, only when its signal aborts. */
+  const hangUntilAborted = (signal?: AbortSignal) =>
+    new Promise((_, reject) => {
+      signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    });
+
+  it('gives up on a hung Gemini request and cancels it', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const seen: { signal?: AbortSignal } = {};
+    vi.doMock('@google/genai', () => ({
+      GoogleGenAI: class {
+        models = {
+          generateContent: (req: any) => {
+            seen.signal = req.config?.abortSignal;
+            return hangUntilAborted(seen.signal);
+          },
+        };
+      },
+    }));
+    const { AIService: Fresh } = await import('./aiService');
+    const res = await Fresh.testConnection(
+      { ...Fresh.getConfig(), provider: 'gemini', geminiApiKey: 'k' },
+      50
+    );
+    expect(res.success).toBe(false);
+    expect(res.message).toMatch(/No response after .* try again/);
+    expect(seen.signal?.aborted).toBe(true);
+    vi.doUnmock('@google/genai');
+  });
+
+  it('gives up on a hung OpenAI-compatible request and cancels it', async () => {
+    const { vi } = await import('vitest');
+    const seen: { signal?: AbortSignal } = {};
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation((_url, init) => {
+        seen.signal = init?.signal ?? undefined;
+        return hangUntilAborted(seen.signal) as Promise<Response>;
+      });
+    const res = await AIService.testConnection(
+      { ...AIService.getConfig(), provider: 'openai-compatible', openaiEndpoint: 'http://localhost:11434/v1' },
+      50
+    );
+    expect(res.success).toBe(false);
+    expect(res.message).toMatch(/No response after/);
+    expect(seen.signal?.aborted).toBe(true);
+    fetchSpy.mockRestore();
+  });
+
+  it('still reports real API errors (e.g. 503 high demand) without waiting for the timeout', async () => {
+    const { vi } = await import('vitest');
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('model overloaded', { status: 503, statusText: 'Service Unavailable' }));
+    const res = await AIService.testConnection(
+      { ...AIService.getConfig(), provider: 'openai-compatible' },
+      60_000
+    );
+    expect(res.success).toBe(false);
+    expect(res.message).toContain('503');
+    fetchSpy.mockRestore();
+  });
+});
