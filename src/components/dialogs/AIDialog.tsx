@@ -123,7 +123,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('AI generation error:', err);
+      console.error('AI generation error:', (err as any)?.message ?? err);
       alert(`AI Generation failed: ${err.message || 'Please check your API key, endpoint, or network.'}`);
     } finally {
       setLoading(false);

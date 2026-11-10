@@ -354,7 +354,7 @@ Create 3-5 main branches and 2-4 subtopics per branch. Keep text concise (2-5 wo
         return this.validateTree(this.parseJsonFromResponse(raw));
       } catch (err: any) {
         // Surface the failure instead of passing a template off as an AI result
-        console.warn('Gemini generation error:', err);
+        console.warn('Gemini generation error:', (err as any)?.message ?? err);
         throw err;
       }
     }
@@ -400,7 +400,7 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         const raw = await this.callGemini(prompt, config);
         return this.validateSubtopics(this.parseJsonFromResponse(raw));
       } catch (err: any) {
-        console.warn('Gemini topic expansion error:', err);
+        console.warn('Gemini topic expansion error:', (err as any)?.message ?? err);
         throw err;
       }
     }
