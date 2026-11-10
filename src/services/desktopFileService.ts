@@ -1,4 +1,4 @@
-import { open, save } from '@tauri-apps/plugin-dialog';
+import { confirm as nativeConfirm, open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
 
@@ -25,6 +25,18 @@ export class DesktopFileService {
    */
   static isTauri(): boolean {
     return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+  }
+
+  /**
+   * OK/Cancel prompt that works on both runtimes. The Tauri dialog plugin replaces
+   * `window.confirm` with an async version that returns a Promise, so code doing
+   * `if (!window.confirm(...))` silently proceeds on desktop. Always await this instead.
+   */
+  static async confirm(message: string, title = 'ZenMind'): Promise<boolean> {
+    if (this.isTauri()) {
+      return nativeConfirm(message, { title, kind: 'warning' });
+    }
+    return window.confirm(message);
   }
 
   /**
