@@ -276,10 +276,15 @@ export default function App() {
   }, []);
 
   const handleCloseTab = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const tab = tabs.find((t) => t.id === id);
       if (!tab) return;
-      if (isDirty(tab) && !window.confirm(`"${tab.title}" has unsaved changes. Close it anyway?`)) return;
+      if (
+        isDirty(tab) &&
+        !(await DesktopFileService.confirm(`"${tab.title}" has unsaved changes. Close it anyway?`))
+      ) {
+        return;
+      }
       forgetTab(id);
       const remaining = tabs.filter((t) => t.id !== id);
       if (remaining.length === 0) {

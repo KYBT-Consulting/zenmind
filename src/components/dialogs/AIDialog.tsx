@@ -19,6 +19,8 @@ import {
   AIConfig,
   ENDPOINT_PRESETS,
   AIEndpointPreset,
+  DEFAULT_GEMINI_MODEL,
+  resolveGeminiModel,
 } from '../../services/aiService';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
@@ -121,7 +123,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
         }
       }
     } catch (err: any) {
-      console.error('AI generation error:', err);
+      console.error('AI generation error:', (err as any)?.message ?? err);
       alert(`AI Generation failed: ${err.message || 'Please check your API key, endpoint, or network.'}`);
     } finally {
       setLoading(false);
@@ -130,7 +132,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
 
   const currentProviderLabel =
     config.provider === 'gemini'
-      ? `Gemini (${config.geminiModel || '2.5-flash'})`
+      ? `Gemini (${resolveGeminiModel(config.geminiModel)})`
       : `${config.openaiModel || 'Custom'} (${config.openaiEndpoint.replace('https://', '').replace('http://', '').replace('/v1', '')})`;
 
   return (
@@ -249,10 +251,11 @@ export const AIDialog: React.FC<AIDialogProps> = ({
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span className="text-slate-600">Model endpoint:</span>
-                <span className="font-semibold text-slate-800 truncate max-w-[200px]">
-                  {config.provider === 'gemini'
-                    ? 'Google Gemini 2.5 Flash'
-                    : `${config.openaiModel} (${config.openaiEndpoint})`}
+                <span
+                  className="font-semibold text-slate-800 truncate max-w-[200px]"
+                  title={currentProviderLabel}
+                >
+                  {currentProviderLabel}
                 </span>
               </div>
               <button
@@ -298,7 +301,7 @@ export const AIDialog: React.FC<AIDialogProps> = ({
                       Google Gemini
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Gemini 2.5 Flash & Pro
+                      Flash, Pro & Flash-Lite models
                     </span>
                   </div>
                 </button>
@@ -365,9 +368,13 @@ export const AIDialog: React.FC<AIDialogProps> = ({
                     onChange={(e) =>
                       setConfig((c) => ({ ...c, geminiModel: e.target.value }))
                     }
-                    placeholder="gemini-2.5-flash"
+                    placeholder={DEFAULT_GEMINI_MODEL}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono outline-hidden focus:border-indigo-500"
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    <code>{DEFAULT_GEMINI_MODEL}</code> always uses Google&apos;s newest Flash model.
+                    Enter a specific model ID (e.g. <code>gemini-3.8-flash</code>) to pin a version.
+                  </p>
                 </div>
               </div>
             ) : (

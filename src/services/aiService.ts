@@ -21,10 +21,31 @@ export interface AIConfig {
   openaiModel: string;
 }
 
+/**
+ * Google's moving alias for the newest Flash model. Using it instead of a pinned
+ * version keeps the default working as Google retires old models; users who need
+ * a fixed version can still enter an exact model ID.
+ */
+export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
+
+/** Gemini API version. v1beta serves both pinned model IDs and the `-latest` aliases. */
+export const GEMINI_API_VERSION = 'v1beta';
+
+/** Test Connection gives up after this long so the user can simply try again. */
+export const TEST_CONNECTION_TIMEOUT_MS = 15_000;
+
+/** Former built-in defaults that Google has since retired; saved configs are migrated off them. */
+const RETIRED_GEMINI_DEFAULTS = new Set(['gemini-2.5-flash']);
+
+/** The Gemini model ID a request will actually use. */
+export function resolveGeminiModel(model?: string | null): string {
+  return model?.trim() || DEFAULT_GEMINI_MODEL;
+}
+
 export const DEFAULT_AI_CONFIG: AIConfig = {
   provider: 'gemini',
   geminiApiKey: '',
-  geminiModel: 'gemini-2.5-flash',
+  geminiModel: DEFAULT_GEMINI_MODEL,
   openaiEndpoint: 'https://api.openai.com/v1',
   openaiApiKey: '',
   openaiModel: 'gpt-4o-mini',
@@ -123,10 +144,13 @@ export class AIService {
           : null;
       if (stored) {
         const parsed = JSON.parse(stored);
+        const savedModel = typeof parsed.geminiModel === 'string' ? parsed.geminiModel.trim() : '';
         return {
           ...DEFAULT_AI_CONFIG,
           ...parsed,
           geminiApiKey: parsed.geminiApiKey || legacyGeminiKey,
+          geminiModel:
+            !savedModel || RETIRED_GEMINI_DEFAULTS.has(savedModel) ? DEFAULT_GEMINI_MODEL : savedModel,
         };
       }
     } catch {
@@ -191,7 +215,8 @@ export class AIService {
    */
   private static async callOpenAI(
     messages: { role: string; content: string }[],
-    config: AIConfig
+    config: AIConfig,
+    signal?: AbortSignal
   ): Promise<string> {
     const baseUrl = (
       config.openaiEndpoint || 'https://api.openai.com/v1'
@@ -215,6 +240,7 @@ export class AIService {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
+      signal,
     });
 
     if (!res.ok) {
@@ -239,16 +265,28 @@ export class AIService {
     prompt: string,
     config: AIConfig
   ): Promise<string> {
+    return (await this.generateGemini(prompt, config)).text;
+  }
+
+  /** Like callGemini, but also reports the concrete model version that served an alias. */
+  private static async generateGemini(
+    prompt: string,
+    config: AIConfig,
+    signal?: AbortSignal
+  ): Promise<{ text: string; modelVersion?: string }> {
     const apiKey = config.geminiApiKey || '';
     if (!apiKey) {
       throw new Error('Google Gemini API Key is not set.');
     }
-    const ai = new GoogleGenAI({ apiKey });
+    // @google/genai 3 defaults to the v1 API, which doesn't serve the `-latest`
+    // aliases (404 "not found for API version v1"). Pin v1beta, the 1.x default.
+    const ai = new GoogleGenAI({ apiKey, apiVersion: GEMINI_API_VERSION });
     const response = await ai.models.generateContent({
-      model: config.geminiModel || 'gemini-2.5-flash',
+      model: resolveGeminiModel(config.geminiModel),
       contents: prompt,
+      ...(signal ? { config: { abortSignal: signal } } : {}),
     });
-    return response.text || '';
+    return { text: response.text || '', modelVersion: response.modelVersion };
   }
 
   /** Validate/normalise an LLM-produced mind map tree; throws if it isn't usable. */
@@ -328,7 +366,7 @@ Create 3-5 main branches and 2-4 subtopics per branch. Keep text concise (2-5 wo
         return this.validateTree(this.parseJsonFromResponse(raw));
       } catch (err: any) {
         // Surface the failure instead of passing a template off as an AI result
-        console.warn('Gemini generation error:', err);
+        console.warn('Gemini generation error:', (err as any)?.message ?? err);
         throw err;
       }
     }
@@ -374,7 +412,7 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         const raw = await this.callGemini(prompt, config);
         return this.validateSubtopics(this.parseJsonFromResponse(raw));
       } catch (err: any) {
-        console.warn('Gemini topic expansion error:', err);
+        console.warn('Gemini topic expansion error:', (err as any)?.message ?? err);
         throw err;
       }
     }
@@ -386,25 +424,36 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
    * Quick connection diagnostic to test API reachable status and model responsiveness.
    */
   static async testConnection(
-    config: AIConfig
+    config: AIConfig,
+    timeoutMs: number = TEST_CONNECTION_TIMEOUT_MS
   ): Promise<{ success: boolean; message: string }> {
+    // No automatic retry: on a timeout or transient error (e.g. 503 high demand)
+    // the button re-enables and the user can test again.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const { signal } = controller;
     try {
       if (config.provider === 'gemini') {
         if (!config.geminiApiKey) {
           return { success: false, message: 'Gemini API key is required.' };
         }
-        const text = await this.callGemini(
+        const { text, modelVersion } = await this.generateGemini(
           'Ping test. Reply with: OK',
-          config
+          config,
+          signal
         );
+        const model = resolveGeminiModel(config.geminiModel);
+        // For an alias like gemini-flash-latest, show which model actually answered
+        const served = modelVersion && modelVersion !== model ? ` → ${modelVersion}` : '';
         return {
           success: true,
-          message: `Connected successfully to Gemini (${config.geminiModel || 'gemini-2.5-flash'}). Response: "${text.trim().substring(0, 30)}"`,
+          message: `Connected successfully to Gemini (${model}${served}). Response: "${text.trim().substring(0, 30)}"`,
         };
       } else {
         const text = await this.callOpenAI(
           [{ role: 'user', content: 'Ping test. Reply with: OK' }],
-          config
+          config,
+          signal
         );
         return {
           success: true,
@@ -412,10 +461,18 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         };
       }
     } catch (err: any) {
+      if (signal.aborted) {
+        return {
+          success: false,
+          message: `No response after ${Math.round(timeoutMs / 1000)} seconds. The service may be busy; try again.`,
+        };
+      }
       return {
         success: false,
         message: err.message || 'Connection failed.',
       };
+    } finally {
+      clearTimeout(timer);
     }
   }
 

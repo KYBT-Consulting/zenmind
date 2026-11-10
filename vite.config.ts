@@ -9,10 +9,10 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: [
-        { find: '@', replacement: path.resolve(__dirname, '.') },
-        { find: /^simple-mind-map$/, replacement: path.resolve(__dirname, 'src/vendor/simple-mind-map/full.js') },
-        { find: /^deepmerge$/, replacement: path.resolve(__dirname, 'src/shims/deepmerge.js') },
-        { find: /^(node:)?stream$/, replacement: path.resolve(__dirname, 'src/shims/stream.js') },
+        { find: '@', replacement: path.resolve(import.meta.dirname, '.') },
+        { find: /^simple-mind-map$/, replacement: path.resolve(import.meta.dirname, 'src/vendor/simple-mind-map/full.js') },
+        { find: /^deepmerge$/, replacement: path.resolve(import.meta.dirname, 'src/shims/deepmerge.js') },
+        { find: /^(node:)?stream$/, replacement: path.resolve(import.meta.dirname, 'src/shims/stream.js') },
       ],
     },
     test: {
