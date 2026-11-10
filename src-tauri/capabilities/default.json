@@ -10,6 +10,8 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "dialog:allow-message",
+    "updater:default",
+    "process:allow-restart",
     "fs:allow-read-file",
     "fs:allow-read-dir",
     "fs:allow-write-file"

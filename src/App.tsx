@@ -20,6 +20,7 @@ import { ShortcutsDialog } from './components/dialogs/ShortcutsDialog';
 import { AboutDialog } from './components/dialogs/AboutDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
+import { UpdateBanner } from './components/floating/UpdateBanner';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
 import { SnapshotService } from './services/snapshotService';
@@ -801,6 +802,8 @@ export default function App() {
           </button>
         )}
       </div>
+
+      <UpdateBanner hasUnsavedChanges={() => tabs.some(isDirty)} />
 
       {/* Non-blocking Toast Notification */}
       {toastMessage && (

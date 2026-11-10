@@ -8,9 +8,12 @@ import {
   Cpu,
   ShieldCheck,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 import pkg from '../../../package.json';
 import { DesktopFileService } from '../../services/desktopFileService';
+import { UpdateService } from '../../services/updateService';
+import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
@@ -36,8 +39,32 @@ const RELEASE_HIGHLIGHTS = [
 export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
   const dialogRef = useDialogA11y<HTMLDivElement>(isOpen, onClose);
   const [copied, setCopied] = useState(false);
+  const [autoCheck, setAutoCheck] = useState(() => UpdateService.getAutoCheck());
+  const [updateStatus, setUpdateStatus] = useState<
+    { kind: 'idle' } | { kind: 'checking' } | { kind: 'current' } | { kind: 'found'; version: string } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
 
   if (!isOpen) return null;
+
+  const handleCheckForUpdates = async () => {
+    setUpdateStatus({ kind: 'checking' });
+    try {
+      const info = await UpdateService.checkForUpdate();
+      if (!info) {
+        setUpdateStatus({ kind: 'current' });
+        return;
+      }
+      setUpdateStatus({ kind: 'found', version: info.version });
+      window.dispatchEvent(new CustomEvent(UPDATE_FOUND_EVENT, { detail: info }));
+    } catch (err: any) {
+      setUpdateStatus({ kind: 'error', message: err?.message || String(err) });
+    }
+  };
+
+  const handleToggleAutoCheck = (enabled: boolean) => {
+    setAutoCheck(enabled);
+    UpdateService.setAutoCheck(enabled);
+  };
 
   const isDesktop = DesktopFileService.isTauri();
   const runtimeLabel = isDesktop ? 'Tauri v3 Native Desktop' : 'Web Browser / PWA';
@@ -140,6 +167,45 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => 
               <span className="text-xs font-semibold text-slate-800">{pkg.license || 'MIT'} Open Source</span>
             </div>
           </div>
+
+          {/* Updates (desktop only) */}
+          {UpdateService.isSupported() && (
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Updates</span>
+                  <span role="status" aria-live="polite" className="text-xs text-slate-700 block truncate">
+                    {updateStatus.kind === 'checking' && 'Checking for updates…'}
+                    {updateStatus.kind === 'current' && `You're up to date (v${APP_VERSION}).`}
+                    {updateStatus.kind === 'found' && `Version ${updateStatus.version} is available. See the notice below.`}
+                    {updateStatus.kind === 'error' && (
+                      <span className="text-red-600" title={updateStatus.message}>
+                        Couldn't check for updates. Try again.
+                      </span>
+                    )}
+                    {updateStatus.kind === 'idle' && `ZenMind v${APP_VERSION}`}
+                  </span>
+                </div>
+                <button
+                  onClick={handleCheckForUpdates}
+                  disabled={updateStatus.kind === 'checking'}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-700 font-semibold text-slate-700 shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={updateStatus.kind === 'checking' ? 'animate-spin' : ''} />
+                  Check for updates
+                </button>
+              </div>
+              <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoCheck}
+                  onChange={(e) => handleToggleAutoCheck(e.target.checked)}
+                  className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                />
+                Check for updates automatically when ZenMind starts
+              </label>
+            </div>
+          )}
 
           {/* What's in this release */}
           <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
