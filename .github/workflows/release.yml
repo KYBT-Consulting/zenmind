@@ -55,6 +55,18 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      # This version's CHANGELOG.md section becomes the release body, which tauri-action
+      # also writes into latest.json as the notes shown in the in-app update notice
+      - name: Release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          {
+            echo "body<<RELEASE_NOTES_EOF_${GITHUB_RUN_ID}"
+            bash scripts/release-notes.sh "${GITHUB_REF_NAME}"
+            echo "RELEASE_NOTES_EOF_${GITHUB_RUN_ID}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and Package with Tauri Action
         uses: tauri-apps/tauri-action@v0
         env:
@@ -64,40 +76,29 @@ jobs:
           # the public key lives in tauri.conf.json (plugins.updater.pubkey).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Signed updater artifacts are enabled only here, so local `tauri build`
-          # keeps working without the private key.
-          TAURI_CONFIG: '{"bundle":{"createUpdaterArtifacts":true}}'
         with:
-          uploadUpdaterJson: true
-          uploadUpdaterSignatures: true
+          # latest.json (tauri-action default); .sig files upload because the
+          # --config below enables createUpdaterArtifacts
+          includeUpdaterJson: true
           tagName: ${{ github.ref_name }}
           releaseName: 'ZenMind ${{ github.ref_name }}'
           releaseDraft: false
           prerelease: false
           retryAttempts: 3
-          args: ${{ matrix.args }}
+          # Signed updater artifacts are enabled only in CI, so local `tauri build` keeps
+          # working without the private key. Must be a --config file (not TAURI_CONFIG):
+          # tauri-action reads it too, to find and upload the .sig files and latest.json.
+          args: ${{ matrix.args }} --config src-tauri/tauri.updater.conf.json
           releaseBody: |
-            ## ZenMind ${{ github.ref_name }} 🧘‍♂️
+            ## What's new in ZenMind ${{ github.ref_name }}
 
-            Desktop release of **ZenMind**: an open-source, modern app built for cross-platform mind mapping and diagramming with local and cloud AI copilot.
+            ${{ steps.notes.outputs.body }}
 
-            See the [changelog](https://github.com/KYBT-Consulting/zenmind/blob/main/CHANGELOG.md) for what is new in this release.
-
-            ### 🌟 Key Highlights
-            - **Interactive SVG Engine**: Dynamic layout trees, logic charts, timelines, fishbone diagrams, and free-floating topics with smooth drag-and-drop.
-            - **Modern Office-Style Ribbon UI**: Intuitive tabs (Home, Insert, Page Style, View, AI), synchronized outline editor, format painter, and docked format inspector.
-            - **Local & Cloud AI Copilot**: Native integrations for Google Gemini and custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM, OpenRouter).
-            - **Multiple Maps in Tabs**: Work on several mind maps at once, each with its own undo history, zoom and unsaved-changes marker.
-            - **Task & Presentation Tools**: Todo checkboxes, progress tracking (0%-100%), priority badges (P1-P5), markdown notes drawer, and presentation mode.
-            - **Multi-Format Interoperability**: Import and export PNG, crisp SVG, print PDF, XMind archives, OPML 2.0, FreeMind XML, and native `.zenmind` files.
-            - **Cross-Platform Native Desktop**: Built on Tauri for fast startup, low RAM footprint (~40MB), and direct filesystem access (including standalone Windows Portable ZIP).
-
-            ### 🌐 Live Web Demo
-            - Try ZenMind online: [kybt-consulting.github.io/zenmind](https://kybt-consulting.github.io/zenmind/)
+            ---
+            [Full changelog](https://github.com/KYBT-Consulting/zenmind/blob/main/CHANGELOG.md) · [Try ZenMind on the web](https://kybt-consulting.github.io/zenmind/)
 
             > Desktop builds use **Tauri v3 Alpha**, so platform-specific quirks are possible. Please report any issues on GitHub.
 
-            ---
             Built with ❤️ by [KYBT Consulting](https://kybtconsulting.com) (makers of [Vertaxa EA](https://vertaxa.online)).
 
       - name: Package and Upload Windows Portable ZIP

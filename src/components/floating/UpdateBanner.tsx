@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Download, X, Check, Copy, RotateCw } from 'lucide-react';
 import { UpdateService, type UpdateInfo } from '../../services/updateService';
 import { DesktopFileService } from '../../services/desktopFileService';
+import { releaseNotesToPlainText } from '../../lib/releaseNotes';
 
 /** Fired by the About dialog's "Check for updates" so this banner shows the result. */
 export const UPDATE_FOUND_EVENT = 'zenmind:update-found';
@@ -76,6 +77,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({ hasUnsavedChanges })
 
   if (!update) return null;
 
+  const notes = update.notes ? releaseNotesToPlainText(update.notes) : '';
   const installing = phase.kind === 'installing';
   const percent = installing && phase.progress !== null ? Math.round(phase.progress * 100) : null;
 
@@ -107,7 +109,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({ hasUnsavedChanges })
         )}
       </div>
 
-      {update.notes && (
+      {notes && (
         <div className="mt-2">
           <button
             onClick={() => setShowNotes((v) => !v)}
@@ -117,7 +119,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({ hasUnsavedChanges })
           </button>
           {showNotes && (
             <p className="mt-1.5 max-h-40 overflow-y-auto whitespace-pre-line rounded-lg bg-slate-50 border border-slate-200/80 p-2 text-[11px] leading-relaxed">
-              {update.notes}
+              {notes}
             </p>
           )}
         </div>
