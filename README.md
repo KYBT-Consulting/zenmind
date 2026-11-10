@@ -10,7 +10,7 @@
 
 ## 🌟 Highlights
 
-- **EdrawMind-Style Ribbon Interface**: Familiar tabs (*Home*, *Insert*, *Page Style*, *View*, *AI Assistant*, *Export*) for rapid brainstorming.
+- **Ribbon Interface**: Familiar tabs (*Home*, *Insert*, *Page Style*, *View*, *AI Assistant*, *Export*) for rapid brainstorming.
 - **10+ Structural Layouts**:
   - Radial Mind Map (classic)
   - Logic Charts (Left & Right)
