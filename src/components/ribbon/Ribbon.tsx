@@ -62,7 +62,7 @@ import {
 import { cn } from '../../lib/utils';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export type RibbonTab = 'home' | 'insert' | 'pageStyle' | 'view' | 'ai' | 'export';
+export type RibbonTab = 'file' | 'home' | 'insert' | 'pageStyle' | 'view' | 'ai' | 'export';
 
 interface RibbonProps {
   engine: MindMapEngine | null;
@@ -145,8 +145,6 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
-  const [showFileMenu, setShowFileMenu] = useState(false);
-  const fileMenuRef = useRef<HTMLDivElement>(null);
 
   const layoutMenuRef = useRef<HTMLDivElement>(null);
   const themeMenuRef = useRef<HTMLDivElement>(null);
@@ -163,9 +161,6 @@ export const Ribbon: React.FC<RibbonProps> = ({
       }
       if (shapeMenuRef.current && !shapeMenuRef.current.contains(target)) {
         setShowShapeMenu(false);
-      }
-      if (fileMenuRef.current && !fileMenuRef.current.contains(target)) {
-        setShowFileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -202,6 +197,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   };
 
   const tabs: { id: RibbonTab; label: string }[] = [
+    { id: 'file', label: 'File' },
     { id: 'home', label: 'Home' },
     { id: 'insert', label: 'Insert' },
     { id: 'pageStyle', label: 'Page Style' },
@@ -270,66 +266,6 @@ export const Ribbon: React.FC<RibbonProps> = ({
           </button>
 
           <div className="h-4 w-px bg-slate-200 mx-1" />
-
-          {/* File menu: New, Open, Save, Save As, Rename */}
-          <div ref={fileMenuRef} className="relative">
-            <button
-              aria-label="File menu"
-              aria-haspopup="menu"
-              aria-expanded={showFileMenu}
-              onClick={() => setShowFileMenu((v) => !v)}
-              title="File"
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-slate-600 transition-colors',
-                showFileMenu ? 'bg-slate-200' : 'hover:bg-slate-200'
-              )}
-            >
-              <FileText size={14} className="text-indigo-600" />
-              <span>File</span>
-              <ChevronDown size={11} className="text-slate-400" />
-            </button>
-            {showFileMenu && (
-              <div
-                role="menu"
-                className="absolute top-full mt-1 left-0 w-60 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
-              >
-                {[
-                  { label: 'New Mind Map', shortcut: DesktopFileService.newMapShortcut().label, icon: FilePlus, onClick: onNewFile },
-                  { label: 'Open…', shortcut: 'Ctrl+O', icon: FolderOpen, onClick: onOpenFile },
-                  { divider: true },
-                  { label: 'Save', shortcut: 'Ctrl+S', icon: Save, onClick: onSaveFile },
-                  { label: 'Save As…', shortcut: 'Ctrl+Shift+S', icon: SaveAll, onClick: onSaveAs },
-                  {
-                    label: 'Rename…',
-                    icon: FilePen,
-                    onClick: onRenameFile,
-                    disabled: !canRenameFile,
-                    hint: canRenameFile ? undefined : 'Save the map to a file first',
-                  },
-                ].map((item, idx) =>
-                  'divider' in item ? (
-                    <div key={`d${idx}`} className="my-1 border-t border-slate-100" />
-                  ) : (
-                    <button
-                      key={item.label}
-                      role="menuitem"
-                      disabled={item.disabled || !item.onClick}
-                      title={item.hint}
-                      onClick={() => {
-                        setShowFileMenu(false);
-                        item.onClick?.();
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      {item.icon && <item.icon size={14} className="text-slate-500 shrink-0" />}
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {item.shortcut && <span className="text-[10px] text-slate-400 font-mono">{item.shortcut}</span>}
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-          </div>
 
           <button aria-label={`New Mind Map (${DesktopFileService.newMapShortcut().label})`}
             onClick={onNewFile}
@@ -446,6 +382,56 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
       {/* Ribbon Toolbar Content Area */}
       <div className="h-16 px-4 py-2 flex items-center gap-6 overflow-visible bg-slate-50/50">
+        {/* --- FILE TAB --- */}
+        {activeTab === 'file' && (
+          <>
+            {[
+              [
+                { label: 'New', hint: DesktopFileService.newMapShortcut().label, icon: FilePlus, color: 'text-indigo-600', onClick: onNewFile, title: 'New Mind Map' },
+                { label: 'Open', hint: 'Ctrl+O', icon: FolderOpen, color: 'text-amber-500', onClick: onOpenFile, title: 'Open a map file' },
+              ],
+              [
+                { label: 'Save', hint: 'Ctrl+S', icon: Save, color: 'text-emerald-600', onClick: onSaveFile, title: 'Save' },
+                { label: 'Save As', hint: 'Ctrl+⇧+S', icon: SaveAll, color: 'text-emerald-600', onClick: onSaveAs, title: 'Save a copy under a new name or location' },
+                {
+                  label: 'Rename',
+                  hint: '',
+                  icon: FilePen,
+                  color: 'text-sky-600',
+                  onClick: onRenameFile,
+                  disabled: !canRenameFile,
+                  title: canRenameFile ? 'Rename or move the file on disk' : 'Save the map to a file first',
+                },
+              ],
+              [
+                { label: 'Export', hint: '', icon: Download, color: 'text-indigo-600', onClick: onOpenExportDialog, title: 'Export as PNG, SVG, PDF, XMind, Markdown, and more' },
+                { label: 'Templates', hint: '', icon: LayoutTemplate, color: 'text-indigo-600', onClick: onOpenTemplates, title: 'Starter Template Gallery' },
+                { label: 'History', hint: '', icon: History, color: 'text-slate-600', onClick: onOpenHistory, title: 'Version History & Snapshots' },
+              ],
+            ].map((group, gi, groups) => (
+              <div
+                key={gi}
+                className={cn('flex items-center gap-2', gi < groups.length - 1 && 'pr-4 border-r border-slate-200')}
+              >
+                {group.map((item) => (
+                  <button
+                    key={item.label}
+                    aria-label={item.title}
+                    title={item.title}
+                    onClick={() => item.onClick?.()}
+                    disabled={('disabled' in item && item.disabled) || !item.onClick}
+                    className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:hover:border-transparent disabled:cursor-not-allowed"
+                  >
+                    <item.icon size={18} className={item.color} />
+                    <span className="text-[10px] font-semibold mt-0.5">{item.label}</span>
+                    {item.hint && <span className="text-[9px] text-slate-400 font-mono">{item.hint}</span>}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+
         {/* --- HOME TAB --- */}
         {activeTab === 'home' && (
           <>
