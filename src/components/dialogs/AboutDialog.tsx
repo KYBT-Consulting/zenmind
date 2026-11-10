@@ -14,7 +14,7 @@ import pkg from '../../../package.json';
 import { DesktopFileService } from '../../services/desktopFileService';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 
-export const APP_VERSION = pkg.version || '0.2.6';
+export const APP_VERSION = pkg.version || '0.2.7';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
+  'Gemini AI Copilot always uses Google\'s newest Flash model (gemini-flash-latest), with Test Connection showing the model that answered',
   'Native Save dialog for every export format (PNG, SVG, PDF, XMind, Markdown, OPML, FreeMind, JSON) on desktop',
   'Starter Template Gallery (SWOT, PESTEL, Porter 5 Forces, Eisenhower, 5 Whys, Org Chart) + Custom Templates',
   'Spatial Arrow & Vim Modal Navigation (h/j/k/l, o/O, i, x, u, f) with Shortcut Cheat-Sheet (?)',

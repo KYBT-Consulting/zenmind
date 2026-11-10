@@ -4,6 +4,22 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.2.7] - 2026-11-10
+
+### Fixed
+- **Unsaved changes lost when closing a tab (desktop):** The Tauri dialog plugin replaces `window.confirm` with an async version, so the "unsaved changes, close anyway?" check always passed and dirty tabs closed without asking. Closing a tab now waits for a native confirmation dialog.
+- **Error messages never appeared on desktop:** `alert()` is routed through the dialog plugin's `message` command, which the app's capability did not allow, so AI, export, and import errors failed silently. The `dialog:allow-message` permission is now granted.
+- **Gemini requests failing with 404:** The built-in default model `gemini-2.5-flash` has been retired. ZenMind now defaults to Google's `gemini-flash-latest` alias, which always points to the newest Flash model, and moves saved settings off the retired default (models you pinned yourself are kept). The Gemini API is pinned to `v1beta`, which serves these aliases; `@google/genai` 3 otherwise defaults to `v1`, which does not.
+- **AI dialog showed a hardcoded "Gemini 2.5 Flash":** The brainstorm screen and provider card now show the configured model, and Test Connection reports which model answered an alias (for example `gemini-flash-latest → gemini-3.8-flash`).
+- **Test Connection could hang indefinitely:** It now gives up after 15 seconds with a "try again" message (Gemini and OpenAI-compatible endpoints alike), and AI errors now log the API's message instead of only a stack trace.
+
+### Changed
+- **Vite 8** (with `@vitejs/plugin-react` 6): production builds are roughly 7× faster.
+- **TypeScript 7:** type checking is roughly 5× faster.
+- **lucide-react 1.x**, **`@google/genai` 3**, **jsdom 31**, and `@types/node` 24.
+- Removed the unused `motion` and `dotenv` dependencies.
+- `vite.config.ts` uses `import.meta.dirname` instead of `__dirname`, ahead of Vite's native config loader becoming the default.
+
 ## [0.2.6] - 2026-11-10
 
 ### Fixed
