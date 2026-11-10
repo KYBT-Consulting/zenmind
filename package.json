@@ -17,7 +17,7 @@
     "desktop:portable": "powershell -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
+    "@google/genai": "^3.0.0",
     "@svgdotjs/svg.js": "^3.2.8",
     "@tailwindcss/vite": "^4.1.14",
     "@tauri-apps/api": "^3.0.0-alpha.3",
