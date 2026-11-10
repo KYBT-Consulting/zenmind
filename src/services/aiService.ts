@@ -21,10 +21,25 @@ export interface AIConfig {
   openaiModel: string;
 }
 
+/**
+ * Google's moving alias for the newest Flash model. Using it instead of a pinned
+ * version keeps the default working as Google retires old models; users who need
+ * a fixed version can still enter an exact model ID.
+ */
+export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
+
+/** Former built-in defaults that Google has since retired; saved configs are migrated off them. */
+const RETIRED_GEMINI_DEFAULTS = new Set(['gemini-2.5-flash']);
+
+/** The Gemini model ID a request will actually use. */
+export function resolveGeminiModel(model?: string | null): string {
+  return model?.trim() || DEFAULT_GEMINI_MODEL;
+}
+
 export const DEFAULT_AI_CONFIG: AIConfig = {
   provider: 'gemini',
   geminiApiKey: '',
-  geminiModel: 'gemini-2.5-flash',
+  geminiModel: DEFAULT_GEMINI_MODEL,
   openaiEndpoint: 'https://api.openai.com/v1',
   openaiApiKey: '',
   openaiModel: 'gpt-4o-mini',
@@ -123,10 +138,13 @@ export class AIService {
           : null;
       if (stored) {
         const parsed = JSON.parse(stored);
+        const savedModel = typeof parsed.geminiModel === 'string' ? parsed.geminiModel.trim() : '';
         return {
           ...DEFAULT_AI_CONFIG,
           ...parsed,
           geminiApiKey: parsed.geminiApiKey || legacyGeminiKey,
+          geminiModel:
+            !savedModel || RETIRED_GEMINI_DEFAULTS.has(savedModel) ? DEFAULT_GEMINI_MODEL : savedModel,
         };
       }
     } catch {
@@ -239,16 +257,24 @@ export class AIService {
     prompt: string,
     config: AIConfig
   ): Promise<string> {
+    return (await this.generateGemini(prompt, config)).text;
+  }
+
+  /** Like callGemini, but also reports the concrete model version that served an alias. */
+  private static async generateGemini(
+    prompt: string,
+    config: AIConfig
+  ): Promise<{ text: string; modelVersion?: string }> {
     const apiKey = config.geminiApiKey || '';
     if (!apiKey) {
       throw new Error('Google Gemini API Key is not set.');
     }
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: config.geminiModel || 'gemini-2.5-flash',
+      model: resolveGeminiModel(config.geminiModel),
       contents: prompt,
     });
-    return response.text || '';
+    return { text: response.text || '', modelVersion: response.modelVersion };
   }
 
   /** Validate/normalise an LLM-produced mind map tree; throws if it isn't usable. */
@@ -393,13 +419,16 @@ Output ONLY a JSON array of strings, e.g. ["Subtopic 1", "Subtopic 2", "Subtopic
         if (!config.geminiApiKey) {
           return { success: false, message: 'Gemini API key is required.' };
         }
-        const text = await this.callGemini(
+        const { text, modelVersion } = await this.generateGemini(
           'Ping test. Reply with: OK',
           config
         );
+        const model = resolveGeminiModel(config.geminiModel);
+        // For an alias like gemini-flash-latest, show which model actually answered
+        const served = modelVersion && modelVersion !== model ? ` → ${modelVersion}` : '';
         return {
           success: true,
-          message: `Connected successfully to Gemini (${config.geminiModel || 'gemini-2.5-flash'}). Response: "${text.trim().substring(0, 30)}"`,
+          message: `Connected successfully to Gemini (${model}${served}). Response: "${text.trim().substring(0, 30)}"`,
         };
       } else {
         const text = await this.callOpenAI(
