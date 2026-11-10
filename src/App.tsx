@@ -673,6 +673,7 @@ export default function App() {
         onOpenHistory={() => setShowHistoryDialog(true)}
         onOpenShortcuts={() => setShowShortcutsDialog(true)}
         onOpenAbout={() => setShowAboutDialog(true)}
+        onExported={(filePath) => setToastMessage(`Exported to ${filePath}`)}
       />
 
       <TabBar
@@ -857,6 +858,7 @@ export default function App() {
         engine={engine}
         docTitle={docTitle}
         onClose={() => setShowExportDialog(false)}
+        onExported={(filePath) => setToastMessage(`Exported to ${filePath}`)}
       />
 
       <ImageDialog

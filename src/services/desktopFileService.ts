@@ -1,5 +1,6 @@
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readFile, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readFile, readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
 
 export interface FileSaveResult {
   success: boolean;
@@ -105,6 +106,40 @@ export class DesktopFileService {
       console.error('Browser save error:', error);
       return { success: false, error };
     }
+  }
+
+  /**
+   * Save exported content (a `data:` URL or plain text) under `<title>.<ext>`.
+   * Desktop: asks for a location with the native save dialog, then writes the bytes.
+   * Web: triggers a normal browser download.
+   */
+  static async saveExport(content: string, title: string, ext: string): Promise<FileSaveResult> {
+    const filename = `${toSafeFilename(title)}.${ext}`;
+    const { label, mime } = exportFileType(ext);
+    const bytes = exportContentToBytes(content);
+
+    if (this.isTauri()) {
+      const selected = await save({
+        title: 'Export Mind Map',
+        defaultPath: filename,
+        filters: [{ name: label, extensions: [ext] }],
+      });
+      if (!selected) return { success: false, canceled: true };
+
+      await writeFile(selected, bytes);
+      return { success: true, filePath: selected };
+    }
+
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoking immediately can cancel the download in some browsers
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return { success: true };
   }
 
   /**

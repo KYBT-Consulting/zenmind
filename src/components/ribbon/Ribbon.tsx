@@ -93,6 +93,8 @@ interface RibbonProps {
   onOpenHistory?: () => void;
   onOpenShortcuts?: () => void;
   onOpenAbout?: () => void;
+  /** Called with the saved path after a desktop quick-export. */
+  onExported?: (filePath: string) => void;
 }
 
 export const Ribbon: React.FC<RibbonProps> = ({
@@ -126,6 +128,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenHistory,
   onOpenShortcuts,
   onOpenAbout,
+  onExported,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -156,7 +159,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   /** Quick-export buttons: report failures the same way the Export dialog does. */
   const runExport = async (format: 'png' | 'svg' | 'pdf' | 'md' | 'json') => {
     try {
-      await engine?.export(format, docTitle || 'mind-map');
+      const result = await engine?.export(format, docTitle || 'mind-map');
+      if (result?.filePath) onExported?.(result.filePath);
     } catch (err) {
       console.error('Export failed:', err);
       alert('Export failed. Please try again.');

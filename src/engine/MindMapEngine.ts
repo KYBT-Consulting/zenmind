@@ -10,6 +10,7 @@ import {
   THEME_PRESETS,
 } from '../types/mindmap';
 import { MindMapFormatService } from '../services/mindMapFormatService';
+import { DesktopFileService, type FileSaveResult } from '../services/desktopFileService';
 import { stripHtml } from '../lib/utils';
 import { isSafeLink, sanitizeMapData } from '../lib/sanitize';
 import { contentSignature } from '../lib/contentSignature';
@@ -990,13 +991,31 @@ export class MindMapEngine {
     this.later(() => this.fitView(), 100);
   }
 
+  /**
+   * Export the map and save it: native save dialog on desktop, browser download on web.
+   * Resolves with `canceled: true` if the user dismisses the dialog; throws on failure.
+   */
   async export(
     format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind' | 'opml' | 'mm' | 'zenmind',
     filename: string = 'mind-map',
     transparent: boolean = false
-  ): Promise<any> {
+  ): Promise<FileSaveResult | undefined> {
     if (!this.mindMap) return;
 
+    const content = await this.renderExport(format, filename, transparent);
+    if (!content) {
+      // simple-mind-map reports exporter errors via errorHandler and resolves empty
+      throw new Error(`Export to ${format} produced no data`);
+    }
+    return DesktopFileService.saveExport(content, filename, format);
+  }
+
+  /** Produce export content without saving: a `data:` URL or plain text. */
+  private async renderExport(
+    format: 'png' | 'svg' | 'pdf' | 'json' | 'md' | 'xmind' | 'opml' | 'mm' | 'zenmind',
+    filename: string,
+    transparent: boolean
+  ): Promise<string | undefined> {
     switch (format) {
       case 'png':
       case 'svg':
@@ -1005,40 +1024,30 @@ export class MindMapEngine {
       case 'md':
       case 'xmind': {
         const mm = this.mindMap as any;
+        // isDownload = false: return the data instead of clicking a download link,
+        // which the desktop webview saves silently to ~/Downloads
         if (typeof mm.export === 'function') {
-          return await mm.export(format, true, filename, transparent);
+          return await mm.export(format, false, filename, transparent);
         } else if (mm.export && typeof mm.export[format] === 'function') {
-          return await mm.export[format](true, filename, transparent);
+          return await mm.export[format](false, filename, transparent);
         }
-        break;
+        return undefined;
       }
-      case 'opml': {
-        const data = this.getTreeData();
-        const xml = MindMapFormatService.exportOpml(data, filename);
-        MindMapFormatService.downloadFile(xml, `${filename}.opml`, 'application/xml');
-        return xml;
-      }
-      case 'mm': {
-        const data = this.getTreeData();
-        const xml = MindMapFormatService.exportFreeMind(data);
-        MindMapFormatService.downloadFile(xml, `${filename}.mm`, 'application/xml');
-        return xml;
-      }
-      case 'zenmind': {
-        const data = this.getData();
-        const json = JSON.stringify(
+      case 'opml':
+        return MindMapFormatService.exportOpml(this.getTreeData(), filename);
+      case 'mm':
+        return MindMapFormatService.exportFreeMind(this.getTreeData());
+      case 'zenmind':
+        return JSON.stringify(
           {
             version: '1.0.0',
             title: filename,
             createdAt: new Date().toISOString(),
-            content: data,
+            content: this.getData(),
           },
           null,
           2
         );
-        MindMapFormatService.downloadFile(json, `${filename}.zenmind`, 'application/json');
-        return json;
-      }
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }

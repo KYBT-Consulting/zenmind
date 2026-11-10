@@ -363,19 +363,4 @@ ${serializeOutline(rootNode)}  </body>
     return `<map version="1.0.1">
 ${serializeNode(rootNode)}</map>`;
   }
-
-  /**
-   * Trigger a client-side download of a text or XML string.
-   */
-  static downloadFile(content: string, filename: string, mimeType: string = 'text/plain') {
-    const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
 }

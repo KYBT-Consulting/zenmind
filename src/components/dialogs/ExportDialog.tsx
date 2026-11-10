@@ -20,6 +20,8 @@ interface ExportDialogProps {
   engine: MindMapEngine | null;
   docTitle: string;
   onClose: () => void;
+  /** Called with the saved path after a desktop export (web downloads have no path). */
+  onExported?: (filePath: string) => void;
 }
 
 export type ExportFormatId =
@@ -38,6 +40,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   engine,
   docTitle,
   onClose,
+  onExported,
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormatId>('png');
   const [transparent, setTransparent] = useState(false);
@@ -119,7 +122,10 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
 
     try {
       const filename = docTitle.trim() || 'mind-map';
-      await engine.export(selectedFormat, filename, transparent);
+      const result = await engine.export(selectedFormat, filename, transparent);
+      // Keep the dialog open if the save dialog was dismissed, so the user can retry
+      if (result?.canceled) return;
+      if (result?.filePath) onExported?.(result.filePath);
       onClose();
     } catch (err) {
       console.error('Export failed:', err);
