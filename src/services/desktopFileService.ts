@@ -1,10 +1,14 @@
 import { confirm as nativeConfirm, open, save } from '@tauri-apps/plugin-dialog';
-import { readFile, readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readFile, readTextFile, rename, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
+import { fileFingerprint } from '../lib/fingerprint';
+import { extensionOf, isZenMindPath, siblingPath } from '../lib/filePaths';
 
 export interface FileSaveResult {
   success: boolean;
   filePath?: string;
+  /** Fingerprint of what was written (desktop), to detect later changes made elsewhere */
+  fingerprint?: string;
   canceled?: boolean;
   error?: any;
 }
@@ -15,6 +19,8 @@ export interface FileOpenResult {
   content?: string;
   /** Raw bytes, set for binary formats (.xmind) that can't be read as text */
   bytes?: Uint8Array;
+  /** Fingerprint of the raw file contents, to detect later changes made elsewhere */
+  fingerprint?: string;
   canceled?: boolean;
   error?: any;
 }
@@ -56,7 +62,8 @@ export class DesktopFileService {
   static async saveZenMindFile(
     data: any,
     suggestedName: string = 'Untitled',
-    existingFilePath?: string
+    existingFilePath?: string,
+    options: { saveAs?: boolean } = {}
   ): Promise<FileSaveResult> {
     const payload = JSON.stringify(
       {
@@ -71,13 +78,16 @@ export class DesktopFileService {
 
     if (this.isTauri()) {
       try {
-        let filePath = existingFilePath;
+        // Write in place only to a ZenMind file. Save As, a new map, or a map imported from
+        // another format (.md, .xmind, ...) asks where to save, starting in the same folder.
+        const writeInPlace = !options.saveAs && !!existingFilePath && isZenMindPath(existingFilePath);
+        let filePath = writeInPlace ? existingFilePath : undefined;
 
-        // If no existing path, prompt native save dialog
         if (!filePath) {
+          const defaultName = `${toSafeFilename(suggestedName, 'Untitled')}.zenmind`;
           const selected = await save({
-            title: 'Save ZenMind Project',
-            defaultPath: `${suggestedName}.zenmind`,
+            title: options.saveAs ? 'Save ZenMind Project As' : 'Save ZenMind Project',
+            defaultPath: existingFilePath ? siblingPath(existingFilePath, defaultName) : defaultName,
             filters: [
               {
                 name: 'ZenMind Mind Map',
@@ -94,7 +104,7 @@ export class DesktopFileService {
 
         // Write directly to disk
         await writeTextFile(filePath, payload);
-        return { success: true, filePath };
+        return { success: true, filePath, fingerprint: fileFingerprint(payload) };
       } catch (error) {
         console.error('Tauri native save error:', error);
         return { success: false, error };
@@ -155,6 +165,39 @@ export class DesktopFileService {
   }
 
   /**
+   * Rename (or move) a file on disk via the native save dialog, starting in its folder
+   * with the suggested name and its current extension. Uses a real rename, so nothing
+   * is deleted. Desktop only.
+   */
+  static async renameFile(currentPath: string, suggestedName: string): Promise<FileSaveResult> {
+    const ext = extensionOf(currentPath) || '.zenmind';
+    const selected = await save({
+      title: 'Rename File',
+      defaultPath: siblingPath(currentPath, `${toSafeFilename(suggestedName, 'Untitled')}${ext}`),
+      filters: [{ name: 'Mind Map', extensions: [ext.slice(1)] }],
+    });
+    if (!selected) return { success: false, canceled: true };
+    if (selected !== currentPath) {
+      await rename(currentPath, selected);
+    }
+    return { success: true, filePath: selected };
+  }
+
+  /**
+   * Read a mind map file from disk by path (desktop only). Binary formats (.xmind)
+   * come back as bytes, everything else as text. Used by the Open dialog and to
+   * reopen the previous session's files on launch.
+   */
+  static async readMapFile(filePath: string): Promise<FileOpenResult> {
+    if (filePath.toLowerCase().endsWith('.xmind')) {
+      const bytes = await readFile(filePath);
+      return { success: true, filePath, bytes, fingerprint: fileFingerprint(bytes) };
+    }
+    const content = await readTextFile(filePath);
+    return { success: true, filePath, content, fingerprint: fileFingerprint(content) };
+  }
+
+  /**
    * Native file open dialog and direct disk read (Tauri) with browser fallback.
    */
   static async openZenMindFile(): Promise<FileOpenResult> {
@@ -196,12 +239,7 @@ export class DesktopFileService {
           return { success: false, canceled: true };
         }
 
-        if (selected.toLowerCase().endsWith('.xmind')) {
-          const bytes = await readFile(selected);
-          return { success: true, filePath: selected, bytes };
-        }
-        const content = await readTextFile(selected);
-        return { success: true, filePath: selected, content };
+        return await this.readMapFile(selected);
       } catch (error) {
         console.error('Tauri native open error:', error);
         return { success: false, error };

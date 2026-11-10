@@ -4,6 +4,8 @@ import {
   FolderOpen,
   FilePlus,
   Save,
+  SaveAll,
+  FilePen,
   Undo2,
   Redo2,
   Plus,
@@ -60,7 +62,7 @@ import {
 import { cn } from '../../lib/utils';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export type RibbonTab = 'home' | 'insert' | 'pageStyle' | 'view' | 'ai' | 'export';
+export type RibbonTab = 'file' | 'home' | 'insert' | 'pageStyle' | 'view' | 'ai' | 'export';
 
 interface RibbonProps {
   engine: MindMapEngine | null;
@@ -77,6 +79,12 @@ interface RibbonProps {
   onOpenExportDialog: () => void;
   onNewFile: () => void;
   onSaveFile: () => void;
+  /** Save a copy under a new name/location; the tab switches to it (Ctrl+Shift+S) */
+  onSaveAs?: () => void;
+  /** Rename/move the open file on disk */
+  onRenameFile?: () => void;
+  /** Rename needs a file on disk (desktop) */
+  canRenameFile?: boolean;
   onOpenFile: () => void;
   isFormatPainterActive?: boolean;
   showMiniMap?: boolean;
@@ -112,6 +120,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenExportDialog,
   onNewFile,
   onSaveFile,
+  onSaveAs,
+  onRenameFile,
+  canRenameFile = false,
   onOpenFile,
   isFormatPainterActive = false,
   showMiniMap = false,
@@ -186,6 +197,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   };
 
   const tabs: { id: RibbonTab; label: string }[] = [
+    { id: 'file', label: 'File' },
     { id: 'home', label: 'Home' },
     { id: 'insert', label: 'Insert' },
     { id: 'pageStyle', label: 'Page Style' },
@@ -370,6 +382,56 @@ export const Ribbon: React.FC<RibbonProps> = ({
 
       {/* Ribbon Toolbar Content Area */}
       <div className="h-16 px-4 py-2 flex items-center gap-6 overflow-visible bg-slate-50/50">
+        {/* --- FILE TAB --- */}
+        {activeTab === 'file' && (
+          <>
+            {[
+              [
+                { label: 'New', hint: DesktopFileService.newMapShortcut().label, icon: FilePlus, color: 'text-indigo-600', onClick: onNewFile, title: 'New Mind Map' },
+                { label: 'Open', hint: 'Ctrl+O', icon: FolderOpen, color: 'text-amber-500', onClick: onOpenFile, title: 'Open a map file' },
+              ],
+              [
+                { label: 'Save', hint: 'Ctrl+S', icon: Save, color: 'text-emerald-600', onClick: onSaveFile, title: 'Save' },
+                { label: 'Save As', hint: 'Ctrl+⇧+S', icon: SaveAll, color: 'text-emerald-600', onClick: onSaveAs, title: 'Save a copy under a new name or location' },
+                {
+                  label: 'Rename',
+                  hint: '',
+                  icon: FilePen,
+                  color: 'text-sky-600',
+                  onClick: onRenameFile,
+                  disabled: !canRenameFile,
+                  title: canRenameFile ? 'Rename or move the file on disk' : 'Save the map to a file first',
+                },
+              ],
+              [
+                { label: 'Export', hint: '', icon: Download, color: 'text-indigo-600', onClick: onOpenExportDialog, title: 'Export as PNG, SVG, PDF, XMind, Markdown, and more' },
+                { label: 'Templates', hint: '', icon: LayoutTemplate, color: 'text-indigo-600', onClick: onOpenTemplates, title: 'Starter Template Gallery' },
+                { label: 'History', hint: '', icon: History, color: 'text-slate-600', onClick: onOpenHistory, title: 'Version History & Snapshots' },
+              ],
+            ].map((group, gi, groups) => (
+              <div
+                key={gi}
+                className={cn('flex items-center gap-2', gi < groups.length - 1 && 'pr-4 border-r border-slate-200')}
+              >
+                {group.map((item) => (
+                  <button
+                    key={item.label}
+                    aria-label={item.title}
+                    title={item.title}
+                    onClick={() => item.onClick?.()}
+                    disabled={('disabled' in item && item.disabled) || !item.onClick}
+                    className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:hover:border-transparent disabled:cursor-not-allowed"
+                  >
+                    <item.icon size={18} className={item.color} />
+                    <span className="text-[10px] font-semibold mt-0.5">{item.label}</span>
+                    {item.hint && <span className="text-[9px] text-slate-400 font-mono">{item.hint}</span>}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+
         {/* --- HOME TAB --- */}
         {activeTab === 'home' && (
           <>

@@ -17,7 +17,7 @@ import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export const APP_VERSION = pkg.version || '0.3.0';
+export const APP_VERSION = pkg.version || '0.3.1';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
+  'File tab with Save As and Rename, and saved maps always reopen from disk, so edits from other devices show up',
   'Automatic Updates: ZenMind checks for new releases and installs signed updates with one click (Check for updates in About)',
   'New ZenMind logo across the app, installers, taskbar, and web favicon',
   'Gemini AI Copilot always uses Google\'s newest Flash model (gemini-flash-latest), with Test Connection showing the model that answered',
