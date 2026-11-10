@@ -13,6 +13,8 @@ export interface SessionTabState {
   filePath?: string;
   dirty: boolean;
   savedJson: string | null;
+  /** Fingerprint of the file as last read or written; the base the unsaved edits started from */
+  diskFingerprint?: string;
 }
 
 export interface PersistedTab {
@@ -23,11 +25,38 @@ export interface PersistedTab {
   data?: unknown;
   savedJson?: string | null;
   dirty?: boolean;
+  diskFingerprint?: string;
 }
 
 export type RestoreEntry =
-  | { kind: 'cache'; title: string; savedTitle: string; filePath?: string; data: any; savedJson: string | null; dirty: boolean }
+  | {
+      kind: 'cache';
+      title: string;
+      savedTitle: string;
+      filePath?: string;
+      data: any;
+      savedJson: string | null;
+      dirty: boolean;
+      diskFingerprint?: string;
+    }
   | { kind: 'disk'; title: string; filePath: string };
+
+/** Title for cached unsaved edits that no longer match their file on disk */
+export const recoveredTitle = (title: string) => `${title} - recovered`;
+
+/**
+ * Compare the file on disk now with the version the cached unsaved edits started from.
+ * - `unchanged`: safe to keep the edits attached to the file
+ * - `changed`: the file was edited elsewhere (or the base is unknown): open both
+ * - `missing`: the file can't be read: keep the edits as a recovered copy
+ */
+export function detectConflict(
+  cachedBase: string | undefined,
+  diskNow: string | null
+): 'unchanged' | 'changed' | 'missing' {
+  if (diskNow === null) return 'missing';
+  return cachedBase !== undefined && cachedBase === diskNow ? 'unchanged' : 'changed';
+}
 
 export const hasUnsavedChanges = (t: Pick<SessionTabState, 'dirty' | 'title' | 'savedTitle'>) =>
   t.dirty || t.title !== t.savedTitle;
@@ -45,6 +74,7 @@ export function toPersistedTab(t: SessionTabState, getData: () => unknown): Pers
       data: getData(),
       savedJson: t.savedJson,
       dirty: t.dirty,
+      diskFingerprint: t.diskFingerprint,
     };
   }
   if (t.filePath) {
@@ -80,6 +110,7 @@ export function planRestore(rawTabs: unknown): RestoreEntry[] {
         data: t.data,
         savedJson: typeof t.savedJson === 'string' ? t.savedJson : null,
         dirty,
+        diskFingerprint: typeof t.diskFingerprint === 'string' ? t.diskFingerprint : undefined,
       });
     } else if (filePath) {
       plan.push({ kind: 'disk', title: savedTitle, filePath });

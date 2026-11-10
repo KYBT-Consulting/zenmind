@@ -1,10 +1,13 @@
 import { confirm as nativeConfirm, open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, readTextFile, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
+import { fileFingerprint } from '../lib/fingerprint';
 
 export interface FileSaveResult {
   success: boolean;
   filePath?: string;
+  /** Fingerprint of what was written (desktop), to detect later changes made elsewhere */
+  fingerprint?: string;
   canceled?: boolean;
   error?: any;
 }
@@ -15,6 +18,8 @@ export interface FileOpenResult {
   content?: string;
   /** Raw bytes, set for binary formats (.xmind) that can't be read as text */
   bytes?: Uint8Array;
+  /** Fingerprint of the raw file contents, to detect later changes made elsewhere */
+  fingerprint?: string;
   canceled?: boolean;
   error?: any;
 }
@@ -94,7 +99,7 @@ export class DesktopFileService {
 
         // Write directly to disk
         await writeTextFile(filePath, payload);
-        return { success: true, filePath };
+        return { success: true, filePath, fingerprint: fileFingerprint(payload) };
       } catch (error) {
         console.error('Tauri native save error:', error);
         return { success: false, error };
@@ -162,10 +167,10 @@ export class DesktopFileService {
   static async readMapFile(filePath: string): Promise<FileOpenResult> {
     if (filePath.toLowerCase().endsWith('.xmind')) {
       const bytes = await readFile(filePath);
-      return { success: true, filePath, bytes };
+      return { success: true, filePath, bytes, fingerprint: fileFingerprint(bytes) };
     }
     const content = await readTextFile(filePath);
-    return { success: true, filePath, content };
+    return { success: true, filePath, content, fingerprint: fileFingerprint(content) };
   }
 
   /**
