@@ -41,3 +41,31 @@ describe('AIService.getConfig model migration', () => {
     expect(AIService.getConfig().geminiModel).toBe('gemini-3.8-flash');
   });
 });
+
+describe('Gemini client setup', () => {
+  it('pins the v1beta API so -latest aliases resolve', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    const ctorArgs: any[] = [];
+    vi.doMock('@google/genai', () => ({
+      GoogleGenAI: class {
+        constructor(opts: any) {
+          ctorArgs.push(opts);
+        }
+        models = { generateContent: async () => ({ text: 'OK', modelVersion: 'gemini-3.8-flash' }) };
+      },
+    }));
+    const { AIService: Fresh, GEMINI_API_VERSION } = await import('./aiService');
+    const res = await Fresh.testConnection({
+      ...Fresh.getConfig(),
+      provider: 'gemini',
+      geminiApiKey: 'test-key',
+      geminiModel: 'gemini-flash-latest',
+    });
+    expect(GEMINI_API_VERSION).toBe('v1beta');
+    expect(ctorArgs[0]).toMatchObject({ apiKey: 'test-key', apiVersion: 'v1beta' });
+    expect(res.success).toBe(true);
+    expect(res.message).toContain('gemini-flash-latest → gemini-3.8-flash');
+    vi.doUnmock('@google/genai');
+  });
+});

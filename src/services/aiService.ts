@@ -28,6 +28,9 @@ export interface AIConfig {
  */
 export const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
 
+/** Gemini API version. v1beta serves both pinned model IDs and the `-latest` aliases. */
+export const GEMINI_API_VERSION = 'v1beta';
+
 /** Former built-in defaults that Google has since retired; saved configs are migrated off them. */
 const RETIRED_GEMINI_DEFAULTS = new Set(['gemini-2.5-flash']);
 
@@ -269,7 +272,9 @@ export class AIService {
     if (!apiKey) {
       throw new Error('Google Gemini API Key is not set.');
     }
-    const ai = new GoogleGenAI({ apiKey });
+    // @google/genai 3 defaults to the v1 API, which doesn't serve the `-latest`
+    // aliases (404 "not found for API version v1"). Pin v1beta, the 1.x default.
+    const ai = new GoogleGenAI({ apiKey, apiVersion: GEMINI_API_VERSION });
     const response = await ai.models.generateContent({
       model: resolveGeminiModel(config.geminiModel),
       contents: prompt,
