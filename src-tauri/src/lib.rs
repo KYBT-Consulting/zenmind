@@ -48,6 +48,12 @@ pub fn run() {
   #[cfg(desktop)]
   let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
 
+  // Remember which files the user opened or saved via the file dialogs, so the next
+  // launch can reopen them from disk (dialog grants otherwise last one run only).
+  // Must be registered after the fs plugin.
+  #[cfg(desktop)]
+  let builder = builder.plugin(tauri_plugin_persisted_scope::init());
+
   builder
     .setup(|app| {
       if cfg!(debug_assertions) {

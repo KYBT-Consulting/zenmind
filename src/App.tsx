@@ -20,6 +20,7 @@ import { ShortcutsDialog } from './components/dialogs/ShortcutsDialog';
 import { AboutDialog } from './components/dialogs/AboutDialog';
 import { SearchBar } from './components/search/SearchBar';
 import { DesktopFileService } from './services/desktopFileService';
+import { planRestore, toPersistedTab } from './lib/session';
 import { UpdateBanner } from './components/floating/UpdateBanner';
 import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
@@ -41,6 +42,8 @@ interface TabInfo {
   savedTitle: string;
   /** Map content differs from savedJson (title changes are checked separately, see isDirty) */
   dirty: boolean;
+  /** Being reopened from disk at launch; the canvas mounts once the file is read */
+  loading?: boolean;
 }
 
 const isDirty = (t: TabInfo) => t.dirty || t.title !== t.savedTitle;
@@ -70,32 +73,44 @@ const makeTab = (title: string, initialData: any, filePath?: string): TabInfo =>
 });
 
 function loadInitialSession(): { tabs: TabInfo[]; activeId: string } {
+  let hadSession = false;
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null;
     if (raw) {
+      hadSession = true;
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
-        const loaded: TabInfo[] = parsed.tabs
-          .filter((t: any) => t && t.data && typeof t.data === 'object' && (t.data.root || t.data.data))
-          .map((t: any) => ({
-            id: `tab-${++tabCounter}`,
-            title: typeof t.title === 'string' && t.title ? t.title : 'Untitled Mind Map',
-            filePath: typeof t.filePath === 'string' ? t.filePath : undefined,
-            initialData: sanitizeMapData(t.data),
-            savedJson: typeof t.savedJson === 'string' ? t.savedJson : null,
-            savedTitle: typeof t.savedTitle === 'string' ? t.savedTitle : t.title || 'Untitled Mind Map',
-            dirty: !!t.dirty,
-          }));
-        if (loaded.length > 0) {
-          const idx = typeof parsed.activeIndex === 'number' && loaded[parsed.activeIndex] ? parsed.activeIndex : 0;
-          return { tabs: loaded, activeId: loaded[idx].id };
+      // Saved files are reopened from disk (desktop); only unsaved work comes from the cache.
+      // The web build can't reopen files by path, so those entries are skipped there.
+      const canReadDisk = DesktopFileService.isTauri();
+      const loaded: TabInfo[] = planRestore(parsed?.tabs).flatMap((entry): TabInfo[] => {
+        if (entry.kind === 'cache') {
+          return [
+            {
+              id: `tab-${++tabCounter}`,
+              title: entry.title,
+              filePath: entry.filePath,
+              initialData: sanitizeMapData(entry.data),
+              savedJson: entry.savedJson,
+              savedTitle: entry.savedTitle,
+              dirty: entry.dirty,
+            },
+          ];
         }
+        if (!canReadDisk) return [];
+        return [{ ...makeTab(entry.title, null, entry.filePath), loading: true }];
+      });
+      if (loaded.length > 0) {
+        const idx = typeof parsed?.activeIndex === 'number' && loaded[parsed.activeIndex] ? parsed.activeIndex : 0;
+        return { tabs: loaded, activeId: loaded[idx].id };
       }
     }
   } catch {
     // ignore invalid or unavailable localStorage
   }
-  const first = makeTab('ZenMind Project', DEFAULT_INITIAL_DATA);
+  // First launch shows the starter map; afterwards, nothing to restore means a blank map
+  const first = hadSession
+    ? makeTab('Untitled Mind Map', BLANK_MAP())
+    : makeTab('ZenMind Project', DEFAULT_INITIAL_DATA);
   return { tabs: [first], activeId: first.id };
 }
 
@@ -452,6 +467,64 @@ export default function App() {
     [engine, activeTab.id]
   );
 
+  // Reopen the previous session's saved files from disk, never from a cached copy,
+  // so changes made to them elsewhere (another device, a sync folder) show up
+  useEffect(() => {
+    const pending = initialSession.tabs.filter((t) => t.loading && t.filePath);
+    if (pending.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(
+        pending.map(async (t) => {
+          const path = t.filePath!;
+          const fileName = path.split(/[\\/]/).pop() || t.title;
+          try {
+            const file = await DesktopFileService.readMapFile(path);
+            const parsed = file.bytes
+              ? await MindMapFormatService.parseFile(new File([file.bytes as BlobPart], fileName))
+              : await MindMapFormatService.parseText(file.content ?? '', path);
+            if (parsed.success && parsed.data) {
+              return { id: t.id, data: parsed.data, title: parsed.title || fileName.replace(/\.[^.]+$/, '') };
+            }
+          } catch (err) {
+            console.warn('Could not reopen', path, (err as any)?.message ?? err);
+          }
+          return { id: t.id, data: null, title: fileName };
+        })
+      );
+      if (cancelled) return;
+
+      const byId = new Map(results.map((r) => [r.id, r]));
+      setTabs((prev) => {
+        const next = prev.flatMap((t): TabInfo[] => {
+          const r = byId.get(t.id);
+          if (!r) return [t];
+          if (!r.data) return []; // moved, deleted, or unreadable: drop the tab
+          return [{ ...t, initialData: r.data, title: r.title, savedTitle: r.title, savedJson: null, dirty: false, loading: false }];
+        });
+        return next.length > 0 ? next : [makeTab('Untitled Mind Map', BLANK_MAP())];
+      });
+
+      const missing = results.filter((r) => !r.data).map((r) => r.title);
+      if (missing.length > 0) {
+        setToastMessage(
+          missing.length === 1
+            ? `Couldn't reopen "${missing[0]}". It may have been moved or deleted; use Open to load it again.`
+            : `Couldn't reopen ${missing.length} files (${missing.join(', ')}). They may have been moved or deleted; use Open to load them again.`
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep a valid active tab if the active one was dropped (e.g. its file couldn't be reopened)
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.id === activeId)) setActiveId(tabs[0].id);
+  }, [tabs, activeId]);
+
   // Auto-dismiss toast notifications
   useEffect(() => {
     if (!toastMessage) return;
@@ -463,16 +536,17 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
+        // Map content is cached only for tabs with unsaved changes; saved files are
+        // remembered by path and reopened from disk next launch (see lib/session.ts)
+        const persisted = tabs
+          .map((t) => ({
+            active: t.id === activeId,
+            entry: toPersistedTab(t, () => enginesRef.current[t.id]?.getData() ?? t.initialData),
+          }))
+          .filter((p) => p.entry !== null);
         const payload = {
-          activeIndex: Math.max(0, tabs.findIndex((t) => t.id === activeId)),
-          tabs: tabs.map((t) => ({
-            title: t.title,
-            filePath: t.filePath,
-            data: enginesRef.current[t.id]?.getData() ?? t.initialData,
-            savedJson: t.savedJson,
-            savedTitle: t.savedTitle,
-            dirty: t.dirty,
-          })),
+          activeIndex: Math.max(0, persisted.findIndex((p) => p.active)),
+          tabs: persisted.map((p) => p.entry),
         };
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
       } catch {
@@ -757,15 +831,21 @@ export default function App() {
               key={tab.id}
               className={tab.id === activeId ? 'absolute inset-0' : 'absolute inset-0 invisible pointer-events-none'}
             >
-              <ErrorBoundary fallbackTitle="Mind Map Canvas encountered an error">
-                <MindMapCanvas
-                  {...getCallbacks(tab.id)}
-                  onFormatPainterChange={tab.id === activeId ? setIsFormatPainterActive : undefined}
-                  isFormatPainterActive={isFormatPainterActive && tab.id === activeId}
-                  initialData={tab.initialData}
-                  isActive={tab.id === activeId}
-                />
-              </ErrorBoundary>
+              {tab.loading ? (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                  Opening {tab.title}…
+                </div>
+              ) : (
+                <ErrorBoundary fallbackTitle="Mind Map Canvas encountered an error">
+                  <MindMapCanvas
+                    {...getCallbacks(tab.id)}
+                    onFormatPainterChange={tab.id === activeId ? setIsFormatPainterActive : undefined}
+                    isFormatPainterActive={isFormatPainterActive && tab.id === activeId}
+                    initialData={tab.initialData}
+                    isActive={tab.id === activeId}
+                  />
+                </ErrorBoundary>
+              )}
             </div>
           ))}
 

@@ -155,6 +155,20 @@ export class DesktopFileService {
   }
 
   /**
+   * Read a mind map file from disk by path (desktop only). Binary formats (.xmind)
+   * come back as bytes, everything else as text. Used by the Open dialog and to
+   * reopen the previous session's files on launch.
+   */
+  static async readMapFile(filePath: string): Promise<FileOpenResult> {
+    if (filePath.toLowerCase().endsWith('.xmind')) {
+      const bytes = await readFile(filePath);
+      return { success: true, filePath, bytes };
+    }
+    const content = await readTextFile(filePath);
+    return { success: true, filePath, content };
+  }
+
+  /**
    * Native file open dialog and direct disk read (Tauri) with browser fallback.
    */
   static async openZenMindFile(): Promise<FileOpenResult> {
@@ -196,12 +210,7 @@ export class DesktopFileService {
           return { success: false, canceled: true };
         }
 
-        if (selected.toLowerCase().endsWith('.xmind')) {
-          const bytes = await readFile(selected);
-          return { success: true, filePath: selected, bytes };
-        }
-        const content = await readTextFile(selected);
-        return { success: true, filePath: selected, content };
+        return await this.readMapFile(selected);
       } catch (error) {
         console.error('Tauri native open error:', error);
         return { success: false, error };
