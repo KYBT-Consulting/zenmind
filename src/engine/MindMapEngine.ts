@@ -39,6 +39,7 @@ export interface MindMapEngineCallbacks {
   onFormatPainterChange?: (isActive: boolean) => void;
   onPresentationModeChange?: (isActive: boolean) => void;
   onContextMenu?: (event: ContextMenuEventInfo) => void;
+  onNodeDateClick?: (node: ActiveNodeInfo) => void;
   /** Fired once, after the first tree render completes (the map is laid out and stable). */
   onFirstRender?: (engine: MindMapEngine) => void;
   onError?: (error: any) => void;
@@ -262,6 +263,17 @@ export class MindMapEngine {
       }
     });
 
+    // Interactive date badge click on canvas
+    this.mindMap.on('node_date_click', (node: any) => {
+      if (!node) return;
+      const renderer = this.mindMap?.renderer as any;
+      renderer?.clearActiveNodeList?.();
+      renderer?.setNodeActive?.(node, true);
+      const info = this.extractActiveNodeInfo(node);
+      this.callbacks.onActiveNodeChange?.(info);
+      this.callbacks.onNodeDateClick?.(info);
+    });
+
     // Right-click context menu on a topic node
     this.mindMap.on('node_contextmenu', (e: MouseEvent, node: any) => {
       e?.preventDefault?.();
@@ -314,6 +326,10 @@ export class MindMapEngine {
       hyperlinkTitle: data.hyperlinkTitle || '',
       tag: data.tag || [],
       icon: data.icon || [],
+      startDate: data.startDate || undefined,
+      endDate: data.endDate || undefined,
+      startTime: data.startTime || undefined,
+      endTime: data.endTime || undefined,
       customLeft: data.customLeft,
       customTop: data.customTop,
       image: data.image
@@ -461,24 +477,91 @@ export class MindMapEngine {
     }
   }
 
-  /** Select a node by uid and bring it into view. Returns false if no such node exists. */
-  selectNodeByUid(uid: string): boolean {
+  /** Select a node by uid and optionally bring it into view. Returns false if no such node exists. */
+  selectNodeByUid(uid: string, centerOnCanvas: boolean = true): boolean {
     const renderer = this.mindMap?.renderer as any;
-    const node = renderer?.findNodeByUid?.(uid);
+    if (!renderer) return false;
+    let node = renderer.findNodeByUid?.(uid);
+    if (!node && typeof renderer.expandToNodeUid === 'function') {
+      renderer.expandToNodeUid(uid, () => {
+        const target = renderer.findNodeByUid?.(uid);
+        if (target) {
+          renderer.clearActiveNodeList?.();
+          renderer.setNodeActive(target, true);
+          if (centerOnCanvas) {
+            renderer.moveNodeToCenter?.(target);
+          }
+          this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(target));
+        }
+      });
+      return true;
+    }
     if (!node) return false;
     renderer.clearActiveNodeList?.();
     renderer.setNodeActive(node, true);
-    renderer.moveNodeToCenter?.(node);
+    if (centerOnCanvas) {
+      renderer.moveNodeToCenter?.(node);
+    }
+    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     return true;
+  }
+
+  private resolveNode(targetUid?: string): any {
+    const renderer = this.mindMap?.renderer as any;
+    if (!renderer) return null;
+    if (!targetUid) return this.getActiveNode();
+    let node = renderer.findNodeByUid?.(targetUid);
+    if (!node && typeof renderer.expandToNodeUid === 'function') {
+      renderer.expandToNodeUid(targetUid, () => {});
+      node = renderer.findNodeByUid?.(targetUid);
+    }
+    return node || null;
   }
 
   /** Add several child topics under a node (by uid, default: the active node) as one undoable step. */
   addChildTopics(texts: string[], parentUid?: string): boolean {
     const renderer = this.mindMap?.renderer as any;
     if (!this.mindMap || !renderer || texts.length === 0) return false;
-    const parent = parentUid ? renderer.findNodeByUid?.(parentUid) : this.getActiveNode();
+    const parent = parentUid ? this.resolveNode(parentUid) : this.getActiveNode();
     if (!parent) return false;
     this.mindMap.execCommand('INSERT_MULTI_CHILD_NODE', [parent], texts.map((text) => ({ data: { text } })));
+    return true;
+  }
+
+  /** Adds a single child topic (or first-level branch when parentUid === 'root') with optional initial data. */
+  addChildNodeWithData(parentUid: string | 'root', data: Record<string, any>): boolean {
+    const renderer = this.mindMap?.renderer as any;
+    if (!this.mindMap || !renderer) return false;
+    const parent = parentUid === 'root' ? renderer.root : this.resolveNode(parentUid);
+    if (!parent) return false;
+    this.mindMap.execCommand('INSERT_CHILD_NODE', false, [parent], data);
+    return true;
+  }
+
+  /** Moves a node into another parent branch (or before a target sibling node). */
+  moveNodeToBranch(nodeUid: string, targetBranchUid: string, beforeNodeUid?: string): boolean {
+    const renderer = this.mindMap?.renderer as any;
+    if (!this.mindMap || !renderer || nodeUid === targetBranchUid) return false;
+    const node = this.resolveNode(nodeUid);
+    if (!node || node.isRoot) return false;
+    if (beforeNodeUid && beforeNodeUid !== nodeUid) {
+      const beforeNode = this.resolveNode(beforeNodeUid);
+      if (beforeNode && !beforeNode.isRoot) {
+        this.mindMap.execCommand('INSERT_BEFORE', node, beforeNode);
+        return true;
+      }
+    }
+    const targetBranch = targetBranchUid === 'root' ? renderer.root : this.resolveNode(targetBranchUid);
+    if (!targetBranch) return false;
+    this.mindMap.execCommand('MOVE_NODE_TO', node, targetBranch);
+    return true;
+  }
+
+  /** Deletes a specific node by uid. */
+  deleteNodeByUid(uid: string): boolean {
+    const node = this.resolveNode(uid);
+    if (!node || node.isRoot) return false;
+    this.mindMap?.execCommand('REMOVE_NODE', [node]);
     return true;
   }
 
@@ -486,9 +569,9 @@ export class MindMapEngine {
     return this.mindMap?.renderer?.activeNodeList?.[0] || null;
   }
 
-  /** Sets the active topic's text. `text` is plain text: it is escaped, never interpreted as markup. */
-  setNodeText(text: string) {
-    const node = this.getActiveNode();
+  /** Sets the active topic's (or specified uid's) text. `text` is plain text: it is escaped, never interpreted as markup. */
+  setNodeText(text: string, targetUid?: string) {
+    const node = this.resolveNode(targetUid);
     if (node) {
       if ((this.mindMap as any)?.richText) {
         const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -496,7 +579,9 @@ export class MindMapEngine {
       } else {
         this.mindMap?.execCommand('SET_NODE_TEXT', node, text);
       }
-      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+      if (this.getActiveNode()?.uid === node.uid) {
+        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+      }
     }
   }
 
@@ -559,8 +644,8 @@ export class MindMapEngine {
     }
   }
 
-  setNodePriority(priority: PriorityLevel | null) {
-    const node = this.getActiveNode();
+  setNodePriority(priority: PriorityLevel | null, targetUid?: string) {
+    const node = this.resolveNode(targetUid);
     if (!node) return;
     const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('priority_'));
     if (priority !== null) {
@@ -568,11 +653,13 @@ export class MindMapEngine {
     } else {
       node.setIcon(currentIcons);
     }
-    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    if (this.getActiveNode()?.uid === node.uid) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    }
   }
 
-  setNodeProgress(progress: ProgressLevel | null) {
-    const node = this.getActiveNode();
+  setNodeProgress(progress: ProgressLevel | null, targetUid?: string) {
+    const node = this.resolveNode(targetUid);
     if (!node) return;
     const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('progress_'));
     if (progress !== null) {
@@ -580,18 +667,55 @@ export class MindMapEngine {
     } else {
       node.setIcon(currentIcons);
     }
-    this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    if (this.getActiveNode()?.uid === node.uid) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
+    }
   }
 
-  toggleNodeCheckbox() {
-    const node = this.getActiveNode();
+  toggleNodeCheckbox(targetUid?: string) {
+    const node = this.resolveNode(targetUid);
     if (!node) return;
     const icons: string[] = node.getData('icon') || [];
     const currentProgress = icons.find((i: string) => i.startsWith('progress_'));
     if (!currentProgress || currentProgress === 'progress_0') {
-      this.setNodeProgress(100);
+      this.setNodeProgress(100, node.uid);
     } else {
-      this.setNodeProgress(0);
+      this.setNodeProgress(0, node.uid);
+    }
+  }
+
+  /**
+   * Updates start/end dates and optional start/end times on the active node (or `targetUid`).
+   * Passing `null` or `""` for a field clears that field; omitting a field leaves it unchanged.
+   */
+  setNodeDates(
+    dates: {
+      startDate?: string | null;
+      endDate?: string | null;
+      startTime?: string | null;
+      endTime?: string | null;
+    },
+    targetUid?: string
+  ) {
+    const node = this.resolveNode(targetUid);
+    const renderer = this.mindMap?.renderer as any;
+    if (!node || !renderer) return;
+
+    const patch: Record<string, string | undefined> = {};
+    if ('startDate' in dates) patch.startDate = dates.startDate || undefined;
+    if ('endDate' in dates) patch.endDate = dates.endDate || undefined;
+    if ('startTime' in dates) patch.startTime = dates.startTime || undefined;
+    if ('endTime' in dates) patch.endTime = dates.endTime || undefined;
+
+    if (typeof renderer.setNodeDataRender === 'function') {
+      renderer.setNodeDataRender(node, patch);
+    } else {
+      this.mindMap?.execCommand('SET_NODE_DATA', node, patch);
+      this.mindMap?.render();
+    }
+
+    if (this.getActiveNode()?.uid === node.uid) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     }
   }
 

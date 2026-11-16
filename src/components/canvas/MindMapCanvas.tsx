@@ -16,6 +16,7 @@ interface MindMapCanvasProps {
   onFormatPainterChange?: (isActive: boolean) => void;
   onPresentationModeChange?: (isActive: boolean) => void;
   onContextMenu?: (event: ContextMenuEventInfo) => void;
+  onNodeDateClick?: (node: ActiveNodeInfo) => void;
   isFormatPainterActive?: boolean;
   initialData?: any;
   isActive?: boolean;
@@ -31,6 +32,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   onFormatPainterChange,
   onPresentationModeChange,
   onContextMenu,
+  onNodeDateClick,
   isFormatPainterActive = false,
   initialData,
   isActive = true,
@@ -55,6 +57,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
       onFormatPainterChange,
       onPresentationModeChange,
       onContextMenu,
+      onNodeDateClick,
       onFirstRender,
       onError: (err) => console.error('ZenMind Engine Error:', err),
     };

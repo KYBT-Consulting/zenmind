@@ -1,12 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { MindMapEngine, DEFAULT_INITIAL_DATA, ContextMenuEventInfo } from './engine/MindMapEngine';
-import { ActiveNodeInfo } from './types/mindmap';
+import { ActiveNodeInfo, WorkspaceViewMode } from './types/mindmap';
 import { Ribbon } from './components/ribbon/Ribbon';
 import { MindMapCanvas } from './components/canvas/MindMapCanvas';
 import { CanvasContextMenu } from './components/canvas/CanvasContextMenu';
 import { MiniMapOverlay } from './components/canvas/MiniMapOverlay';
 import { FormatInspector, InspectorTab } from './components/inspector/FormatInspector';
 import { OutlinePanel } from './components/outline/OutlinePanel';
+import { KanbanView } from './components/kanban/KanbanView';
+import { DailyPlannerView } from './components/planner/DailyPlannerView';
 import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { AIDialog } from './components/dialogs/AIDialog';
@@ -124,6 +126,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string>(initialSession.activeId);
   const [engines, setEngines] = useState<Record<string, MindMapEngine>>({});
   const [views, setViews] = useState<Record<string, TabView>>({});
+  const [viewMode, setViewMode] = useState<WorkspaceViewMode>('mindmap');
   const [showOutline, setShowOutline] = useState(false);
   const [showInspector, setShowInspector] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
@@ -226,6 +229,11 @@ export default function App() {
         },
         onContextMenu: (event: ContextMenuEventInfo) => {
           setContextMenu(event);
+        },
+        onNodeDateClick: () => {
+          setInspectorTab('task');
+          setInspectorTabRequest((n) => n + 1);
+          setShowInspector(true);
         },
       };
     }
@@ -888,6 +896,8 @@ export default function App() {
         onOpenHistory={() => setShowHistoryDialog(true)}
         onOpenShortcuts={() => setShowShortcutsDialog(true)}
         onOpenAbout={() => setShowAboutDialog(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         onExported={(filePath) => setToastMessage(`Exported to ${filePath}`)}
       />
 
@@ -897,6 +907,8 @@ export default function App() {
         onSelect={handleSelectTab}
         onClose={handleCloseTab}
         onNew={handleNewFile}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
@@ -919,11 +931,13 @@ export default function App() {
           onDrop={handleDrop}
         >
           {/* In-Canvas Find & Replace Bar (Ctrl+F) */}
-          <SearchBar
-            isOpen={showSearch}
-            engine={engine}
-            onClose={() => setShowSearch(false)}
-          />
+          {viewMode === 'mindmap' && (
+            <SearchBar
+              isOpen={showSearch}
+              engine={engine}
+              onClose={() => setShowSearch(false)}
+            />
+          )}
 
           {/* Drag & Drop Visual Target Overlay */}
           {isDraggingFile && (
@@ -941,30 +955,38 @@ export default function App() {
           )}
 
           {/* Right-Click Context Menu for Nodes and Canvas */}
-          <CanvasContextMenu
-            menu={contextMenu}
-            engine={engine}
-            onClose={() => setContextMenu(null)}
-            onOpenNotes={handleOpenNotes}
-            onOpenImageDialog={() => setShowImageDialog(true)}
-            onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
-          />
+          {viewMode === 'mindmap' && (
+            <CanvasContextMenu
+              menu={contextMenu}
+              engine={engine}
+              onClose={() => setContextMenu(null)}
+              onOpenNotes={handleOpenNotes}
+              onOpenImageDialog={() => setShowImageDialog(true)}
+              onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
+            />
+          )}
 
           {/* Context Floating Bubble Menu over selected topic */}
-          <FloatingBubbleMenu
-            engine={engine}
-            activeNode={activeNode}
-            isFormatPainterActive={isFormatPainterActive}
-            onOpenNotes={handleOpenNotes}
-            onOpenImage={() => setShowImageDialog(true)}
-            onOpenFormula={() => setShowFormulaDialog(true)}
-            onOpenHyperlink={() => setShowHyperlinkDialog(true)}
-          />
+          {viewMode === 'mindmap' && (
+            <FloatingBubbleMenu
+              engine={engine}
+              activeNode={activeNode}
+              isFormatPainterActive={isFormatPainterActive}
+              onOpenNotes={handleOpenNotes}
+              onOpenImage={() => setShowImageDialog(true)}
+              onOpenFormula={() => setShowFormulaDialog(true)}
+              onOpenHyperlink={() => setShowHyperlinkDialog(true)}
+            />
+          )}
 
           {tabs.map((tab) => (
             <div
               key={tab.id}
-              className={tab.id === activeId ? 'absolute inset-0' : 'absolute inset-0 invisible pointer-events-none'}
+              className={
+                tab.id === activeId && viewMode === 'mindmap'
+                  ? 'absolute inset-0'
+                  : 'absolute inset-0 invisible pointer-events-none'
+              }
             >
               {tab.loading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
@@ -977,19 +999,63 @@ export default function App() {
                     onFormatPainterChange={tab.id === activeId ? setIsFormatPainterActive : undefined}
                     isFormatPainterActive={isFormatPainterActive && tab.id === activeId}
                     initialData={tab.initialData}
-                    isActive={tab.id === activeId}
+                    isActive={tab.id === activeId && viewMode === 'mindmap'}
                   />
                 </ErrorBoundary>
               )}
             </div>
           ))}
 
+          {/* Kanban Board View */}
+          {viewMode === 'kanban' && (
+            <div className="absolute inset-0 z-10">
+              <KanbanView
+                engine={engine}
+                data={mindMapData}
+                activeNode={activeNode}
+                onLocateNode={(uid) => {
+                  setViewMode('mindmap');
+                  setTimeout(() => engine?.selectNodeByUid(uid, true), 50);
+                }}
+                onOpenTaskInspector={(uid) => {
+                  engine?.selectNodeByUid(uid, false);
+                  setInspectorTab('task');
+                  setInspectorTabRequest((n) => n + 1);
+                  setShowInspector(true);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Daily Planner View */}
+          {viewMode === 'planner' && (
+            <div className="absolute inset-0 z-10">
+              <DailyPlannerView
+                engine={engine}
+                data={mindMapData}
+                activeNode={activeNode}
+                onLocateNode={(uid) => {
+                  setViewMode('mindmap');
+                  setTimeout(() => engine?.selectNodeByUid(uid, true), 50);
+                }}
+                onOpenTaskInspector={(uid) => {
+                  engine?.selectNodeByUid(uid, false);
+                  setInspectorTab('task');
+                  setInspectorTabRequest((n) => n + 1);
+                  setShowInspector(true);
+                }}
+              />
+            </div>
+          )}
+
           {/* Navigator Mini-Map Overlay */}
-          <MiniMapOverlay
-            engine={engine}
-            isOpen={showMiniMap}
-            onClose={() => setShowMiniMap(false)}
-          />
+          {viewMode === 'mindmap' && (
+            <MiniMapOverlay
+              engine={engine}
+              isOpen={showMiniMap}
+              onClose={() => setShowMiniMap(false)}
+            />
+          )}
         </main>
 
         {/* Right Format Inspector Sidebar */}

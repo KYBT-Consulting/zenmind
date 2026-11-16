@@ -309,6 +309,10 @@ export interface ActiveNodeInfo {
   hyperlinkTitle?: string;
   tag?: string[];
   icon?: string[];
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
   customLeft?: number;
   customTop?: number;
   image?: { url: string; title?: string; width?: number; height?: number };
@@ -335,6 +339,8 @@ export interface OuterFrameConfig {
   strokeDasharray?: string;
   fill?: string;
 }
+
+export type WorkspaceViewMode = 'mindmap' | 'kanban' | 'planner';
 
 export interface MindMapExportOptions {
   filename?: string;

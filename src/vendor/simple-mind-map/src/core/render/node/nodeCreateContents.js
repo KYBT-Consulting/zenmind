@@ -12,6 +12,11 @@ import {
 import { Image as SVGImage, SVG, A, G, Rect, Text } from '@svgdotjs/svg.js'
 import iconsSvg from '../../../svg/icons'
 import { noneRichTextNodeLineHeight } from '../../../constants/constant'
+import {
+  formatTaskDateBadge,
+  getTaskDateBadgeColors,
+  getTaskDateStatus
+} from '../../../../lib/taskDates'
 
 // 测量svg文本宽高
 const measureText = (text, style) => {
@@ -354,14 +359,56 @@ function createHyperlinkNode() {
 
 //  创建标签节点
 function createTagNode() {
-  const tagData = this.getData('tag')
-  if (!tagData || tagData.length <= 0) {
-    return []
+  const rawTagData = this.getData('tag') || []
+  const startDate = this.getData('startDate')
+  const endDate = this.getData('endDate')
+  const startTime = this.getData('startTime')
+  const endTime = this.getData('endTime')
+  const icons = this.getData('icon') || []
+  const progressIcon = Array.isArray(icons)
+    ? icons.find(i => typeof i === 'string' && i.startsWith('progress_'))
+    : null
+  const progressNum = progressIcon
+    ? parseInt(progressIcon.replace('progress_', ''), 10)
+    : null
+
+  const dateBadgeText = formatTaskDateBadge({
+    startDate,
+    endDate,
+    startTime,
+    endTime
+  })
+  let dateTagItem = null
+  if (dateBadgeText) {
+    const status = getTaskDateStatus(
+      { startDate, endDate, startTime, endTime },
+      progressNum
+    )
+    const colors = getTaskDateBadgeColors(status)
+    dateTagItem = {
+      text: `📅 ${dateBadgeText}`,
+      isDateBadge: true,
+      style: {
+        fill: colors.svgFill,
+        radius: 4,
+        fontSize: 11,
+        height: 20,
+        paddingX: 7
+      }
+    }
   }
+
   let { maxTag, tagsColorMap } = this.mindMap.opt
   tagsColorMap = tagsColorMap || {}
+  const combinedTags = [
+    ...(dateTagItem ? [dateTagItem] : []),
+    ...rawTagData.slice(0, maxTag)
+  ]
+  if (combinedTags.length <= 0) {
+    return []
+  }
   const nodes = []
-  tagData.slice(0, maxTag).forEach((item, index) => {
+  combinedTags.forEach((item, index) => {
     let str = ''
     let style = {
       ...defaultTagStyle
@@ -378,8 +425,16 @@ function createTagNode() {
     const hasCustomWidth = typeof style.width !== 'undefined'
     // 创建容器节点
     const tag = new G()
-    tag.on('click', () => {
-      this.mindMap.emit('node_tag_click', this, item, index, tag)
+    if (item && item.isDateBadge) {
+      tag.attr('cursor', 'pointer')
+    }
+    tag.on('click', e => {
+      if (item && item.isDateBadge) {
+        e?.stopPropagation?.()
+        this.mindMap.emit('node_date_click', this, e)
+      } else {
+        this.mindMap.emit('node_tag_click', this, item, index, tag)
+      }
     })
     // 标签文本
     const text = new Text().text(str)
