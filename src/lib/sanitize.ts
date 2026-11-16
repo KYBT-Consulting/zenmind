@@ -52,6 +52,18 @@ function sanitizeNodeData(data: any) {
     delete data.hyperlinkTitle;
   }
   if (typeof data.hyperlinkTitle === 'string') data.hyperlinkTitle = sanitizeHtml(data.hyperlinkTitle);
+  if (data.startDate !== undefined && (typeof data.startDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.startDate))) {
+    delete data.startDate;
+  }
+  if (data.endDate !== undefined && (typeof data.endDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.endDate))) {
+    delete data.endDate;
+  }
+  if (data.startTime !== undefined && (typeof data.startTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.startTime))) {
+    delete data.startTime;
+  }
+  if (data.endTime !== undefined && (typeof data.endTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.endTime))) {
+    delete data.endTime;
+  }
   // Summary (generalization) nodes carry their own text
   const gen = data.generalization;
   if (Array.isArray(gen)) gen.forEach(sanitizeNodeData);

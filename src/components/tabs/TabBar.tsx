@@ -1,7 +1,8 @@
 import React from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Network, Kanban, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { DesktopFileService } from '../../services/desktopFileService';
+import { WorkspaceViewMode } from '../../types/mindmap';
 
 export interface TabSummary {
   id: string;
@@ -15,9 +16,19 @@ interface TabBarProps {
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
   onNew: () => void;
+  viewMode?: WorkspaceViewMode;
+  onViewModeChange?: (mode: WorkspaceViewMode) => void;
 }
 
-export const TabBar: React.FC<TabBarProps> = ({ tabs, activeId, onSelect, onClose, onNew }) => {
+export const TabBar: React.FC<TabBarProps> = ({
+  tabs,
+  activeId,
+  onSelect,
+  onClose,
+  onNew,
+  viewMode = 'mindmap',
+  onViewModeChange,
+}) => {
   const newLabel = `New Mind Map (${DesktopFileService.newMapShortcut().label})`;
 
   const onTabKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -99,6 +110,42 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeId, onSelect, onClos
       >
         <Plus size={14} />
       </button>
+
+      {onViewModeChange && (
+        <div
+          role="group"
+          aria-label="Workspace View Mode"
+          className="ml-auto mb-1 flex items-center bg-slate-200/80 p-0.5 rounded-lg border border-slate-300/60 shrink-0"
+        >
+          {(
+            [
+              { id: 'mindmap', label: 'Mind Map', icon: Network },
+              { id: 'kanban', label: 'Kanban', icon: Kanban },
+              { id: 'planner', label: 'Daily Planner', icon: Calendar },
+            ] as { id: WorkspaceViewMode; label: string; icon: React.FC<{ size?: number }> }[]
+          ).map((item) => {
+            const Icon = item.icon;
+            const active = viewMode === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onViewModeChange(item.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer',
+                  active
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                )}
+              >
+                <Icon size={12} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

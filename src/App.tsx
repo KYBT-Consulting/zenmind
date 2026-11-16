@@ -1,12 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { MindMapEngine, DEFAULT_INITIAL_DATA, ContextMenuEventInfo } from './engine/MindMapEngine';
-import { ActiveNodeInfo } from './types/mindmap';
+import { ActiveNodeInfo, WorkspaceViewMode } from './types/mindmap';
 import { Ribbon } from './components/ribbon/Ribbon';
 import { MindMapCanvas } from './components/canvas/MindMapCanvas';
 import { CanvasContextMenu } from './components/canvas/CanvasContextMenu';
 import { MiniMapOverlay } from './components/canvas/MiniMapOverlay';
 import { FormatInspector, InspectorTab } from './components/inspector/FormatInspector';
 import { OutlinePanel } from './components/outline/OutlinePanel';
+import { KanbanView } from './components/kanban/KanbanView';
+import { DailyPlannerView } from './components/planner/DailyPlannerView';
 import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
 import { AIDialog } from './components/dialogs/AIDialog';
@@ -124,6 +127,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string>(initialSession.activeId);
   const [engines, setEngines] = useState<Record<string, MindMapEngine>>({});
   const [views, setViews] = useState<Record<string, TabView>>({});
+  const [viewMode, setViewMode] = useState<WorkspaceViewMode>('mindmap');
   const [showOutline, setShowOutline] = useState(false);
   const [showInspector, setShowInspector] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
@@ -227,6 +231,11 @@ export default function App() {
         onContextMenu: (event: ContextMenuEventInfo) => {
           setContextMenu(event);
         },
+        onNodeDateClick: () => {
+          setInspectorTab('task');
+          setInspectorTabRequest((n) => n + 1);
+          setShowInspector(true);
+        },
       };
     }
     return callbacksCache.current[id];
@@ -250,6 +259,8 @@ export default function App() {
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
 
   /** Drops the per-tab engine/view/callback entries of a tab that is going away. */
   const forgetTab = (id: string) => {
@@ -345,18 +356,20 @@ export default function App() {
     [tabs, activeId]
   );
 
-  // File Save / Save As (.zenmind JSON) - Native Desktop & Web
-  const saveActiveTab = useCallback(
-    async (options: { saveAs?: boolean; title?: string; filePath?: string } = {}) => {
-      if (!engine) return;
-      const data = engine.getData();
-      const savedTree = engine.getContentSignature();
-      const titleToSave = options.title ?? docTitle;
-      const id = activeTab.id;
+  // File Save / Save As (.zenmind JSON) - Native Desktop & Web. Works on any tab, not just
+  // the active one, so the exit prompt can save every tab with unsaved changes.
+  const saveTab = useCallback(
+    async (id: string, options: { saveAs?: boolean; title?: string; filePath?: string } = {}) => {
+      const tab = tabsRef.current.find((t) => t.id === id);
+      const eng = enginesRef.current[id];
+      if (!tab || !eng) return;
+      const data = eng.getData();
+      const savedTree = eng.getContentSignature();
+      const titleToSave = options.title ?? tab.title;
       const result = await DesktopFileService.saveZenMindFile(
         data,
         titleToSave,
-        options.filePath ?? currentFilePath,
+        options.filePath ?? tab.filePath,
         { saveAs: options.saveAs }
       );
       if (result.success) {
@@ -374,7 +387,11 @@ export default function App() {
       }
       return result;
     },
-    [engine, activeTab.id, docTitle, currentFilePath, updateTab]
+    [updateTab]
+  );
+  const saveActiveTab = useCallback(
+    (options: { saveAs?: boolean; title?: string; filePath?: string } = {}) => saveTab(activeTab.id, options),
+    [saveTab, activeTab.id]
   );
   const handleSaveFile = useCallback(() => void saveActiveTab(), [saveActiveTab]);
   const handleSaveAs = useCallback(() => void saveActiveTab({ saveAs: true }), [saveActiveTab]);
@@ -663,28 +680,80 @@ export default function App() {
   }, [toastMessage]);
 
   // Persist open tabs & session state to localStorage for crash/refresh recovery
+  const writeSession = useCallback((sessionTabs: TabInfo[], sessionActiveId: string) => {
+    try {
+      // Map content is cached only for tabs with unsaved changes; saved files are
+      // remembered by path and reopened from disk next launch (see lib/session.ts)
+      const persisted = sessionTabs
+        .map((t) => ({
+          active: t.id === sessionActiveId,
+          entry: toPersistedTab(t, () => enginesRef.current[t.id]?.getData() ?? t.initialData),
+        }))
+        .filter((p) => p.entry !== null);
+      const payload = {
+        activeIndex: Math.max(0, persisted.findIndex((p) => p.active)),
+        tabs: persisted.map((p) => p.entry),
+      };
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage quota or private-mode errors
+    }
+  }, []);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      try {
-        // Map content is cached only for tabs with unsaved changes; saved files are
-        // remembered by path and reopened from disk next launch (see lib/session.ts)
-        const persisted = tabs
-          .map((t) => ({
-            active: t.id === activeId,
-            entry: toPersistedTab(t, () => enginesRef.current[t.id]?.getData() ?? t.initialData),
-          }))
-          .filter((p) => p.entry !== null);
-        const payload = {
-          activeIndex: Math.max(0, persisted.findIndex((p) => p.active)),
-          tabs: persisted.map((p) => p.entry),
-        };
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
-      } catch {
-        // Ignore storage quota or private-mode errors
-      }
-    }, 400);
+    const timer = setTimeout(() => writeSession(tabs, activeId), 400);
     return () => clearTimeout(timer);
-  }, [tabs, activeId, views]);
+  }, [tabs, activeId, views, writeSession]);
+
+  // Desktop: closing the window with unsaved changes asks Save / Don't Save / Cancel.
+  // (The beforeunload handler below only covers the web build; Tauri ignores it.)
+  const saveTabRef = useRef(saveTab);
+  saveTabRef.current = saveTab;
+  useEffect(() => {
+    if (!DesktopFileService.isTauri()) return;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    getCurrentWindow()
+      .onCloseRequested(async (event) => {
+        const dirtyTabs = tabsRef.current.filter(isDirty);
+        if (dirtyTabs.length === 0) return;
+        const names = dirtyTabs.map((t) => `"${t.title}"`).join(', ');
+        const choice = await DesktopFileService.askSaveBeforeExit(
+          dirtyTabs.length === 1
+            ? `${names} has unsaved changes. Save before closing?`
+            : `${dirtyTabs.length} maps have unsaved changes (${names}). Save them before closing?`
+        );
+        if (choice === 'cancel') {
+          event.preventDefault();
+          return;
+        }
+        if (choice === 'save') {
+          for (const tab of dirtyTabs) {
+            setActiveId(tab.id); // show which map a Save As dialog is for
+            const result = await saveTabRef.current(tab.id);
+            if (!result?.success) {
+              event.preventDefault(); // canceled or failed: stay open so nothing is lost
+              return;
+            }
+          }
+          return;
+        }
+        // Don't Save: forget the cached edits so they aren't restored next launch. File-backed
+        // tabs are still remembered by path; unsaved untitled maps are dropped.
+        const discarded = tabsRef.current.map((t) =>
+          isDirty(t) ? { ...t, dirty: false, title: t.savedTitle } : t
+        );
+        writeSession(discarded, activeIdRef.current);
+      })
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      })
+      .catch((err) => console.warn('Could not watch for window close', err));
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [writeSession]);
 
   // Periodic automatic version history snapshot (every 15s of settled edits per active tab)
   useEffect(() => {
@@ -888,6 +957,8 @@ export default function App() {
         onOpenHistory={() => setShowHistoryDialog(true)}
         onOpenShortcuts={() => setShowShortcutsDialog(true)}
         onOpenAbout={() => setShowAboutDialog(true)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         onExported={(filePath) => setToastMessage(`Exported to ${filePath}`)}
       />
 
@@ -897,6 +968,8 @@ export default function App() {
         onSelect={handleSelectTab}
         onClose={handleCloseTab}
         onNew={handleNewFile}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
@@ -919,11 +992,13 @@ export default function App() {
           onDrop={handleDrop}
         >
           {/* In-Canvas Find & Replace Bar (Ctrl+F) */}
-          <SearchBar
-            isOpen={showSearch}
-            engine={engine}
-            onClose={() => setShowSearch(false)}
-          />
+          {viewMode === 'mindmap' && (
+            <SearchBar
+              isOpen={showSearch}
+              engine={engine}
+              onClose={() => setShowSearch(false)}
+            />
+          )}
 
           {/* Drag & Drop Visual Target Overlay */}
           {isDraggingFile && (
@@ -941,30 +1016,38 @@ export default function App() {
           )}
 
           {/* Right-Click Context Menu for Nodes and Canvas */}
-          <CanvasContextMenu
-            menu={contextMenu}
-            engine={engine}
-            onClose={() => setContextMenu(null)}
-            onOpenNotes={handleOpenNotes}
-            onOpenImageDialog={() => setShowImageDialog(true)}
-            onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
-          />
+          {viewMode === 'mindmap' && (
+            <CanvasContextMenu
+              menu={contextMenu}
+              engine={engine}
+              onClose={() => setContextMenu(null)}
+              onOpenNotes={handleOpenNotes}
+              onOpenImageDialog={() => setShowImageDialog(true)}
+              onOpenHyperlinkDialog={() => setShowHyperlinkDialog(true)}
+            />
+          )}
 
           {/* Context Floating Bubble Menu over selected topic */}
-          <FloatingBubbleMenu
-            engine={engine}
-            activeNode={activeNode}
-            isFormatPainterActive={isFormatPainterActive}
-            onOpenNotes={handleOpenNotes}
-            onOpenImage={() => setShowImageDialog(true)}
-            onOpenFormula={() => setShowFormulaDialog(true)}
-            onOpenHyperlink={() => setShowHyperlinkDialog(true)}
-          />
+          {viewMode === 'mindmap' && (
+            <FloatingBubbleMenu
+              engine={engine}
+              activeNode={activeNode}
+              isFormatPainterActive={isFormatPainterActive}
+              onOpenNotes={handleOpenNotes}
+              onOpenImage={() => setShowImageDialog(true)}
+              onOpenFormula={() => setShowFormulaDialog(true)}
+              onOpenHyperlink={() => setShowHyperlinkDialog(true)}
+            />
+          )}
 
           {tabs.map((tab) => (
             <div
               key={tab.id}
-              className={tab.id === activeId ? 'absolute inset-0' : 'absolute inset-0 invisible pointer-events-none'}
+              className={
+                tab.id === activeId && viewMode === 'mindmap'
+                  ? 'absolute inset-0'
+                  : 'absolute inset-0 invisible pointer-events-none'
+              }
             >
               {tab.loading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
@@ -977,19 +1060,63 @@ export default function App() {
                     onFormatPainterChange={tab.id === activeId ? setIsFormatPainterActive : undefined}
                     isFormatPainterActive={isFormatPainterActive && tab.id === activeId}
                     initialData={tab.initialData}
-                    isActive={tab.id === activeId}
+                    isActive={tab.id === activeId && viewMode === 'mindmap'}
                   />
                 </ErrorBoundary>
               )}
             </div>
           ))}
 
+          {/* Kanban Board View */}
+          {viewMode === 'kanban' && (
+            <div className="absolute inset-0 z-10">
+              <KanbanView
+                engine={engine}
+                data={mindMapData}
+                activeNode={activeNode}
+                onLocateNode={(uid) => {
+                  setViewMode('mindmap');
+                  setTimeout(() => engine?.selectNodeByUid(uid, true), 50);
+                }}
+                onOpenTaskInspector={(uid) => {
+                  engine?.selectNodeByUid(uid, false);
+                  setInspectorTab('task');
+                  setInspectorTabRequest((n) => n + 1);
+                  setShowInspector(true);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Daily Planner View */}
+          {viewMode === 'planner' && (
+            <div className="absolute inset-0 z-10">
+              <DailyPlannerView
+                engine={engine}
+                data={mindMapData}
+                activeNode={activeNode}
+                onLocateNode={(uid) => {
+                  setViewMode('mindmap');
+                  setTimeout(() => engine?.selectNodeByUid(uid, true), 50);
+                }}
+                onOpenTaskInspector={(uid) => {
+                  engine?.selectNodeByUid(uid, false);
+                  setInspectorTab('task');
+                  setInspectorTabRequest((n) => n + 1);
+                  setShowInspector(true);
+                }}
+              />
+            </div>
+          )}
+
           {/* Navigator Mini-Map Overlay */}
-          <MiniMapOverlay
-            engine={engine}
-            isOpen={showMiniMap}
-            onClose={() => setShowMiniMap(false)}
-          />
+          {viewMode === 'mindmap' && (
+            <MiniMapOverlay
+              engine={engine}
+              isOpen={showMiniMap}
+              onClose={() => setShowMiniMap(false)}
+            />
+          )}
         </main>
 
         {/* Right Format Inspector Sidebar */}

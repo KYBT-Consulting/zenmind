@@ -67,4 +67,22 @@ describe('sanitizeMapData', () => {
     expect(doc.root.data.hyperlink).toBeUndefined();
     expect(doc.root.data.generalization.text).toBe('s');
   });
+
+  it('preserves valid task dates/times and removes malformed ones', () => {
+    const map: any = {
+      data: {
+        text: 'Root',
+        startDate: '2026-11-16',
+        endDate: 'invalid-date',
+        startTime: '09:30',
+        endTime: '99:99',
+      },
+      children: [],
+    };
+    sanitizeMapData(map);
+    expect(map.data.startDate).toBe('2026-11-16');
+    expect(map.data.endDate).toBeUndefined();
+    expect(map.data.startTime).toBe('09:30');
+    expect(map.data.endTime).toBeUndefined();
+  });
 });

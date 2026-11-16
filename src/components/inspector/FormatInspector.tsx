@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Braces,
   Layers,
+  Calendar,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
@@ -32,6 +33,13 @@ import {
   BranchLineStyle,
 } from '../../types/mindmap';
 import { cn, stripHtml } from '../../lib/utils';
+import {
+  addDaysToDateString,
+  formatTaskDateBadge,
+  getTaskDateBadgeColors,
+  getTaskDateStatus,
+  getTodayDateString,
+} from '../../lib/taskDates';
 
 export type InspectorTab = 'node' | 'task' | 'notes' | 'structure';
 
@@ -480,6 +488,199 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                   <p className="text-[10px] text-slate-400 mt-1.5">
                     Tip: Click the progress badge on any node to advance it directly!
                   </p>
+                </div>
+
+                {/* Schedule & Dates */}
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar size={12} className="text-indigo-600" />
+                      <span>Schedule & Dates</span>
+                    </label>
+                    {(activeNode.startDate || activeNode.endDate || activeNode.startTime || activeNode.endTime) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          engine?.setNodeDates({
+                            startDate: null,
+                            endDate: null,
+                            startTime: null,
+                            endTime: null,
+                          })
+                        }
+                        className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                      >
+                        Clear Dates
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Active Date Badge Summary */}
+                  {(() => {
+                    const badgeLabel = formatTaskDateBadge({
+                      startDate: activeNode.startDate,
+                      endDate: activeNode.endDate,
+                      startTime: activeNode.startTime,
+                      endTime: activeNode.endTime,
+                    });
+                    if (!badgeLabel) return null;
+                    const status = getTaskDateStatus(
+                      {
+                        startDate: activeNode.startDate,
+                        endDate: activeNode.endDate,
+                        startTime: activeNode.startTime,
+                        endTime: activeNode.endTime,
+                      },
+                      currentProgress
+                    );
+                    const colors = getTaskDateBadgeColors(status);
+                    return (
+                      <div
+                        className={cn(
+                          'flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold',
+                          colors.bgClass,
+                          colors.textClass,
+                          colors.borderClass
+                        )}
+                      >
+                        <span className="truncate">📅 {badgeLabel}</span>
+                        <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 font-bold shrink-0">
+                          {colors.label}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Quick Date Presets */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      {
+                        label: 'Today',
+                        apply: () => {
+                          const today = getTodayDateString();
+                          engine?.setNodeDates({ startDate: today, endDate: today });
+                        },
+                      },
+                      {
+                        label: 'Tomorrow',
+                        apply: () => {
+                          const tmr = addDaysToDateString(getTodayDateString(), 1);
+                          engine?.setNodeDates({ startDate: tmr, endDate: tmr });
+                        },
+                      },
+                      {
+                        label: 'Next 7 Days',
+                        apply: () => {
+                          const today = getTodayDateString();
+                          const nextWeek = addDaysToDateString(today, 6);
+                          engine?.setNodeDates({ startDate: today, endDate: nextWeek });
+                        },
+                      },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={preset.apply}
+                        className="py-1.5 px-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-[11px] font-semibold text-slate-700 bg-white transition-all cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Start Date & End Date Inputs */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-500 block mb-1">Start Date</span>
+                      <input
+                        type="date"
+                        aria-label="Start Date"
+                        value={activeNode.startDate || ''}
+                        onChange={(e) => {
+                          const nextStart = e.target.value || null;
+                          const patch: { startDate: string | null; endDate?: string | null } = {
+                            startDate: nextStart,
+                          };
+                          if (nextStart && activeNode.endDate && activeNode.endDate < nextStart) {
+                            patch.endDate = nextStart;
+                          }
+                          engine?.setNodeDates(patch);
+                        }}
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-500 block mb-1">End / Due Date</span>
+                      <input
+                        type="date"
+                        aria-label="End Date"
+                        value={activeNode.endDate || ''}
+                        min={activeNode.startDate || undefined}
+                        onChange={(e) => {
+                          const nextEnd = e.target.value || null;
+                          engine?.setNodeDates({ endDate: nextEnd });
+                        }}
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Daily Time-Blocking Inputs */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                        <Clock size={11} className="text-indigo-500" />
+                        <span>Daily Time Block (Optional)</span>
+                      </span>
+                      {(activeNode.startTime || activeNode.endTime) ? (
+                        <button
+                          type="button"
+                          onClick={() => engine?.setNodeDates({ startTime: null, endTime: null })}
+                          className="text-[10px] text-slate-400 hover:text-red-500 cursor-pointer"
+                        >
+                          Clear Time
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const today = activeNode.startDate || activeNode.endDate || getTodayDateString();
+                            engine?.setNodeDates({
+                              startDate: activeNode.startDate || today,
+                              endDate: activeNode.endDate || today,
+                              startTime: '09:00',
+                              endTime: '10:00',
+                            });
+                          }}
+                          className="text-[10px] text-indigo-600 hover:underline font-semibold cursor-pointer"
+                        >
+                          + 09:00–10:00
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">Start Time</span>
+                        <input
+                          type="time"
+                          aria-label="Start Time"
+                          value={activeNode.startTime || ''}
+                          onChange={(e) => engine?.setNodeDates({ startTime: e.target.value || null })}
+                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">End Time</span>
+                        <input
+                          type="time"
+                          aria-label="End Time"
+                          value={activeNode.endTime || ''}
+                          onChange={(e) => engine?.setNodeDates({ endTime: e.target.value || null })}
+                          className="w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Tag Badges */}

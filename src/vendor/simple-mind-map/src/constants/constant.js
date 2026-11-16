@@ -206,7 +206,12 @@ export const nodeDataNoStylePropList = [
   'dir',
   'needUpdate', // 重新创建节点内容
   'imgMap',
-  'nodeLink'
+  'nodeLink',
+  'startDate',
+  'endDate',
+  'startTime',
+  'endTime',
+  'isFloating'
 ]
 
 // 错误类型

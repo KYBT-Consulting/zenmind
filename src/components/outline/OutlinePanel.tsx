@@ -13,6 +13,7 @@ import {
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
 import { cn, stripHtml } from '../../lib/utils';
+import { formatTaskDateBadge, getTaskDateBadgeColors, getTaskDateStatus } from '../../lib/taskDates';
 
 interface OutlineItemProps {
   node: any;
@@ -53,6 +54,24 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
   const progressIcon = icons.find((i) => typeof i === 'string' && i.startsWith('progress_'));
   const priorityNum = priorityIcon ? parseInt(priorityIcon.replace('priority_', ''), 10) : null;
   const progressNum = progressIcon ? parseInt(progressIcon.replace('progress_', ''), 10) : null;
+  const dateBadge = formatTaskDateBadge({
+    startDate: node.data?.startDate,
+    endDate: node.data?.endDate,
+    startTime: node.data?.startTime,
+    endTime: node.data?.endTime,
+  });
+  const dateStatus = dateBadge
+    ? getTaskDateStatus(
+        {
+          startDate: node.data?.startDate,
+          endDate: node.data?.endDate,
+          startTime: node.data?.startTime,
+          endTime: node.data?.endTime,
+        },
+        progressNum
+      )
+    : null;
+  const dateColors = dateBadge ? getTaskDateBadgeColors(dateStatus) : null;
 
   return (
     <div className="select-none">
@@ -126,6 +145,20 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
         <span className="text-xs truncate flex-1 font-medium">
           {stripHtml(node.data?.text) || '(Untitled Topic)'}
         </span>
+
+        {dateBadge && dateColors && (
+          <span
+            className={cn(
+              'px-1.5 py-0.5 rounded text-[9px] font-semibold leading-tight shrink-0 border',
+              dateColors.bgClass,
+              dateColors.textClass,
+              dateColors.borderClass
+            )}
+            title={dateBadge}
+          >
+            {dateBadge}
+          </span>
+        )}
       </div>
 
       {!collapsed && hasChildren && (

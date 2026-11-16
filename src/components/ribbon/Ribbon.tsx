@@ -48,6 +48,9 @@ import {
   Info,
   UnfoldVertical,
   FoldVertical,
+  Calendar,
+  Kanban,
+  Network,
 } from 'lucide-react';
 import { APP_VERSION } from '../dialogs/AboutDialog';
 import { MindMapEngine } from '../../engine/MindMapEngine';
@@ -58,6 +61,7 @@ import {
   SHAPE_OPTIONS,
   ShapeType,
   THEME_PRESETS,
+  WorkspaceViewMode,
 } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
 import logoUrl from '../../assets/zenmind-logo.svg';
@@ -101,6 +105,8 @@ interface RibbonProps {
   onOpenHistory?: () => void;
   onOpenShortcuts?: () => void;
   onOpenAbout?: () => void;
+  viewMode?: WorkspaceViewMode;
+  onViewModeChange?: (mode: WorkspaceViewMode) => void;
   /** Called with the saved path after a desktop quick-export. */
   onExported?: (filePath: string) => void;
 }
@@ -139,6 +145,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenHistory,
   onOpenShortcuts,
   onOpenAbout,
+  viewMode = 'mindmap',
+  onViewModeChange,
   onExported,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
@@ -801,6 +809,14 @@ export const Ribbon: React.FC<RibbonProps> = ({
             </button>
 
             <button
+              onClick={() => onOpenTasks?.()}
+              className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <Calendar size={18} className="text-indigo-600" />
+              <span className="text-[10px] font-semibold mt-1">Task Dates</span>
+            </button>
+
+            <button
               onClick={() => onOpenNotes?.()}
               className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
             >
@@ -883,6 +899,38 @@ export const Ribbon: React.FC<RibbonProps> = ({
         {/* --- VIEW TAB --- */}
         {activeTab === 'view' && (
           <div className="flex items-center gap-3">
+            {/* Workspace View Switcher */}
+            {onViewModeChange && (
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
+                {(
+                  [
+                    { id: 'mindmap', label: 'Mind Map', icon: Network },
+                    { id: 'kanban', label: 'Kanban Board', icon: Kanban },
+                    { id: 'planner', label: 'Daily Planner', icon: Calendar },
+                  ] as { id: WorkspaceViewMode; label: string; icon: React.FC<{ size?: number }> }[]
+                ).map((item) => {
+                  const Icon = item.icon;
+                  const active = viewMode === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onViewModeChange(item.id)}
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer',
+                        active
+                          ? 'bg-white text-indigo-700 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      )}
+                    >
+                      <Icon size={13} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Pitch / Presentation Mode */}
             <button
               onClick={() => engine?.enterPresentationMode()}
