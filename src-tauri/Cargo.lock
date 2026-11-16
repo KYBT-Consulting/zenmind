@@ -5134,7 +5134,7 @@ dependencies = [
 
 [[package]]
 name = "zenmind"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "gtk",
  "log",

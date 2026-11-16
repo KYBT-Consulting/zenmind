@@ -4,6 +4,12 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.4.2] - 2026-11-16
+
+### Fixed
+- **Inspector didn't work on topics picked in the Daily Planner or Kanban:** Selecting a task there highlighted it and showed it in the Format inspector, but didn't actually select it, so the inspector's buttons did nothing: Clear Dates, the start/end date and time fields, the date presets, priority, progress, and the Style tab's shape and colour. Selecting a topic from the Planner, Kanban, the Outline panel, search, or a date badge on the map now selects it the same way clicking it on the map does.
+- **About → What's New:** Now says the view switcher is in the middle of the title bar (it moved there in 0.4.1).
+
 ## [0.4.1] - 2026-11-16
 
 ### Changed
