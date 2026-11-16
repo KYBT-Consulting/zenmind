@@ -4,6 +4,14 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [Unreleased]
+
+### Changed
+- **Cleaner `.rpm` file names:** The Fedora/RHEL package is now named `ZenMind-X.Y.Z.x86_64.rpm` instead of `ZenMind-X.Y.Z-1.x86_64.rpm`.
+
+### Security
+- The desktop app no longer includes the `zip` library, which had open security advisories. ZenMind never used it to install updates, so nothing changes for you.
+
 ## [0.4.1] - 2026-11-16
 
 ### Changed

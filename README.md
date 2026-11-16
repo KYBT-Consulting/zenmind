@@ -65,7 +65,7 @@ ZenMind binaries and installer bundles are published for every release under [Gi
 
 | Platform | Package Format | Installation / Run Command |
 | :--- | :--- | :--- |
-| **Fedora / RHEL / CentOS** | `.rpm` | `sudo dnf install ./ZenMind-0.2.0-1.x86_64.rpm` |
+| **Fedora / RHEL / CentOS** | `.rpm` | `sudo dnf install ./ZenMind-0.2.0.x86_64.rpm` |
 | **Ubuntu 24.04+ / Debian** | `.deb` | `sudo dpkg -i ./ZenMind_0.2.0_amd64.deb` |
 | **Universal Linux** | `.AppImage` | `chmod +x ./ZenMind_0.2.0_amd64.AppImage && ./ZenMind_0.2.0_amd64.AppImage` |
 | **Docker (Self-Hosted Web)** | Container Image | `docker compose up -d` (Access via `http://localhost:3000`) |
