@@ -132,11 +132,45 @@ jobs:
             Write-Host "Uploaded $zipName to GitHub release $version"
           }
 
-      - name: Verify and Upload Linux RPM
-        if: matrix.platform == 'ubuntu-24.04' && startsWith(github.ref, 'refs/tags/v')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # The Tauri bundler names RPMs {name}-{version}-{release}.{arch}.rpm, and the RPM release
+  # field defaults to "1" (it can't be empty), so tauri-action uploads ZenMind-X.Y.Z-1.x86_64.rpm.
+  # Drop the "-1" from the release assets and from latest.json. This runs after every build job
+  # so no job's latest.json merge can write the old URL back. Renaming doesn't affect the .sig:
+  # it signs the file's bytes, not its name.
+  tidy-rpm-names:
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Rename RPM assets and update latest.json
+        shell: bash
         run: |
-          find src-tauri/target/release/bundle/rpm -name "*.rpm" -exec gh release upload ${{ github.ref_name }} {} --clobber \; || true
+          set -euo pipefail
+          release_id=$(gh api "repos/$GH_REPO/releases/tags/$TAG" --jq .id)
+
+          gh api --paginate "repos/$GH_REPO/releases/$release_id/assets" \
+            --jq '.[] | select(.name | test("-1\\.[^.]+\\.rpm(\\.sig)?$")) | "\(.id) \(.name)"' |
+          while read -r id name; do
+            new=$(sed -E 's/-1(\.[^.]+\.rpm(\.sig)?)$/\1/' <<<"$name")
+            echo "Renaming $name -> $new"
+            gh api -X PATCH "repos/$GH_REPO/releases/assets/$id" -f name="$new" >/dev/null
+          done
+
+          dir=$(mktemp -d)
+          gh release download "$TAG" -p latest.json -D "$dir"
+          jq '.platforms |= map_values(.url |= sub("-1(?<s>\\.[^./]+\\.rpm)$"; "\(.s)"))' \
+            "$dir/latest.json" > "$dir/latest.fixed.json"
+          if ! cmp -s "$dir/latest.json" "$dir/latest.fixed.json"; then
+            mv "$dir/latest.fixed.json" "$dir/latest.json"
+            gh release upload "$TAG" "$dir/latest.json" --clobber
+            echo "Updated latest.json:"
+          fi
+          jq -r '.platforms | to_entries[] | "\(.key): \(.value.url)"' "$dir/latest.json"
 
 

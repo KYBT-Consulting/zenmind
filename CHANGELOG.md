@@ -6,9 +6,15 @@ All notable changes to ZenMind are documented here. The format follows
 
 ## [0.4.2] - 2026-11-16
 
+### Changed
+- **Cleaner `.rpm` file names:** The Fedora/RHEL package is now named `ZenMind-X.Y.Z.x86_64.rpm` instead of `ZenMind-X.Y.Z-1.x86_64.rpm`.
+
 ### Fixed
 - **Inspector didn't work on topics picked in the Daily Planner or Kanban:** Selecting a task there highlighted it and showed it in the Format inspector, but didn't actually select it, so the inspector's buttons did nothing: Clear Dates, the start/end date and time fields, the date presets, priority, progress, and the Style tab's shape and colour. Selecting a topic from the Planner, Kanban, the Outline panel, search, or a date badge on the map now selects it the same way clicking it on the map does.
 - **About → What's New:** Now says the view switcher is in the middle of the title bar (it moved there in 0.4.1).
+
+### Security
+- The desktop app no longer includes the `zip` library, which had open security advisories. ZenMind never used it to install updates, so nothing changes for you.
 
 ## [0.4.1] - 2026-11-16
 
