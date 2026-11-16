@@ -4,6 +4,15 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.4.0] - 2026-11-16
+
+### Added
+- **Task dates and time blocks:** Give any topic a start date, an end/due date, and an optional start and end time. Dates show as color-coded 📅 badges on the map and in the Outline (overdue, due today, upcoming, scheduled, done), and you can set them from the Task inspector with quick presets.
+- **Kanban board view:** Each first-level branch becomes a column and its subtopics become cards. Drag cards between columns, rename them, tick them off, cycle their progress, and filter by status.
+- **Daily Planner view:** A week strip, an hourly schedule, an all-day and overdue list, and a backlog of unscheduled topics you can drag onto the day.
+- **View switcher:** Switch between Mind Map, Kanban, and Daily Planner from the tab bar or the Ribbon's View tab.
+- **Save prompt when closing the desktop app:** Closing the window with unsaved changes now asks whether to save them, discard them, or cancel. Previously the window closed without asking.
+
 ## [0.3.2] - 2026-11-10
 
 ### Fixed

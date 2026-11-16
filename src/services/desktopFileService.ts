@@ -1,4 +1,4 @@
-import { confirm as nativeConfirm, open, save } from '@tauri-apps/plugin-dialog';
+import { confirm as nativeConfirm, message as nativeMessage, open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, readTextFile, rename, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { exportContentToBytes, exportFileType, toSafeFilename } from '../lib/exportFile';
 import { fileFingerprint } from '../lib/fingerprint';
@@ -43,6 +43,21 @@ export class DesktopFileService {
       return nativeConfirm(message, { title, kind: 'warning' });
     }
     return window.confirm(message);
+  }
+
+  /** Desktop exit prompt: Save / Don't Save / Cancel. */
+  static async askSaveBeforeExit(message: string, title = 'ZenMind'): Promise<'save' | 'discard' | 'cancel'> {
+    const SAVE = 'Save';
+    const DISCARD = "Don't Save";
+    const result = await nativeMessage(message, {
+      title,
+      kind: 'warning',
+      buttons: { yes: SAVE, no: DISCARD, cancel: 'Cancel' },
+    });
+    // Custom buttons return their label; some platforms report the default button names instead
+    if (result === SAVE || result === 'Yes') return 'save';
+    if (result === DISCARD || result === 'No') return 'discard';
+    return 'cancel';
   }
 
   /**
