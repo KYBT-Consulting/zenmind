@@ -465,3 +465,18 @@ export function extractAllTasks(treeData: any): TaskItem[] {
 
   return items;
 }
+
+/** Unfinished tasks that need attention: scheduled for today, and past their end date. */
+export function countAttentionTasks(
+  treeData: any,
+  todayStr: string = getTodayDateString()
+): { dueToday: number; overdue: number } {
+  let dueToday = 0;
+  let overdue = 0;
+  for (const task of extractAllTasks(treeData)) {
+    const status = getTaskDateStatus(task, task.progress, todayStr); // completed tasks report 'completed'
+    if (status === 'today') dueToday++;
+    else if (status === 'overdue') overdue++;
+  }
+  return { dueToday, overdue };
+}

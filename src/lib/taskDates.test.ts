@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addDaysToDateString,
   daysBetween,
+  countAttentionTasks,
   extractAllTasks,
   extractKanbanColumns,
   formatTaskDateBadge,
@@ -172,5 +173,29 @@ describe('Kanban and Planner tree extraction', () => {
   it('extracts all non-root tasks for the Daily Planner', () => {
     const all = extractAllTasks(sampleTree);
     expect(all.map((t) => t.uid)).toEqual(['branch-1', 'task-1', 'subtask-1', 'branch-2']);
+  });
+});
+
+describe('countAttentionTasks', () => {
+  it('counts unfinished tasks due today and overdue, ignoring done and future ones', () => {
+    const t = (uid: string, data: Record<string, unknown>) => ({ data: { uid, text: uid, ...data }, children: [] });
+    const tree = {
+      data: { uid: 'root', text: 'Root' },
+      children: [
+        {
+          data: { uid: 'b1', text: 'Branch' },
+          children: [
+            t('today', { startDate: '2026-11-16', endDate: '2026-11-16' }),
+            t('spans-today', { startDate: '2026-11-14', endDate: '2026-11-18' }),
+            t('late', { endDate: '2026-11-10' }),
+            t('late-done', { endDate: '2026-11-10', icon: ['progress_100'] }),
+            t('next-week', { startDate: '2026-11-23' }),
+            t('undated', {}),
+          ],
+        },
+      ],
+    };
+    expect(countAttentionTasks(tree, '2026-11-16')).toEqual({ dueToday: 2, overdue: 1 });
+    expect(countAttentionTasks({}, '2026-11-16')).toEqual({ dueToday: 0, overdue: 0 });
   });
 });

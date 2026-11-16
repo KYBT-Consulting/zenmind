@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { countAttentionTasks } from './lib/taskDates';
 import { MindMapEngine, DEFAULT_INITIAL_DATA, ContextMenuEventInfo } from './engine/MindMapEngine';
 import { ActiveNodeInfo, WorkspaceViewMode } from './types/mindmap';
 import { Ribbon } from './components/ribbon/Ribbon';
@@ -256,6 +257,8 @@ export default function App() {
   }, []);
 
   const totalNodes = countNodes(mindMapData);
+  // Badge on the Daily Planner button: unfinished tasks due today or overdue in the open map
+  const plannerCounts = useMemo(() => countAttentionTasks(mindMapData), [mindMapData]);
 
   const tabsRef = useRef(tabs);
   tabsRef.current = tabs;
@@ -959,6 +962,7 @@ export default function App() {
         onOpenAbout={() => setShowAboutDialog(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        plannerCounts={plannerCounts}
         onExported={(filePath) => setToastMessage(`Exported to ${filePath}`)}
       />
 
@@ -968,8 +972,6 @@ export default function App() {
         onSelect={handleSelectTab}
         onClose={handleCloseTab}
         onNew={handleNewFile}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Main Workspace Area (Outline, Canvas, Inspector) */}
