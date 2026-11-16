@@ -68,7 +68,7 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
   const itemsByUid = useMemo(() => new Map(allItems.map((item) => [item.uid, item])), [allItems]);
 
   // First-level branches for assigning newly created tasks
-  const branches = useMemo(() => {
+  const branches = useMemo((): { uid: string; title: string }[] => {
     const root = data?.root ?? data;
     if (!root || !Array.isArray(root.children)) return [];
     return root.children
