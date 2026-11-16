@@ -17,7 +17,7 @@ import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export const APP_VERSION = pkg.version || '0.4.0';
+export const APP_VERSION = pkg.version || '0.4.1';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -25,18 +25,11 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
-  'File tab with Save As and Rename, and saved maps always reopen from disk, so edits from other devices show up',
-  'Automatic Updates: ZenMind checks for new releases and installs signed updates with one click (Check for updates in About)',
-  'New ZenMind logo across the app, installers, taskbar, and web favicon',
-  'Gemini AI Copilot always uses Google\'s newest Flash model (gemini-flash-latest), with Test Connection showing the model that answered',
-  'Native Save dialog for every export format (PNG, SVG, PDF, XMind, Markdown, OPML, FreeMind, JSON) on desktop',
-  'Starter Template Gallery (SWOT, PESTEL, Porter 5 Forces, Eisenhower, 5 Whys, Org Chart) + Custom Templates',
-  'Spatial Arrow & Vim Modal Navigation (h/j/k/l, o/O, i, x, u, f) with Shortcut Cheat-Sheet (?)',
-  'Right-Click Context Menus for topics and canvas + Expand All / Collapse All / Level controls',
-  'Interactive Task Progress (0%–100%) & Priority Badges (P1–P5) across Canvas, Outline, and Floating Bar',
-  'Inline Markdown shortcuts (**bold**, *italic*, `code`), Highlighter Tints, and Callout Badges',
-  'Automatic & Manual Version History Snapshots with 1-click rollback',
-  'Smooth Trackpad Pinch-to-Zoom isolated to the infinite Mind Map Canvas',
+  'Task dates and time blocks: give any topic a start date, a due date, and optional start and end times, shown as color-coded 📅 badges on the map and in the Outline',
+  'Kanban board: each first-level branch is a column and its subtopics are cards you can drag, rename, tick off, and filter',
+  'Daily Planner: a week strip, an hourly schedule, all-day and overdue lists, and a backlog of unscheduled topics to drag onto your day',
+  'Switch between Mind Map, Kanban, and Daily Planner from the tab bar or the View tab',
+  'Closing the desktop app with unsaved changes now asks whether to save them first',
 ];
 
 export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
@@ -214,7 +207,8 @@ export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => 
           <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900 mb-2.5 flex items-center gap-1.5">
               <Sparkles size={13} className="text-indigo-600" />
-              <span>What&apos;s New in v{APP_VERSION}</span>
+              {/* Highlights cover the minor release (0.4.x), so a patch doesn't make them look stale */}
+              <span>What&apos;s New in v{APP_VERSION.split('.').slice(0, 2).join('.')}</span>
             </h4>
             <ul className="space-y-1.5 text-[11px] text-slate-700">
               {RELEASE_HIGHLIGHTS.map((item, idx) => (

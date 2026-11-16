@@ -4,6 +4,11 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.4.1] - 2026-11-16
+
+### Fixed
+- **About → What's New:** The list now describes this release's features. In 0.4.0 it still showed features from earlier releases.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
