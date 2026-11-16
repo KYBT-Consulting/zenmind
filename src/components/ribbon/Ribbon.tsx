@@ -49,10 +49,9 @@ import {
   UnfoldVertical,
   FoldVertical,
   Calendar,
-  Kanban,
-  Network,
 } from 'lucide-react';
 import { APP_VERSION } from '../dialogs/AboutDialog';
+import { PlannerCounts, ViewSwitcher } from './ViewSwitcher';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
   ActiveNodeInfo,
@@ -107,6 +106,8 @@ interface RibbonProps {
   onOpenAbout?: () => void;
   viewMode?: WorkspaceViewMode;
   onViewModeChange?: (mode: WorkspaceViewMode) => void;
+  /** Due-today/overdue counts shown on the Daily Planner button. */
+  plannerCounts?: PlannerCounts;
   /** Called with the saved path after a desktop quick-export. */
   onExported?: (filePath: string) => void;
 }
@@ -147,6 +148,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onOpenAbout,
   viewMode = 'mindmap',
   onViewModeChange,
+  plannerCounts,
   onExported,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
@@ -221,7 +223,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
     <div className="w-full bg-white border-b border-slate-200 select-none shadow-sm z-30 flex flex-col">
       {/* Top Brand & Quick Access Bar */}
       <div className="h-10 px-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/70">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 overflow-hidden">
           <button
             type="button"
             onClick={() => onOpenAbout?.()}
@@ -243,13 +245,21 @@ export const Ribbon: React.FC<RibbonProps> = ({
             type="text"
             value={docTitle}
             onChange={(e) => onDocTitleChange(e.target.value)}
-            className="text-xs font-medium text-slate-700 bg-transparent hover:bg-white focus:bg-white px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 outline-none transition-all max-w-xs"
+            className="text-xs font-medium text-slate-700 bg-transparent hover:bg-white focus:bg-white px-2 py-1 rounded border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 outline-none transition-all max-w-xs min-w-28 flex-1"
             placeholder="Untitled Mind Map"
           />
         </div>
 
+        {/* Workspace view switcher: centered in the free space between the two groups. It never
+            shrinks below its own width (so it can't overlap the buttons); the title input gives way. */}
+        <div className="flex-1 flex justify-center px-3">
+          {onViewModeChange && (
+            <ViewSwitcher viewMode={viewMode} onChange={onViewModeChange} plannerCounts={plannerCounts} />
+          )}
+        </div>
+
         {/* Quick Action Buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button aria-label="Undo (Ctrl+Z)"
             onClick={() => engine?.undo()}
             disabled={!canUndo}
@@ -303,7 +313,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs font-medium transition-colors"
           >
             <LayoutTemplate size={14} className="text-indigo-600" />
-            <span>Templates</span>
+            <span className="hidden 2xl:inline">Templates</span>
           </button>
 
           <button aria-label="Version History & Snapshots"
@@ -343,7 +353,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             )}
           >
             <List size={14} />
-            <span>Outline</span>
+            <span className="hidden 2xl:inline">Outline</span>
           </button>
 
           <button aria-label="Toggle Format Inspector"
@@ -357,15 +367,17 @@ export const Ribbon: React.FC<RibbonProps> = ({
             )}
           >
             <SlidersHorizontal size={14} />
-            <span>Format</span>
+            <span className="hidden 2xl:inline">Format</span>
           </button>
 
           <button
+            aria-label="AI Brainstorm"
+            title="AI Brainstorm"
             onClick={() => onOpenAIDialog('generate')}
             className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white rounded-md text-xs font-semibold shadow-sm transition-all ml-1"
           >
             <Sparkles size={13} />
-            <span>AI Brainstorm</span>
+            <span className="hidden xl:inline">AI Brainstorm</span>
           </button>
         </div>
       </div>
@@ -899,38 +911,6 @@ export const Ribbon: React.FC<RibbonProps> = ({
         {/* --- VIEW TAB --- */}
         {activeTab === 'view' && (
           <div className="flex items-center gap-3">
-            {/* Workspace View Switcher */}
-            {onViewModeChange && (
-              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 mr-1">
-                {(
-                  [
-                    { id: 'mindmap', label: 'Mind Map', icon: Network },
-                    { id: 'kanban', label: 'Kanban Board', icon: Kanban },
-                    { id: 'planner', label: 'Daily Planner', icon: Calendar },
-                  ] as { id: WorkspaceViewMode; label: string; icon: React.FC<{ size?: number }> }[]
-                ).map((item) => {
-                  const Icon = item.icon;
-                  const active = viewMode === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onViewModeChange(item.id)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer',
-                        active
-                          ? 'bg-white text-indigo-700 shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      )}
-                    >
-                      <Icon size={13} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
             {/* Pitch / Presentation Mode */}
             <button
               onClick={() => engine?.enterPresentationMode()}

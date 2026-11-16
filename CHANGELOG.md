@@ -6,6 +6,10 @@ All notable changes to ZenMind are documented here. The format follows
 
 ## [0.4.1] - 2026-11-16
 
+### Changed
+- **Easier to find Kanban and Daily Planner:** The Mind Map / Kanban / Daily Planner switcher now sits in the middle of the title bar, larger and with the current view highlighted, instead of at the far end of the tab bar. The Daily Planner button shows how many unfinished tasks are due today (amber) or overdue (red).
+- On narrower windows, the switcher and the Templates, Outline, Format, and AI Brainstorm buttons show icons only (with tooltips) so the title bar doesn't overlap.
+
 ### Fixed
 - **About → What's New:** The list now describes this release's features. In 0.4.0 it still showed features from earlier releases.
 
