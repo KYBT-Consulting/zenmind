@@ -29,6 +29,7 @@ import {
   isTaskOnDate,
   minutesToTimeString,
   parseTimeToMinutes,
+  rescheduleDatesOnto,
   TaskItem,
 } from '../../lib/taskDates';
 import { cn, stripHtml } from '../../lib/utils';
@@ -41,7 +42,8 @@ interface DailyPlannerViewProps {
   onOpenTaskInspector: (uid: string) => void;
 }
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 06:00 to 22:00
+const DEFAULT_FIRST_HOUR = 6; // 06:00
+const DEFAULT_LAST_HOUR = 22; // 22:00
 
 export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
   engine,
@@ -63,6 +65,7 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
   const [dragOverAllDay, setDragOverAllDay] = useState(false);
 
   const allItems = useMemo(() => extractAllTasks(data), [data]);
+  const itemsByUid = useMemo(() => new Map(allItems.map((item) => [item.uid, item])), [allItems]);
 
   // First-level branches for assigning newly created tasks
   const branches = useMemo(() => {
@@ -109,6 +112,18 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
       .sort((a, b) => (parseTimeToMinutes(a.startTime) ?? 0) - (parseTimeToMinutes(b.startTime) ?? 0));
   }, [tasksOnSelectedDate]);
 
+  // 06:00–22:00 by default, widened so blocks starting earlier or later (e.g. 05:30, 23:00) still get a row
+  const hours = useMemo(() => {
+    let first = DEFAULT_FIRST_HOUR;
+    let last = DEFAULT_LAST_HOUR;
+    for (const t of timeBlockedTasks) {
+      const hour = Math.floor((parseTimeToMinutes(t.startTime) ?? 0) / 60);
+      first = Math.min(first, hour);
+      last = Math.max(last, hour);
+    }
+    return Array.from({ length: last - first + 1 }, (_, i) => i + first);
+  }, [timeBlockedTasks]);
+
   const allDayTasks = useMemo(() => {
     return tasksOnSelectedDate.filter((t) => parseTimeToMinutes(t.startTime) === null);
   }, [tasksOnSelectedDate]);
@@ -145,32 +160,19 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
     });
   }, [allItems, backlogFilter, backlogSearch]);
 
+  // Keeps a multi-day range when placing a task on the selected date (see rescheduleDatesOnto).
+  const datesOnSelectedDay = (uid: string) => rescheduleDatesOnto(itemsByUid.get(uid) ?? {}, selectedDate);
+
   const handleScheduleAtHour = (uid: string, hour: number) => {
     if (!engine) return;
     const startTime = `${String(hour).padStart(2, '0')}:00`;
-    const endTime = `${String(Math.min(23, hour + 1)).padStart(2, '0')}:00`;
-    engine.setNodeDates(
-      {
-        startDate: selectedDate,
-        endDate: selectedDate,
-        startTime,
-        endTime,
-      },
-      uid
-    );
+    const endTime = hour >= 23 ? '23:59' : `${String(hour + 1).padStart(2, '0')}:00`;
+    engine.setNodeDates({ ...datesOnSelectedDay(uid), startTime, endTime }, uid);
   };
 
   const handleScheduleAllDay = (uid: string) => {
     if (!engine) return;
-    engine.setNodeDates(
-      {
-        startDate: selectedDate,
-        endDate: selectedDate,
-        startTime: null,
-        endTime: null,
-      },
-      uid
-    );
+    engine.setNodeDates({ ...datesOnSelectedDay(uid), startTime: null, endTime: null }, uid);
   };
 
   const handleShiftEndTime = (task: TaskItem, deltaMinutes: number, e: React.MouseEvent) => {
@@ -192,7 +194,7 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
     const title = newHourTaskText.trim();
     if (!title || !engine) return;
     const startTime = `${String(hour).padStart(2, '0')}:00`;
-    const endTime = `${String(Math.min(23, hour + 1)).padStart(2, '0')}:00`;
+    const endTime = hour >= 23 ? '23:59' : `${String(hour + 1).padStart(2, '0')}:00`;
     engine.addChildNodeWithData(defaultBranchUid, {
       text: title,
       icon: ['progress_0'],
@@ -377,7 +379,7 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
-            {HOURS.map((hour) => {
+            {hours.map((hour) => {
               const hourLabel = `${String(hour).padStart(2, '0')}:00`;
               const slotTasks = timeBlockedTasks.filter((t) => {
                 const mins = parseTimeToMinutes(t.startTime);

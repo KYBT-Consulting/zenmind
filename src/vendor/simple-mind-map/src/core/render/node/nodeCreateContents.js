@@ -16,7 +16,7 @@ import {
   formatTaskDateBadge,
   getTaskDateBadgeColors,
   getTaskDateStatus
-} from '../../../../lib/taskDates'
+} from '../../../../../../lib/taskDates'
 
 // 测量svg文本宽高
 const measureText = (text, style) => {
@@ -433,7 +433,8 @@ function createTagNode() {
         e?.stopPropagation?.()
         this.mindMap.emit('node_date_click', this, e)
       } else {
-        this.mindMap.emit('node_tag_click', this, item, index, tag)
+        // index into the node's own tag list (the date badge is prepended)
+        this.mindMap.emit('node_tag_click', this, item, dateTagItem ? index - 1 : index, tag)
       }
     })
     // 标签文本

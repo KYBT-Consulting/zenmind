@@ -506,25 +506,52 @@ export class MindMapEngine {
     return true;
   }
 
-  private resolveNode(targetUid?: string): any {
-    const renderer = this.mindMap?.renderer as any;
-    if (!renderer) return null;
-    if (!targetUid) return this.getActiveNode();
-    let node = renderer.findNodeByUid?.(targetUid);
-    if (!node && typeof renderer.expandToNodeUid === 'function') {
-      renderer.expandToNodeUid(targetUid, () => {});
-      node = renderer.findNodeByUid?.(targetUid);
+  /**
+   * Resolves rendered node instances by uid and runs `fn` with them (null for a uid that doesn't exist).
+   * Nodes inside collapsed branches have no rendered instance, so their ancestors are expanded first and
+   * `fn` runs once that render completes — i.e. `fn` may run asynchronously.
+   */
+  private withNodes(uids: string[], fn: (nodes: any[]) => void) {
+    const find = (uid: string) => (this.mindMap?.renderer as any)?.findNodeByUid?.(uid) || null;
+    const run = (tried: Set<string>) => {
+      const renderer = this.mindMap?.renderer as any;
+      if (!renderer) return; // engine destroyed while waiting for a render
+      const missing = uids.find((uid) => !tried.has(uid) && !find(uid));
+      if (missing && typeof renderer.expandToNodeUid === 'function') {
+        tried.add(missing);
+        renderer.expandToNodeUid(missing, () => run(tried));
+        return;
+      }
+      fn(uids.map(find));
+    };
+    run(new Set());
+  }
+
+  /** Runs `fn` with the node `targetUid` (default: the active node), expanding collapsed ancestors if needed. */
+  private withNode(targetUid: string | undefined, fn: (node: any) => void) {
+    if (!targetUid) {
+      const active = this.getActiveNode();
+      if (active) fn(active);
+      return;
     }
-    return node || null;
+    this.withNodes([targetUid], ([node]) => {
+      if (node) fn(node);
+    });
+  }
+
+  /** True when `uid` is somewhere below `nodeData` in the tree. */
+  private static subtreeContainsUid(nodeData: any, uid: string): boolean {
+    return (nodeData?.children || []).some(
+      (child: any) => child?.data?.uid === uid || MindMapEngine.subtreeContainsUid(child, uid)
+    );
   }
 
   /** Add several child topics under a node (by uid, default: the active node) as one undoable step. */
   addChildTopics(texts: string[], parentUid?: string): boolean {
-    const renderer = this.mindMap?.renderer as any;
-    if (!this.mindMap || !renderer || texts.length === 0) return false;
-    const parent = parentUid ? this.resolveNode(parentUid) : this.getActiveNode();
-    if (!parent) return false;
-    this.mindMap.execCommand('INSERT_MULTI_CHILD_NODE', [parent], texts.map((text) => ({ data: { text } })));
+    if (!this.mindMap || texts.length === 0) return false;
+    this.withNode(parentUid, (parent) => {
+      this.mindMap?.execCommand('INSERT_MULTI_CHILD_NODE', [parent], texts.map((text) => ({ data: { text } })));
+    });
     return true;
   }
 
@@ -532,36 +559,48 @@ export class MindMapEngine {
   addChildNodeWithData(parentUid: string | 'root', data: Record<string, any>): boolean {
     const renderer = this.mindMap?.renderer as any;
     if (!this.mindMap || !renderer) return false;
-    const parent = parentUid === 'root' ? renderer.root : this.resolveNode(parentUid);
-    if (!parent) return false;
-    this.mindMap.execCommand('INSERT_CHILD_NODE', false, [parent], data);
+    if (parentUid === 'root') {
+      this.mindMap.execCommand('INSERT_CHILD_NODE', false, [renderer.root], data);
+      return true;
+    }
+    this.withNode(parentUid, (parent) => {
+      this.mindMap?.execCommand('INSERT_CHILD_NODE', false, [parent], data);
+    });
     return true;
   }
 
-  /** Moves a node into another parent branch (or before a target sibling node). */
+  /**
+   * Moves a node into another parent branch, placed before `beforeNodeUid` when given (else appended).
+   * Refuses moves that would put a node inside its own subtree, and treats "before itself" as a no-op.
+   */
   moveNodeToBranch(nodeUid: string, targetBranchUid: string, beforeNodeUid?: string): boolean {
     const renderer = this.mindMap?.renderer as any;
-    if (!this.mindMap || !renderer || nodeUid === targetBranchUid) return false;
-    const node = this.resolveNode(nodeUid);
-    if (!node || node.isRoot) return false;
-    if (beforeNodeUid && beforeNodeUid !== nodeUid) {
-      const beforeNode = this.resolveNode(beforeNodeUid);
+    if (!this.mindMap || !renderer || nodeUid === targetBranchUid || beforeNodeUid === nodeUid) return false;
+    const uids = [nodeUid];
+    if (targetBranchUid !== 'root') uids.push(targetBranchUid);
+    if (beforeNodeUid) uids.push(beforeNodeUid);
+    this.withNodes(uids, ([node, ...rest]) => {
+      if (!node || node.isRoot) return;
+      const targetBranch = targetBranchUid === 'root' ? this.mindMap?.renderer?.root : rest[0];
+      const beforeNode = beforeNodeUid ? rest[rest.length - 1] : null;
+      // Moving a node before/under one of its own descendants would detach the whole subtree.
+      if (MindMapEngine.subtreeContainsUid(node.nodeData, targetBranchUid)) return;
+      if (beforeNodeUid && MindMapEngine.subtreeContainsUid(node.nodeData, beforeNodeUid)) return;
       if (beforeNode && !beforeNode.isRoot) {
-        this.mindMap.execCommand('INSERT_BEFORE', node, beforeNode);
-        return true;
+        this.mindMap?.execCommand('INSERT_BEFORE', node, beforeNode);
+      } else if (targetBranch) {
+        this.mindMap?.execCommand('MOVE_NODE_TO', node, targetBranch);
       }
-    }
-    const targetBranch = targetBranchUid === 'root' ? renderer.root : this.resolveNode(targetBranchUid);
-    if (!targetBranch) return false;
-    this.mindMap.execCommand('MOVE_NODE_TO', node, targetBranch);
+    });
     return true;
   }
 
   /** Deletes a specific node by uid. */
   deleteNodeByUid(uid: string): boolean {
-    const node = this.resolveNode(uid);
-    if (!node || node.isRoot) return false;
-    this.mindMap?.execCommand('REMOVE_NODE', [node]);
+    if (!this.mindMap) return false;
+    this.withNode(uid, (node) => {
+      if (!node.isRoot) this.mindMap?.execCommand('REMOVE_NODE', [node]);
+    });
     return true;
   }
 
@@ -571,17 +610,21 @@ export class MindMapEngine {
 
   /** Sets the active topic's (or specified uid's) text. `text` is plain text: it is escaped, never interpreted as markup. */
   setNodeText(text: string, targetUid?: string) {
-    const node = this.resolveNode(targetUid);
-    if (node) {
+    this.withNode(targetUid, (node) => {
       if ((this.mindMap as any)?.richText) {
         const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         this.mindMap?.execCommand('SET_NODE_TEXT', node, `<p>${escaped}</p>`, true);
       } else {
         this.mindMap?.execCommand('SET_NODE_TEXT', node, text);
       }
-      if (this.getActiveNode()?.uid === node.uid) {
-        this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
-      }
+      this.notifyIfActive(node);
+    });
+  }
+
+  /** Re-publishes inspector state when `node` is the selected node. */
+  private notifyIfActive(node: any) {
+    if (this.getActiveNode()?.uid === node.uid) {
+      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     }
   }
 
@@ -645,43 +688,28 @@ export class MindMapEngine {
   }
 
   setNodePriority(priority: PriorityLevel | null, targetUid?: string) {
-    const node = this.resolveNode(targetUid);
-    if (!node) return;
-    const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('priority_'));
-    if (priority !== null) {
-      node.setIcon([...currentIcons, `priority_${priority}`]);
-    } else {
-      node.setIcon(currentIcons);
-    }
-    if (this.getActiveNode()?.uid === node.uid) {
-      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
-    }
+    this.withNode(targetUid, (node) => {
+      const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('priority_'));
+      node.setIcon(priority !== null ? [...currentIcons, `priority_${priority}`] : currentIcons);
+      this.notifyIfActive(node);
+    });
   }
 
   setNodeProgress(progress: ProgressLevel | null, targetUid?: string) {
-    const node = this.resolveNode(targetUid);
-    if (!node) return;
-    const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('progress_'));
-    if (progress !== null) {
-      node.setIcon([...currentIcons, `progress_${progress}`]);
-    } else {
-      node.setIcon(currentIcons);
-    }
-    if (this.getActiveNode()?.uid === node.uid) {
-      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
-    }
+    this.withNode(targetUid, (node) => {
+      const currentIcons: string[] = (node.getData('icon') || []).filter((i: string) => !i.startsWith('progress_'));
+      node.setIcon(progress !== null ? [...currentIcons, `progress_${progress}`] : currentIcons);
+      this.notifyIfActive(node);
+    });
   }
 
   toggleNodeCheckbox(targetUid?: string) {
-    const node = this.resolveNode(targetUid);
-    if (!node) return;
-    const icons: string[] = node.getData('icon') || [];
-    const currentProgress = icons.find((i: string) => i.startsWith('progress_'));
-    if (!currentProgress || currentProgress === 'progress_0') {
-      this.setNodeProgress(100, node.uid);
-    } else {
-      this.setNodeProgress(0, node.uid);
-    }
+    this.withNode(targetUid, (node) => {
+      const icons: string[] = node.getData('icon') || [];
+      const currentProgress = icons.find((i: string) => i.startsWith('progress_'));
+      const done = currentProgress && currentProgress !== 'progress_0';
+      this.setNodeProgress(done ? 0 : 100, node.uid);
+    });
   }
 
   /**
@@ -697,26 +725,23 @@ export class MindMapEngine {
     },
     targetUid?: string
   ) {
-    const node = this.resolveNode(targetUid);
-    const renderer = this.mindMap?.renderer as any;
-    if (!node || !renderer) return;
-
     const patch: Record<string, string | undefined> = {};
     if ('startDate' in dates) patch.startDate = dates.startDate || undefined;
     if ('endDate' in dates) patch.endDate = dates.endDate || undefined;
     if ('startTime' in dates) patch.startTime = dates.startTime || undefined;
     if ('endTime' in dates) patch.endTime = dates.endTime || undefined;
 
-    if (typeof renderer.setNodeDataRender === 'function') {
-      renderer.setNodeDataRender(node, patch);
-    } else {
-      this.mindMap?.execCommand('SET_NODE_DATA', node, patch);
-      this.mindMap?.render();
-    }
-
-    if (this.getActiveNode()?.uid === node.uid) {
-      this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
-    }
+    this.withNode(targetUid, (node) => {
+      const renderer = this.mindMap?.renderer as any;
+      if (!renderer) return;
+      if (typeof renderer.setNodeDataRender === 'function') {
+        renderer.setNodeDataRender(node, patch);
+      } else {
+        this.mindMap?.execCommand('SET_NODE_DATA', node, patch);
+        this.mindMap?.render();
+      }
+      this.notifyIfActive(node);
+    });
   }
 
   setNodeIcons(icons: string[]) {

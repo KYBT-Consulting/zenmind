@@ -188,6 +188,11 @@ export function getTaskDateStatus(
   if (!start && !end && !hasTime) return null;
   if (progress === 100) return 'completed';
 
+  // A start date with no end ("From Nov 16") is open-ended: once started it is ongoing, never overdue.
+  if (start && !end && start < todayStr) {
+    return 'scheduled';
+  }
+
   const effectiveEnd = end || start;
   const effectiveStart = start || end;
 
@@ -279,6 +284,34 @@ export function isTaskOnDate(dates: TaskDateInfo, targetDateStr: string): boolea
   if (start) return start === targetDateStr;
   if (end) return end === targetDateStr;
   return false;
+}
+
+/** Whole days from `fromDateStr` to `toDateStr` (negative when `to` is earlier). Both must be valid. */
+export function daysBetween(fromDateStr: string, toDateStr: string): number {
+  const [fy, fm, fd] = fromDateStr.split('-').map(Number);
+  const [ty, tm, td] = toDateStr.split('-').map(Number);
+  // Date.UTC avoids DST shifts turning a day into 23/25 hours.
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+}
+
+/**
+ * Start/end dates for placing a task on `targetDateStr` without throwing away a multi-day range:
+ * - a range that already covers the target is kept as-is;
+ * - any other multi-day range is shifted to start on the target, keeping its length;
+ * - everything else becomes a single-day task on the target.
+ */
+export function rescheduleDatesOnto(
+  dates: TaskDateInfo,
+  targetDateStr: string
+): { startDate: string; endDate: string } {
+  const start = isValidDateString(dates.startDate) ? dates.startDate : undefined;
+  const end = isValidDateString(dates.endDate) ? dates.endDate : undefined;
+  if (start && end && start !== end) {
+    if (isTaskOnDate(dates, targetDateStr)) return { startDate: start, endDate: end };
+    const length = Math.abs(daysBetween(start, end));
+    return { startDate: targetDateStr, endDate: addDaysToDateString(targetDateStr, length) };
+  }
+  return { startDate: targetDateStr, endDate: targetDateStr };
 }
 
 /** Parses HH:mm to minutes since midnight (0..1439). Returns null if invalid. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addDaysToDateString,
+  daysBetween,
   extractAllTasks,
   extractKanbanColumns,
   formatTaskDateBadge,
@@ -10,6 +11,7 @@ import {
   isValidTimeString,
   minutesToTimeString,
   parseTimeToMinutes,
+  rescheduleDatesOnto,
 } from './taskDates';
 
 describe('taskDates validation and formatting', () => {
@@ -51,6 +53,42 @@ describe('taskDates validation and formatting', () => {
     expect(getTaskDateStatus({ startDate: '2026-11-18', endDate: '2026-11-18' }, 0, today)).toBe('upcoming');
     expect(getTaskDateStatus({ startDate: '2026-12-01', endDate: '2026-12-05' }, 0, today)).toBe('scheduled');
     expect(getTaskDateStatus({}, 0, today)).toBeNull();
+  });
+
+  it('treats a start-only date as open-ended, never overdue', () => {
+    const today = '2026-11-16';
+    expect(getTaskDateStatus({ startDate: '2026-11-10' }, 0, today)).toBe('scheduled');
+    expect(getTaskDateStatus({ startDate: '2026-11-16' }, 0, today)).toBe('today');
+    expect(getTaskDateStatus({ startDate: '2026-11-18' }, 0, today)).toBe('upcoming');
+  });
+
+  it('counts whole days between dates across month and DST boundaries', () => {
+    expect(daysBetween('2026-11-16', '2026-11-20')).toBe(4);
+    expect(daysBetween('2026-11-20', '2026-11-16')).toBe(-4);
+    expect(daysBetween('2026-03-01', '2026-04-01')).toBe(31);
+  });
+
+  it('reschedules onto a date without losing a multi-day range', () => {
+    // range already covers the target: unchanged
+    expect(rescheduleDatesOnto({ startDate: '2026-11-16', endDate: '2026-11-20' }, '2026-11-18')).toEqual({
+      startDate: '2026-11-16',
+      endDate: '2026-11-20',
+    });
+    // range elsewhere: shifted to start on the target, same length
+    expect(rescheduleDatesOnto({ startDate: '2026-11-01', endDate: '2026-11-03' }, '2026-11-16')).toEqual({
+      startDate: '2026-11-16',
+      endDate: '2026-11-18',
+    });
+    // single-day, start-only, or undated: becomes a single day on the target
+    expect(rescheduleDatesOnto({ startDate: '2026-11-01', endDate: '2026-11-01' }, '2026-11-16')).toEqual({
+      startDate: '2026-11-16',
+      endDate: '2026-11-16',
+    });
+    expect(rescheduleDatesOnto({ startDate: '2026-11-01' }, '2026-11-16')).toEqual({
+      startDate: '2026-11-16',
+      endDate: '2026-11-16',
+    });
+    expect(rescheduleDatesOnto({}, '2026-11-16')).toEqual({ startDate: '2026-11-16', endDate: '2026-11-16' });
   });
 
   it('checks if a task falls on a specific date', () => {

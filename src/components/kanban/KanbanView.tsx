@@ -256,6 +256,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 onDragOver={(e) => {
                   e.preventDefault();
                   if (dragOverColUid !== col.uid) setDragOverColUid(col.uid);
+                  // Card dragover stops propagation, so reaching here means the pointer is over the
+                  // column itself (not a card): drop appends to this column rather than before a stale card.
+                  if (dragOverCardUid !== null) setDragOverCardUid(null);
                 }}
                 onDragLeave={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -265,7 +268,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                 onDrop={(e) => {
                   e.preventDefault();
                   const sourceUid = e.dataTransfer.getData('text/zenmind-card-uid') || draggedCardUid;
-                  if (sourceUid && engine) {
+                  // Dropping a card back onto itself leaves it where it is.
+                  if (sourceUid && engine && sourceUid !== dragOverCardUid) {
                     engine.moveNodeToBranch(sourceUid, col.uid, dragOverCardUid || undefined);
                   }
                   setDraggedCardUid(null);
