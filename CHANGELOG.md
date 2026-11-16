@@ -11,6 +11,7 @@ All notable changes to ZenMind are documented here. The format follows
 - On narrower windows, the switcher and the Templates, Outline, Format, and AI Brainstorm buttons show icons only (with tooltips) so the title bar doesn't overlap.
 
 ### Fixed
+- **Drag and drop in the Windows desktop app:** Dragging tasks onto the Daily Planner's timeline, all-day list, or between Kanban columns did nothing on Windows, because the window's built-in file-drop handling swallowed every drag. Dropping a mind map file onto the window to open it now works the same way as in the browser.
 - **About → What's New:** The list now describes this release's features. In 0.4.0 it still showed features from earlier releases.
 
 ## [0.4.0] - 2026-11-16
