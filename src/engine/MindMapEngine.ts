@@ -266,9 +266,7 @@ export class MindMapEngine {
     // Interactive date badge click on canvas
     this.mindMap.on('node_date_click', (node: any) => {
       if (!node) return;
-      const renderer = this.mindMap?.renderer as any;
-      renderer?.clearActiveNodeList?.();
-      renderer?.setNodeActive?.(node, true);
+      this.activateNode(node);
       const info = this.extractActiveNodeInfo(node);
       this.callbacks.onActiveNodeChange?.(info);
       this.callbacks.onNodeDateClick?.(info);
@@ -486,8 +484,7 @@ export class MindMapEngine {
       renderer.expandToNodeUid(uid, () => {
         const target = renderer.findNodeByUid?.(uid);
         if (target) {
-          renderer.clearActiveNodeList?.();
-          renderer.setNodeActive(target, true);
+          this.activateNode(target);
           if (centerOnCanvas) {
             renderer.moveNodeToCenter?.(target);
           }
@@ -497,13 +494,25 @@ export class MindMapEngine {
       return true;
     }
     if (!node) return false;
-    renderer.clearActiveNodeList?.();
-    renderer.setNodeActive(node, true);
+    this.activateNode(node);
     if (centerOnCanvas) {
       renderer.moveNodeToCenter?.(node);
     }
     this.callbacks.onActiveNodeChange?.(this.extractActiveNodeInfo(node));
     return true;
+  }
+
+  /**
+   * Makes `node` the only selected node, the way clicking it on the canvas does. `renderer.setNodeActive`
+   * alone only restyles the node: it leaves `activeNodeList` empty, so every action on "the selected
+   * node" (the inspector's buttons, Clear Dates, styles…) would silently do nothing.
+   */
+  private activateNode(node: any) {
+    const renderer = this.mindMap?.renderer as any;
+    if (!renderer) return;
+    renderer.clearActiveNodeList?.();
+    renderer.addNodeToActiveList?.(node, true);
+    renderer.emitNodeActiveEvent?.(node);
   }
 
   /**
