@@ -32,6 +32,7 @@ import { FolderImportService } from './services/folderImportService';
 import { MindMapFormatService } from './services/mindMapFormatService';
 import { SnapshotService } from './services/snapshotService';
 import { sanitizeMapData } from './lib/sanitize';
+import { loadTagVisibility, saveTagVisibility, type TagVisibility } from './lib/tagVisibility';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { TabBar } from './components/tabs/TabBar';
 import { MobileBottomBar } from './components/mobile/MobileBottomBar';
@@ -153,6 +154,7 @@ export default function App() {
       return false;
     }
   });
+  const [tagVisibility, setTagVisibility] = useState<TagVisibility>(loadTagVisibility);
   const [showSearch, setShowSearch] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -534,6 +536,16 @@ export default function App() {
     setInspectorTab('task');
     setInspectorTabRequest((n) => n + 1);
     setShowInspector(true);
+  }, []);
+
+  // Apply the tag view options to every open map (tabs share the preference)
+  useEffect(() => {
+    Object.values(engines).forEach((eng) => eng.setTagVisibility(tagVisibility));
+  }, [engines, tagVisibility]);
+
+  const handleTagVisibilityChange = useCallback((next: TagVisibility) => {
+    setTagVisibility(next);
+    saveTagVisibility(next);
   }, []);
 
   const handleToggleVimMode = useCallback((enabled: boolean) => {
@@ -945,6 +957,8 @@ export default function App() {
         isFormatPainterActive={isFormatPainterActive}
         showMiniMap={showMiniMap}
         onToggleMiniMap={() => setShowMiniMap(!showMiniMap)}
+        tagVisibility={tagVisibility}
+        onTagVisibilityChange={handleTagVisibilityChange}
         onOpenNotes={handleOpenNotes}
         onOpenTasks={handleOpenTasks}
         onOpenStructure={() => {

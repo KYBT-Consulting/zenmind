@@ -16,6 +16,7 @@ import { DesktopFileService, type FileSaveResult } from '../services/desktopFile
 import { stripHtml } from '../lib/utils';
 import { isSafeLink, sanitizeMapData } from '../lib/sanitize';
 import { contentSignature } from '../lib/contentSignature';
+import { loadTagVisibility, sameTagVisibility, type TagVisibility } from '../lib/tagVisibility';
 import { applyNumbering } from '../lib/numbering';
 import {
   applyInlineMarkdown,
@@ -160,6 +161,8 @@ export class MindMapEngine {
         if (target === this.container) return true;
         return (this.mindMap as any).editNodeClassList?.some((c: string) => target.classList?.contains(c)) ?? false;
       },
+      // Read by the vendored tag renderer to hide quadrant/date/custom badges
+      tagVisibility: loadTagVisibility(),
       enableFreeDrag: true, // Allows freely dragging nodes and floating topics anywhere on canvas
       errorHandler: (code: string, err: any) => {
         console.error('MindMap error:', code, err);
@@ -694,6 +697,15 @@ export class MindMapEngine {
       this.mindMap?.execCommand('SET_NODE_HYPERLINK', link, resolvedTitle);
     }
     return true;
+  }
+
+  /** Shows or hides badge kinds (quadrant, date, custom tags) on every topic. View-only; map data is untouched. */
+  setTagVisibility(visibility: TagVisibility) {
+    if (!this.mindMap) return;
+    const current = this.mindMap.opt.tagVisibility as TagVisibility | undefined;
+    if (current && sameTagVisibility(current, visibility)) return;
+    this.mindMap.opt.tagVisibility = { ...visibility };
+    (this.mindMap as any).reRender(); // rebuilds node contents; missing from the bundled typings
   }
 
   setNodeTags(tags: string[]) {

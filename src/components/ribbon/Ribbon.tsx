@@ -53,6 +53,7 @@ import {
 import { APP_VERSION } from '../dialogs/AboutDialog';
 import { PlannerCounts, ViewSwitcher } from './ViewSwitcher';
 import { MindMapEngine } from '../../engine/MindMapEngine';
+import { DEFAULT_TAG_VISIBILITY, type TagVisibility } from '../../lib/tagVisibility';
 import {
   ActiveNodeInfo,
   LAYOUT_OPTIONS,
@@ -92,6 +93,9 @@ interface RibbonProps {
   isFormatPainterActive?: boolean;
   showMiniMap?: boolean;
   onToggleMiniMap?: () => void;
+  /** Which badge kinds (quadrant, date, custom tags) are drawn on the mind map. */
+  tagVisibility?: TagVisibility;
+  onTagVisibilityChange?: (visibility: TagVisibility) => void;
   onOpenNotes?: () => void;
   onOpenTasks?: () => void;
   onOpenStructure?: () => void;
@@ -111,6 +115,17 @@ interface RibbonProps {
   /** Called with the saved path after a desktop quick-export. */
   onExported?: (filePath: string) => void;
 }
+
+const TAG_KIND_OPTIONS: { key: keyof TagVisibility; label: string; hint: string }[] = [
+  { key: 'quadrant', label: 'Quadrant', hint: 'Covey Q1–Q4 badge' },
+  { key: 'date', label: 'Dates', hint: 'Start / due date badge' },
+  { key: 'custom', label: 'Custom tags', hint: 'Your tags and callout badges' },
+  { key: 'priority', label: 'Priority', hint: 'Priority 1–5 icon' },
+  { key: 'progress', label: 'Progress', hint: 'Task progress icon' },
+];
+
+const setAllTagKinds = (visible: boolean): TagVisibility =>
+  Object.fromEntries(TAG_KIND_OPTIONS.map((opt) => [opt.key, visible])) as unknown as TagVisibility;
 
 export const Ribbon: React.FC<RibbonProps> = ({
   engine,
@@ -134,6 +149,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
   isFormatPainterActive = false,
   showMiniMap = false,
   onToggleMiniMap,
+  tagVisibility = DEFAULT_TAG_VISIBILITY,
+  onTagVisibilityChange,
   onOpenNotes,
   onOpenTasks,
   onOpenStructure,
@@ -155,10 +172,12 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
+  const [showTagsMenu, setShowTagsMenu] = useState(false);
 
   const layoutMenuRef = useRef<HTMLDivElement>(null);
   const themeMenuRef = useRef<HTMLDivElement>(null);
   const shapeMenuRef = useRef<HTMLDivElement>(null);
+  const tagsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -171,6 +190,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
       }
       if (shapeMenuRef.current && !shapeMenuRef.current.contains(target)) {
         setShowShapeMenu(false);
+      }
+      if (tagsMenuRef.current && !tagsMenuRef.current.contains(target)) {
+        setShowTagsMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -205,6 +227,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
     setShowLayoutMenu(false);
     setShowThemeMenu(false);
   };
+
+  const hiddenTagKinds = TAG_KIND_OPTIONS.filter((opt) => !tagVisibility[opt.key]).length;
 
   const tabs: { id: RibbonTab; label: string }[] = [
     { id: 'file', label: 'File' },
@@ -933,6 +957,73 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <Eye size={14} className={showMiniMap ? 'text-indigo-600' : 'text-slate-600'} />
               <span>Navigator (Mini-Map)</span>
             </button>
+
+            {/* Tag visibility: choose which badges appear on topics */}
+            <div className="relative" ref={tagsMenuRef}>
+              <button
+                aria-label="Choose which tags to show on topics"
+                aria-expanded={showTagsMenu}
+                onClick={() => setShowTagsMenu((prev) => !prev)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors shadow-xs',
+                  hiddenTagKinds > 0
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-semibold'
+                    : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                )}
+                title="Show or hide quadrant, date, custom tag, priority and progress badges on topics"
+              >
+                <Tag size={14} className="text-indigo-600" />
+                <span>Tags</span>
+                {hiddenTagKinds > 0 && (
+                  <span className="text-[10px] font-semibold px-1.5 rounded-full bg-indigo-100 text-indigo-700">
+                    {hiddenTagKinds} hidden
+                  </span>
+                )}
+                <ChevronDown size={12} className="text-slate-400" />
+              </button>
+              {showTagsMenu && (
+                <div className="absolute top-10 left-0 w-60 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
+                    Show on topics
+                  </div>
+                  {TAG_KIND_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.key}
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-xs text-slate-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={tagVisibility[opt.key]}
+                        onChange={(e) =>
+                          onTagVisibilityChange?.({ ...tagVisibility, [opt.key]: e.target.checked })
+                        }
+                        className="accent-indigo-600"
+                      />
+                      <span className="flex flex-col">
+                        <span className="font-medium">{opt.label}</span>
+                        <span className="text-[10px] text-slate-400">{opt.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                  <div className="flex gap-1 border-t border-slate-100 mt-1 pt-1.5 px-1">
+                    <button
+                      type="button"
+                      onClick={() => onTagVisibilityChange?.(setAllTagKinds(true))}
+                      className="flex-1 px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      Show all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onTagVisibilityChange?.(setAllTagKinds(false))}
+                      className="flex-1 px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      Hide all
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Find & Replace */}
             <button

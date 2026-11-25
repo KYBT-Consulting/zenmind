@@ -17,7 +17,7 @@ import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export const APP_VERSION = pkg.version || '0.5.0';
+export const APP_VERSION = pkg.version || '0.5.1';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
+  'New Tags menu on the View tab: show or hide quadrant, date, custom tag, priority and progress badges on the map',
   "4 Quadrants view: sort topics by Stephen Covey's Urgent/Important matrix, drag them between quadrants, add items straight into a quadrant, and triage everything not yet sorted from a sidebar",
   'Mark any topic Urgent and/or Important, or pick Q1–Q4 directly, from the Format inspector or the right-click menu',
   'Quadrant badges (Q1–Q4) appear on the map, in the Outline, on Kanban cards, and in the Daily Planner',

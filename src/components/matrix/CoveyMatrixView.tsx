@@ -69,11 +69,6 @@ export const CoveyMatrixView: React.FC<CoveyMatrixViewProps> = ({
   const allItems = useMemo(() => extractAllTasks(data), [data]);
   const matrix = useMemo(() => groupItemsByCoveyQuadrant(allItems), [allItems]);
 
-  const rootTitle = useMemo(() => {
-    const root = data?.root ?? data;
-    return stripHtml(root?.data?.text || '') || 'Central Topic';
-  }, [data]);
-
   const branches = useMemo((): { uid: string; title: string }[] => {
     const root = data?.root ?? data;
     if (!root || !Array.isArray(root.children)) return [];
@@ -611,9 +606,6 @@ export const CoveyMatrixView: React.FC<CoveyMatrixViewProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-bold text-slate-800">
-                {rootTitle} — Stephen Covey&apos;s 4 Quadrants
-              </h2>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                 {matrix.counts.assigned} Classified
               </span>
@@ -632,7 +624,7 @@ export const CoveyMatrixView: React.FC<CoveyMatrixViewProps> = ({
               )}
             </div>
             <p className="text-[11px] text-slate-500">
-              Habit 3: Put First Things First • Assign Urgency &amp; Importance attributes to any topic or drag items across quadrants
+              Assign Urgency &amp; Importance attributes to any topic or drag items across quadrants
             </p>
           </div>
         </div>

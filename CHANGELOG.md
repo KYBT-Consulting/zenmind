@@ -4,6 +4,14 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.5.1] - 2026-11-25
+
+### Added
+- **Choose which tags show on the map:** A new **Tags** menu on the View tab lets you show or hide each kind of badge on your topics: Covey quadrant (Q1–Q4), dates, your own tags (including callout badges), priority, and progress. **Show all** and **Hide all** buttons switch them together. Hiding a badge only changes what you see; it stays saved in your map. Your choice is remembered and applies to every open map, and the button shows how many kinds are hidden.
+
+### Changed
+- **Simpler 4 Quadrants header:** The view no longer shows the map title and "Habit 3" subtitle above the quadrants, only the short how-to line, the counts, and the controls.
+
 ## [0.5.0] - 2026-11-25
 
 ### Added
