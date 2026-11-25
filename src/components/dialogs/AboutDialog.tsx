@@ -17,7 +17,7 @@ import { UPDATE_FOUND_EVENT } from '../floating/UpdateBanner';
 import { useDialogA11y } from '../../lib/useDialogA11y';
 import logoUrl from '../../assets/zenmind-logo.svg';
 
-export const APP_VERSION = pkg.version || '0.4.2';
+export const APP_VERSION = pkg.version || '0.5.0';
 
 interface AboutDialogProps {
   isOpen: boolean;
@@ -25,11 +25,11 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
-  'Task dates and time blocks: give any topic a start date, a due date, and optional start and end times, shown as color-coded 📅 badges on the map and in the Outline',
-  'Kanban board: each first-level branch is a column and its subtopics are cards you can drag, rename, tick off, and filter',
-  'Daily Planner: a week strip, an hourly schedule, all-day and overdue lists, and a backlog of unscheduled topics to drag onto your day',
-  'Switch between Mind Map, Kanban, and Daily Planner from the middle of the title bar, where the Planner button shows how many tasks are due today or overdue',
-  'Closing the desktop app with unsaved changes now asks whether to save them first',
+  "4 Quadrants view: sort topics by Stephen Covey's Urgent/Important matrix, drag them between quadrants, add items straight into a quadrant, and triage everything not yet sorted from a sidebar",
+  'Mark any topic Urgent and/or Important, or pick Q1–Q4 directly, from the Format inspector or the right-click menu',
+  'Quadrant badges (Q1–Q4) appear on the map, in the Outline, on Kanban cards, and in the Daily Planner',
+  'Quadrants are kept when you export to and import from OPML and FreeMind',
+  'Switch between Mind Map, Kanban, 4 Quadrants, and Daily Planner from the middle of the title bar',
 ];
 
 export const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
