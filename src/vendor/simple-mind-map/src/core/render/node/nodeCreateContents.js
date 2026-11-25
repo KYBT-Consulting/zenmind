@@ -104,8 +104,18 @@ function createIconNode() {
   if (!_data.icon || _data.icon.length <= 0) {
     return []
   }
+  // App-level view option: hide priority/progress icons (all shown by default)
+  const visibility = this.mindMap.opt.tagVisibility || {}
+  const hidePriority = visibility.priority === false
+  const hideProgress = visibility.progress === false
   let iconSize = this.mindMap.themeConfig.iconSize
   return _data.icon
+    .filter(item => {
+      if (typeof item !== 'string') return true
+      if (hidePriority && item.startsWith('priority_')) return false
+      if (hideProgress && item.startsWith('progress_')) return false
+      return true
+    })
     .map(item => {
       let src = iconsSvg.getNodeIconListIcon(
         item,
@@ -374,6 +384,11 @@ function createTagNode() {
     important: this.getData('important'),
     quadrant: this.getData('quadrant')
   })
+  // App-level view option: which badge kinds to draw on the canvas (all shown by default)
+  const visibility = this.mindMap.opt.tagVisibility || {}
+  const showQuadrant = visibility.quadrant !== false
+  const showDate = visibility.date !== false
+  const showCustom = visibility.custom !== false
   const icons = this.getData('icon') || []
   const progressIcon = Array.isArray(icons)
     ? icons.find(i => typeof i === 'string' && i.startsWith('progress_'))
@@ -383,7 +398,7 @@ function createTagNode() {
     : null
 
   let quadrantTagItem = null
-  if (coveyQuadrant) {
+  if (showQuadrant && coveyQuadrant) {
     const qMeta = getCoveyQuadrantMeta(coveyQuadrant)
     quadrantTagItem = {
       text: formatCoveyCanvasBadge(coveyQuadrant),
@@ -405,7 +420,7 @@ function createTagNode() {
     endTime
   })
   let dateTagItem = null
-  if (dateBadgeText) {
+  if (showDate && dateBadgeText) {
     const status = getTaskDateStatus(
       { startDate, endDate, startTime, endTime },
       progressNum
@@ -430,7 +445,7 @@ function createTagNode() {
   const combinedTags = [
     ...(quadrantTagItem ? [quadrantTagItem] : []),
     ...(dateTagItem ? [dateTagItem] : []),
-    ...rawTagData.slice(0, maxTag)
+    ...(showCustom ? rawTagData.slice(0, maxTag) : [])
   ]
   if (combinedTags.length <= 0) {
     return []

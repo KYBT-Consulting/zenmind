@@ -28,6 +28,7 @@ const DOCUMENT_SHORTCUTS: ShortcutItem[] = [
   { keys: ['Ctrl', 'Shift', 'S'], description: 'Save map as a new file' },
   { keys: ['Ctrl', 'O'], description: 'Open a map file' },
   { keys: ['Ctrl', 'F'], description: 'Find & Replace across topics' },
+  { keys: ['Ctrl', 'F1'], description: 'Collapse or pin the ribbon' },
   { keys: ['Ctrl', 'Z'], description: 'Undo last change' },
   { keys: ['Ctrl', 'Y'], description: 'Redo change' },
   { keys: ['Ctrl', 'C'], description: 'Copy selected topic subtree' },

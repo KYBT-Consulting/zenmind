@@ -15,10 +15,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Build and deploy are separate jobs (GitHub's recommended layout). With both in one job,
+  # deploy-pages can query the artifact before the upload is listed ("No artifacts named
+  # github-pages"), and re-running that job uploads a second copy, which then fails with
+  # "Multiple artifacts named github-pages". Now deploy only starts once the upload is done,
+  # and "Re-run failed jobs" re-runs deploy alone against the single artifact.
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -45,6 +47,13 @@ jobs:
         with:
           path: './dist'
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
