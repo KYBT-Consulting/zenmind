@@ -1,4 +1,5 @@
-import { PriorityLevel, ProgressLevel } from '../types/mindmap';
+import { CoveyQuadrant, PriorityLevel, ProgressLevel } from '../types/mindmap';
+import { resolveCoveyAttributes } from './coveyMatrix';
 import { stripHtml } from './utils';
 
 export interface TaskDateInfo {
@@ -24,6 +25,9 @@ export interface TaskItem {
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  urgent?: boolean;
+  important?: boolean;
+  quadrant: CoveyQuadrant | null;
   tags: string[];
   note: string;
   fillColor?: string;
@@ -360,6 +364,7 @@ function extractNodeTaskItem(
   const tags = rawTags
     .map((t: any) => (typeof t === 'string' ? t : t?.text || ''))
     .filter(Boolean);
+  const covey = resolveCoveyAttributes(data);
 
   return {
     uid: data.uid,
@@ -375,6 +380,9 @@ function extractNodeTaskItem(
     endDate: isValidDateString(data.endDate) ? data.endDate : undefined,
     startTime: isValidTimeString(data.startTime) ? data.startTime : undefined,
     endTime: isValidTimeString(data.endTime) ? data.endTime : undefined,
+    urgent: covey.urgent,
+    important: covey.important,
+    quadrant: covey.quadrant,
     tags,
     note: data.note || '',
     fillColor: data.fillColor,

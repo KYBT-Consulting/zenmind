@@ -1,4 +1,5 @@
 import MindMap from 'simple-mind-map';
+import { resolveCoveyAttributes } from '../lib/coveyMatrix';
 import { toPlainText } from '../lib/utils';
 
 export interface ParseResult {
@@ -195,6 +196,16 @@ export class MindMapFormatService {
         const tags = category.split(',').map((t) => t.trim()).filter(Boolean);
         if (tags.length) nodeData.data.tag = tags;
       }
+      const coveyAttr = el.getAttribute('_coveyQuadrant');
+      if (coveyAttr) {
+        const qNum = parseInt(coveyAttr, 10);
+        const covey = resolveCoveyAttributes({ quadrant: qNum });
+        if (covey.quadrant) {
+          nodeData.data.urgent = covey.urgent;
+          nodeData.data.important = covey.important;
+          nodeData.data.quadrant = covey.quadrant;
+        }
+      }
       return nodeData;
     };
 
@@ -282,6 +293,18 @@ export class MindMapFormatService {
       const link = el.getAttribute('LINK');
       if (link) nodeData.data.hyperlink = link;
       if (tags.length) nodeData.data.tag = tags;
+      const coveyAttr = directChildren.find(
+        (c) => c.tagName.toLowerCase() === 'attribute' && (c.getAttribute('NAME') || '').toLowerCase() === 'covey_quadrant'
+      );
+      if (coveyAttr) {
+        const qNum = parseInt(coveyAttr.getAttribute('VALUE') || '', 10);
+        const covey = resolveCoveyAttributes({ quadrant: qNum });
+        if (covey.quadrant) {
+          nodeData.data.urgent = covey.urgent;
+          nodeData.data.important = covey.important;
+          nodeData.data.quadrant = covey.quadrant;
+        }
+      }
       return nodeData;
     };
 
@@ -297,10 +320,12 @@ export class MindMapFormatService {
       // _note is plain text by OPML convention; url and category carry the link and tags
       const note = node.data?.note ? toPlainText(node.data.note) : '';
       const tags = this.tagTexts(node.data?.tag);
+      const covey = resolveCoveyAttributes(node.data);
       const attrs =
         (note ? ` _note="${this.escapeAttr(note)}"` : '') +
         (node.data?.hyperlink ? ` url="${this.escapeAttr(node.data.hyperlink)}"` : '') +
-        (tags.length ? ` category="${this.escapeAttr(tags.join(','))}"` : '');
+        (tags.length ? ` category="${this.escapeAttr(tags.join(','))}"` : '') +
+        (covey.quadrant ? ` _coveyQuadrant="${covey.quadrant}"` : '');
       const children = node.children || [];
 
       if (children.length === 0) {
@@ -349,6 +374,10 @@ ${serializeOutline(rootNode)}  </body>
       }
       if (tags.length) {
         inner += `${indent}  <attribute NAME="tags" VALUE="${this.escapeAttr(tags.join(','))}"/>\n`;
+      }
+      const covey = resolveCoveyAttributes(node.data);
+      if (covey.quadrant) {
+        inner += `${indent}  <attribute NAME="covey_quadrant" VALUE="${covey.quadrant}"/>\n`;
       }
       for (const child of children) {
         inner += serializeNode(child, indent + '  ');

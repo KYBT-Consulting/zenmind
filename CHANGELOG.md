@@ -4,6 +4,17 @@ All notable changes to ZenMind are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/) (pre-1.0: minor versions may include breaking changes).
 
+## [0.5.0] - 2026-11-25
+
+### Added
+- **4 Quadrants view:** A new view, next to Kanban and Daily Planner in the title bar, that sorts your topics into Stephen Covey's four quadrants: Q1 Urgent & Important (Do First), Q2 Not Urgent & Important (Schedule), Q3 Urgent & Not Important (Delegate), and Q4 Not Urgent & Not Important (Eliminate). Drag topics between quadrants, add new items straight into a quadrant, tick them off, filter them, and see what share of your classified work sits in Q2. A sidebar lists topics you haven't sorted yet, with one-click Q1–Q4 buttons.
+- **Urgent and Important on any topic:** Set a topic's urgency and importance, or pick Q1–Q4 directly, from the Format inspector's Task tab or the right-click menu.
+- **Quadrant badges:** Sorted topics show a coloured Q1–Q4 badge on the map (click it to open the topic's task settings), in the Outline, on Kanban cards, and in the Daily Planner.
+- **OPML and FreeMind:** Quadrants are saved when you export to these formats and restored when you import them.
+
+### Changed
+- The Eisenhower Priority Matrix template is now the **Covey / Eisenhower 4-Quadrant Matrix**, and its example tasks come already sorted into their quadrants.
+
 ## [0.4.2] - 2026-11-16
 
 ### Changed

@@ -2,6 +2,7 @@ import MindMap from 'simple-mind-map';
 import {
   ActiveNodeInfo,
   BranchLineStyle,
+  CoveyQuadrant,
   LayoutType,
   OuterFrameConfig,
   PriorityLevel,
@@ -9,6 +10,7 @@ import {
   ShapeType,
   THEME_PRESETS,
 } from '../types/mindmap';
+import { computeCoveyDataPatch, resolveCoveyAttributes } from '../lib/coveyMatrix';
 import { MindMapFormatService } from '../services/mindMapFormatService';
 import { DesktopFileService, type FileSaveResult } from '../services/desktopFileService';
 import { stripHtml } from '../lib/utils';
@@ -263,14 +265,16 @@ export class MindMapEngine {
       }
     });
 
-    // Interactive date badge click on canvas
-    this.mindMap.on('node_date_click', (node: any) => {
+    // Interactive date or Covey quadrant badge click on canvas
+    const handleTaskBadgeClick = (node: any) => {
       if (!node) return;
       this.activateNode(node);
       const info = this.extractActiveNodeInfo(node);
       this.callbacks.onActiveNodeChange?.(info);
       this.callbacks.onNodeDateClick?.(info);
-    });
+    };
+    this.mindMap.on('node_date_click', handleTaskBadgeClick);
+    this.mindMap.on('node_quadrant_click', handleTaskBadgeClick);
 
     // Right-click context menu on a topic node
     this.mindMap.on('node_contextmenu', (e: MouseEvent, node: any) => {
@@ -306,6 +310,8 @@ export class MindMapEngine {
       rect = undefined;
     }
 
+    const covey = resolveCoveyAttributes(data);
+
     return {
       uid: node.uid,
       text: stripHtml(data.text || ''),
@@ -328,6 +334,9 @@ export class MindMapEngine {
       endDate: data.endDate || undefined,
       startTime: data.startTime || undefined,
       endTime: data.endTime || undefined,
+      urgent: covey.urgent,
+      important: covey.important,
+      quadrant: covey.quadrant,
       customLeft: data.customLeft,
       customTop: data.customTop,
       image: data.image
@@ -751,6 +760,37 @@ export class MindMapEngine {
       }
       this.notifyIfActive(node);
     });
+  }
+
+  /**
+   * Assigns or clears Stephen Covey's Four Quadrant attributes (`urgent`, `important`, `quadrant`)
+   * on the active node (or `targetUid`).
+   */
+  setNodeCoveyAttributes(
+    update: {
+      urgent?: boolean | null;
+      important?: boolean | null;
+      quadrant?: CoveyQuadrant | null;
+    },
+    targetUid?: string
+  ) {
+    this.withNode(targetUid, (node) => {
+      const renderer = this.mindMap?.renderer as any;
+      if (!renderer) return;
+      const patch = computeCoveyDataPatch(node.nodeData?.data, update);
+      if (typeof renderer.setNodeDataRender === 'function') {
+        renderer.setNodeDataRender(node, patch);
+      } else {
+        this.mindMap?.execCommand('SET_NODE_DATA', node, patch);
+        this.mindMap?.render();
+      }
+      this.notifyIfActive(node);
+    });
+  }
+
+  /** Convenience helper to assign (1..4) or clear (`null`) a topic's Covey Quadrant directly. */
+  setNodeQuadrant(quadrant: CoveyQuadrant | null, targetUid?: string) {
+    this.setNodeCoveyAttributes({ quadrant }, targetUid);
   }
 
   setNodeIcons(icons: string[]) {

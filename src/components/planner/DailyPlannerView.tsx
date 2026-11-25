@@ -33,6 +33,7 @@ import {
   TaskItem,
 } from '../../lib/taskDates';
 import { cn, stripHtml } from '../../lib/utils';
+import { getCoveyQuadrantMeta } from '../../lib/coveyMatrix';
 
 interface DailyPlannerViewProps {
   engine: MindMapEngine | null;
@@ -469,6 +470,17 @@ export const DailyPlannerView: React.FC<DailyPlannerViewProps> = ({
                                 <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-white/80 text-slate-500 border border-slate-200/70">
                                   {task.branchTitle}
                                 </span>
+                                {task.quadrant !== null && (
+                                  <span
+                                    title={`${getCoveyQuadrantMeta(task.quadrant).name}: ${getCoveyQuadrantMeta(task.quadrant).axisLabel}`}
+                                    className={cn(
+                                      'px-1 py-0.2 rounded text-[9px] font-bold text-white',
+                                      getCoveyQuadrantMeta(task.quadrant).solidBgClass
+                                    )}
+                                  >
+                                    {getCoveyQuadrantMeta(task.quadrant).code}
+                                  </span>
+                                )}
                                 {task.priority !== null && (
                                   <span
                                     className={cn(

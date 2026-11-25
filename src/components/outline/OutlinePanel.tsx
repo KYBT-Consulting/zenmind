@@ -13,6 +13,7 @@ import {
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import { ActiveNodeInfo } from '../../types/mindmap';
 import { cn, stripHtml } from '../../lib/utils';
+import { getCoveyQuadrantMeta, resolveCoveyQuadrant } from '../../lib/coveyMatrix';
 import { formatTaskDateBadge, getTaskDateBadgeColors, getTaskDateStatus } from '../../lib/taskDates';
 
 interface OutlineItemProps {
@@ -54,6 +55,8 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
   const progressIcon = icons.find((i) => typeof i === 'string' && i.startsWith('progress_'));
   const priorityNum = priorityIcon ? parseInt(priorityIcon.replace('priority_', ''), 10) : null;
   const progressNum = progressIcon ? parseInt(progressIcon.replace('progress_', ''), 10) : null;
+  const coveyQuadrant = resolveCoveyQuadrant(node.data);
+  const coveyMeta = coveyQuadrant ? getCoveyQuadrantMeta(coveyQuadrant) : null;
   const dateBadge = formatTaskDateBadge({
     startDate: node.data?.startDate,
     endDate: node.data?.endDate,
@@ -103,6 +106,18 @@ const OutlineItem: React.FC<OutlineItemProps> = ({
           </button>
         ) : (
           <div className="w-3.5" />
+        )}
+
+        {coveyMeta && (
+          <span
+            title={`${coveyMeta.name}: ${coveyMeta.axisLabel}`}
+            className={cn(
+              'px-1 py-0.2 rounded text-[9px] font-bold leading-tight shrink-0 text-white',
+              coveyMeta.solidBgClass
+            )}
+          >
+            {coveyMeta.code}
+          </span>
         )}
 
         {priorityNum !== null && !isNaN(priorityNum) && (

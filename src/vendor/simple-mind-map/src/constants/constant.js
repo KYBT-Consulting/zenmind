@@ -211,6 +211,9 @@ export const nodeDataNoStylePropList = [
   'endDate',
   'startTime',
   'endTime',
+  'urgent',
+  'important',
+  'quadrant',
   'isFloating'
 ]
 
