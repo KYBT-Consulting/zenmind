@@ -24,9 +24,11 @@ import {
   RotateCcw,
   UnfoldVertical,
   FoldVertical,
+  Grid2x2,
 } from 'lucide-react';
 import { MindMapEngine, ContextMenuEventInfo } from '../../engine/MindMapEngine';
-import { PriorityLevel, ProgressLevel } from '../../types/mindmap';
+import { CoveyQuadrant, PriorityLevel, ProgressLevel } from '../../types/mindmap';
+import { COVEY_QUADRANTS } from '../../lib/coveyMatrix';
 import { cn } from '../../lib/utils';
 
 interface CanvasContextMenuProps {
@@ -88,10 +90,11 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
   const currentProgress = currentProgressIcon
     ? (parseInt(currentProgressIcon.replace('progress_', ''), 10) as ProgressLevel)
     : null;
+  const currentQuadrant = menu.node?.quadrant ?? null;
 
   // Keep context menu inside viewport boundaries
   const menuWidth = 248;
-  const estimatedHeight = isNode ? 470 : 280;
+  const estimatedHeight = isNode ? 505 : 280;
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800;
   const left = Math.max(8, Math.min(menu.clientX, viewportW - menuWidth - 8));
@@ -320,6 +323,37 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
                     )}
                   >
                     P{lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <Grid2x2 size={11} className="text-indigo-600" />
+                <span>Quadrant</span>
+              </span>
+              <div className="flex items-center gap-1">
+                {COVEY_QUADRANTS.map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    title={`${q.name}: ${q.axisLabel} (${q.actionLabel})`}
+                    onClick={() =>
+                      run(() =>
+                        engine.setNodeQuadrant(
+                          currentQuadrant === q.id ? null : (q.id as CoveyQuadrant)
+                        )
+                      )
+                    }
+                    className={cn(
+                      'px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer',
+                      currentQuadrant === q.id
+                        ? `${q.solidBgClass} text-white shadow-2xs`
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    )}
+                  >
+                    {q.code}
                   </button>
                 ))}
               </div>

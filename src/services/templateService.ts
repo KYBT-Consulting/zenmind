@@ -150,38 +150,96 @@ export const BUILTIN_TEMPLATES: MindMapTemplate[] = [
   },
   {
     id: 'eisenhower-matrix',
-    name: 'Eisenhower Priority Matrix',
+    name: 'Covey / Eisenhower 4-Quadrant Matrix',
     category: 'Project Management',
-    description: 'Prioritize tasks across Urgent/Important quadrants with priority badges and checkboxes.',
+    description: 'Prioritize tasks across Urgent/Important quadrants with Covey matrix attributes, badges, and checkboxes.',
     layout: 'mindMap',
     themeId: 'solar-warmth',
     data: buildFullDoc('mindMap', 'solar-warmth', {
-      data: { text: 'Eisenhower Priority Matrix', expand: true },
+      data: { text: 'Stephen Covey 4-Quadrant Matrix', expand: true },
       children: [
         {
-          data: { text: 'Do First (Urgent & Important)', expand: true, icon: ['priority_1'] },
+          data: { text: 'Quadrant I: Necessity (Do First)', expand: true, icon: ['priority_1'] },
           children: [
-            { data: { text: 'Resolve production blocker', icon: ['priority_1', 'progress_50'] } },
-            { data: { text: 'Finalize release deliverable', icon: ['priority_1', 'progress_25'] } },
+            {
+              data: {
+                text: 'Resolve production blocker',
+                icon: ['priority_1', 'progress_50'],
+                urgent: true,
+                important: true,
+                quadrant: 1,
+              },
+            },
+            {
+              data: {
+                text: 'Finalize release deliverable',
+                icon: ['priority_1', 'progress_25'],
+                urgent: true,
+                important: true,
+                quadrant: 1,
+              },
+            },
           ],
         },
         {
-          data: { text: 'Schedule (Important, Not Urgent)', expand: true, icon: ['priority_2'] },
+          data: { text: 'Quadrant II: Effectiveness (Schedule)', expand: true, icon: ['priority_2'] },
           children: [
-            { data: { text: 'Q3 architecture roadmap', icon: ['priority_2', 'progress_0'] } },
-            { data: { text: 'Automated test coverage', icon: ['priority_2', 'progress_0'] } },
+            {
+              data: {
+                text: 'Q3 architecture roadmap',
+                icon: ['priority_2', 'progress_0'],
+                urgent: false,
+                important: true,
+                quadrant: 2,
+              },
+            },
+            {
+              data: {
+                text: 'Automated test coverage',
+                icon: ['priority_2', 'progress_0'],
+                urgent: false,
+                important: true,
+                quadrant: 2,
+              },
+            },
           ],
         },
         {
-          data: { text: 'Delegate (Urgent, Not Important)', expand: true, icon: ['priority_3'] },
+          data: { text: 'Quadrant III: Distraction (Delegate)', expand: true, icon: ['priority_3'] },
           children: [
-            { data: { text: 'Routine status reporting', icon: ['priority_3', 'progress_0'] } },
-            { data: { text: 'Meeting scheduling', icon: ['priority_3', 'progress_100'] } },
+            {
+              data: {
+                text: 'Routine status reporting',
+                icon: ['priority_3', 'progress_0'],
+                urgent: true,
+                important: false,
+                quadrant: 3,
+              },
+            },
+            {
+              data: {
+                text: 'Meeting scheduling',
+                icon: ['priority_3', 'progress_100'],
+                urgent: true,
+                important: false,
+                quadrant: 3,
+              },
+            },
           ],
         },
         {
-          data: { text: 'Eliminate (Neither)', expand: true, icon: ['priority_4'] },
-          children: [{ data: { text: 'Unfocused ad-hoc requests', icon: ['priority_4'] } }],
+          data: { text: 'Quadrant IV: Waste (Eliminate)', expand: true, icon: ['priority_4'] },
+          children: [
+            {
+              data: {
+                text: 'Unfocused ad-hoc requests',
+                icon: ['priority_4'],
+                urgent: false,
+                important: false,
+                quadrant: 4,
+              },
+            },
+          ],
         },
       ],
     }),

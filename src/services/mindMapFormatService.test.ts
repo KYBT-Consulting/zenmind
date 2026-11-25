@@ -54,6 +54,28 @@ describe('OPML round trip', () => {
     const out = MindMapFormatService.exportOpml({ data: { text: 'x', note: '<p>hello <b>there</b></p>' }, children: [] });
     expect(out).toContain('_note="hello there"');
   });
+
+  it('round-trips Covey quadrant attributes in OPML and FreeMind', () => {
+    const mapWithCovey = {
+      data: { text: 'Strategy' },
+      children: [
+        { data: { text: 'Deep Work', urgent: false, important: true, quadrant: 2 }, children: [] },
+        { data: { text: 'Unclassified' }, children: [] },
+      ],
+    };
+
+    const opml = MindMapFormatService.exportOpml(mapWithCovey, 'Strategy');
+    expect(opml).toContain('_coveyQuadrant="2"');
+    const fromOpml = MindMapFormatService.parseOpml(opml).data;
+    expect(fromOpml.children[0].data).toMatchObject({ urgent: false, important: true, quadrant: 2 });
+    expect(fromOpml.children[1].data.quadrant).toBeUndefined();
+
+    const mm = MindMapFormatService.exportFreeMind(mapWithCovey);
+    expect(mm).toContain('NAME="covey_quadrant" VALUE="2"');
+    const fromMm = MindMapFormatService.parseFreeMind(mm);
+    expect(fromMm.children[0].data).toMatchObject({ urgent: false, important: true, quadrant: 2 });
+    expect(fromMm.children[1].data.quadrant).toBeUndefined();
+  });
 });
 
 describe('FreeMind round trip', () => {

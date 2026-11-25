@@ -24,6 +24,7 @@ import {
   getTodayDateString,
   TaskItem,
 } from '../../lib/taskDates';
+import { getCoveyQuadrantMeta } from '../../lib/coveyMatrix';
 import { cn, stripHtml } from '../../lib/utils';
 
 type KanbanFilter = 'all' | 'tasks' | 'today' | 'overdue' | 'completed';
@@ -512,8 +513,20 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                           </div>
                         </div>
 
-                        {/* Metadata Badges Row: Priority, Progress, Dates, Tags, Notes */}
+                        {/* Metadata Badges Row: Quadrant, Priority, Progress, Dates, Tags, Notes */}
                         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                          {card.quadrant !== null && (
+                            <span
+                              title={`${getCoveyQuadrantMeta(card.quadrant).name}: ${getCoveyQuadrantMeta(card.quadrant).axisLabel}`}
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[10px] font-bold text-white leading-none',
+                                getCoveyQuadrantMeta(card.quadrant).solidBgClass
+                              )}
+                            >
+                              {getCoveyQuadrantMeta(card.quadrant).code}
+                            </span>
+                          )}
+
                           {card.priority !== null && (
                             <span
                               className={cn(

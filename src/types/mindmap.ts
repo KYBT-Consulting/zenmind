@@ -313,6 +313,9 @@ export interface ActiveNodeInfo {
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  urgent?: boolean;
+  important?: boolean;
+  quadrant?: CoveyQuadrant | null;
   customLeft?: number;
   customTop?: number;
   image?: { url: string; title?: string; width?: number; height?: number };
@@ -330,6 +333,7 @@ export interface ActiveNodeInfo {
 
 export type PriorityLevel = 1 | 2 | 3 | 4 | 5;
 export type ProgressLevel = 0 | 25 | 50 | 75 | 100;
+export type CoveyQuadrant = 1 | 2 | 3 | 4;
 
 export interface OuterFrameConfig {
   text?: string;
@@ -340,7 +344,7 @@ export interface OuterFrameConfig {
   fill?: string;
 }
 
-export type WorkspaceViewMode = 'mindmap' | 'kanban' | 'planner';
+export type WorkspaceViewMode = 'mindmap' | 'kanban' | 'matrix' | 'planner';
 
 export interface MindMapExportOptions {
   filename?: string;

@@ -21,10 +21,12 @@ import {
   Braces,
   Layers,
   Calendar,
+  Grid2x2,
 } from 'lucide-react';
 import { MindMapEngine } from '../../engine/MindMapEngine';
 import {
   ActiveNodeInfo,
+  CoveyQuadrant,
   LAYOUT_OPTIONS,
   PriorityLevel,
   ProgressLevel,
@@ -32,6 +34,7 @@ import {
   THEME_PRESETS,
   BranchLineStyle,
 } from '../../types/mindmap';
+import { COVEY_QUADRANTS } from '../../lib/coveyMatrix';
 import { cn, stripHtml } from '../../lib/utils';
 import {
   addDaysToDateString,
@@ -406,6 +409,150 @@ export const FormatInspector: React.FC<FormatInspectorProps> = ({
                     <CheckSquare size={13} />
                     <span>{currentProgress === 100 ? 'Completed' : 'To Do'}</span>
                   </button>
+                </div>
+
+                {/* Stephen Covey Four Quadrants (Urgency & Importance Attributes) */}
+                <div className="pt-3 border-t border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Grid2x2 size={12} className="text-indigo-600" />
+                      <span>Covey Matrix (4 Quadrants)</span>
+                    </label>
+                    {activeNode.quadrant && (
+                      <button
+                        type="button"
+                        onClick={() => engine?.setNodeQuadrant(null)}
+                        className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Explicit Urgency & Importance Attribute Toggles */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Urgency
+                      </span>
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          aria-pressed={activeNode.urgent === true}
+                          onClick={() =>
+                            engine?.setNodeCoveyAttributes({
+                              urgent: activeNode.urgent === true ? false : true,
+                            })
+                          }
+                          className={cn(
+                            'py-1 px-1.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer',
+                            activeNode.urgent === true
+                              ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
+                          )}
+                        >
+                          Urgent
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={activeNode.urgent === false}
+                          onClick={() =>
+                            engine?.setNodeCoveyAttributes({
+                              urgent: false,
+                            })
+                          }
+                          className={cn(
+                            'py-1 px-1.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer',
+                            activeNode.urgent === false
+                              ? 'bg-slate-700 text-white border-slate-700 shadow-2xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                          )}
+                        >
+                          Not Urgent
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Importance
+                      </span>
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          aria-pressed={activeNode.important === true}
+                          onClick={() =>
+                            engine?.setNodeCoveyAttributes({
+                              important: activeNode.important === true ? false : true,
+                            })
+                          }
+                          className={cn(
+                            'py-1 px-1.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer',
+                            activeNode.important === true
+                              ? 'bg-teal-600 text-white border-teal-600 shadow-2xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
+                          )}
+                        >
+                          Important
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={activeNode.important === false}
+                          onClick={() =>
+                            engine?.setNodeCoveyAttributes({
+                              important: false,
+                            })
+                          }
+                          className={cn(
+                            'py-1 px-1.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer',
+                            activeNode.important === false
+                              ? 'bg-slate-700 text-white border-slate-700 shadow-2xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                          )}
+                        >
+                          Not Imp.
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2x2 Quadrant Matrix Quick Selector */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {COVEY_QUADRANTS.map((q) => {
+                      const isSelected = activeNode.quadrant === q.id;
+                      return (
+                        <button
+                          key={q.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() =>
+                            engine?.setNodeQuadrant(isSelected ? null : (q.id as CoveyQuadrant))
+                          }
+                          className={cn(
+                            'p-2 rounded-xl border text-left transition-all cursor-pointer',
+                            isSelected
+                              ? `${q.bgClass} ${q.borderClass} ring-2 ${q.ringClass} shadow-xs`
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[10px] font-bold text-white leading-none',
+                                q.solidBgClass
+                              )}
+                            >
+                              {q.code}
+                            </span>
+                            <span className={cn('text-[10px] font-bold truncate', q.textClass)}>
+                              {q.actionLabel}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1 truncate">{q.axisLabel}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Priority Levels */}

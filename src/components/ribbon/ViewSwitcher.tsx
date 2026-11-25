@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Kanban, Network } from 'lucide-react';
+import { Calendar, Grid2x2, Kanban, Network } from 'lucide-react';
 import { WorkspaceViewMode } from '../../types/mindmap';
 import { cn } from '../../lib/utils';
 
@@ -19,6 +19,7 @@ interface ViewSwitcherProps {
 const VIEWS: { id: WorkspaceViewMode; label: string; icon: React.FC<{ size?: number }> }[] = [
   { id: 'mindmap', label: 'Mind Map', icon: Network },
   { id: 'kanban', label: 'Kanban', icon: Kanban },
+  { id: 'matrix', label: '4 Quadrants', icon: Grid2x2 },
   { id: 'planner', label: 'Daily Planner', icon: Calendar },
 ];
 

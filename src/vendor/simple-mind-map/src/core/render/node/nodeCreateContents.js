@@ -17,6 +17,11 @@ import {
   getTaskDateBadgeColors,
   getTaskDateStatus
 } from '../../../../../../lib/taskDates'
+import {
+  formatCoveyCanvasBadge,
+  getCoveyQuadrantMeta,
+  resolveCoveyQuadrant
+} from '../../../../../../lib/coveyMatrix'
 
 // 测量svg文本宽高
 const measureText = (text, style) => {
@@ -364,6 +369,11 @@ function createTagNode() {
   const endDate = this.getData('endDate')
   const startTime = this.getData('startTime')
   const endTime = this.getData('endTime')
+  const coveyQuadrant = resolveCoveyQuadrant({
+    urgent: this.getData('urgent'),
+    important: this.getData('important'),
+    quadrant: this.getData('quadrant')
+  })
   const icons = this.getData('icon') || []
   const progressIcon = Array.isArray(icons)
     ? icons.find(i => typeof i === 'string' && i.startsWith('progress_'))
@@ -371,6 +381,22 @@ function createTagNode() {
   const progressNum = progressIcon
     ? parseInt(progressIcon.replace('progress_', ''), 10)
     : null
+
+  let quadrantTagItem = null
+  if (coveyQuadrant) {
+    const qMeta = getCoveyQuadrantMeta(coveyQuadrant)
+    quadrantTagItem = {
+      text: formatCoveyCanvasBadge(coveyQuadrant),
+      isQuadrantBadge: true,
+      style: {
+        fill: qMeta.svgFill,
+        radius: 4,
+        fontSize: 11,
+        height: 20,
+        paddingX: 7
+      }
+    }
+  }
 
   const dateBadgeText = formatTaskDateBadge({
     startDate,
@@ -400,7 +426,9 @@ function createTagNode() {
 
   let { maxTag, tagsColorMap } = this.mindMap.opt
   tagsColorMap = tagsColorMap || {}
+  const prependedBadgeCount = (quadrantTagItem ? 1 : 0) + (dateTagItem ? 1 : 0)
   const combinedTags = [
+    ...(quadrantTagItem ? [quadrantTagItem] : []),
     ...(dateTagItem ? [dateTagItem] : []),
     ...rawTagData.slice(0, maxTag)
   ]
@@ -425,16 +453,19 @@ function createTagNode() {
     const hasCustomWidth = typeof style.width !== 'undefined'
     // 创建容器节点
     const tag = new G()
-    if (item && item.isDateBadge) {
+    if (item && (item.isDateBadge || item.isQuadrantBadge)) {
       tag.attr('cursor', 'pointer')
     }
     tag.on('click', e => {
-      if (item && item.isDateBadge) {
+      if (item && item.isQuadrantBadge) {
+        e?.stopPropagation?.()
+        this.mindMap.emit('node_quadrant_click', this, e)
+      } else if (item && item.isDateBadge) {
         e?.stopPropagation?.()
         this.mindMap.emit('node_date_click', this, e)
       } else {
-        // index into the node's own tag list (the date badge is prepended)
-        this.mindMap.emit('node_tag_click', this, item, dateTagItem ? index - 1 : index, tag)
+        // index into the node's own tag list (quadrant/date badges are prepended)
+        this.mindMap.emit('node_tag_click', this, item, index - prependedBadgeCount, tag)
       }
     })
     // 标签文本

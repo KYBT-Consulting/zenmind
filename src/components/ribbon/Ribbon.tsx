@@ -49,6 +49,7 @@ import {
   UnfoldVertical,
   FoldVertical,
   Calendar,
+  Grid2x2,
 } from 'lucide-react';
 import { APP_VERSION } from '../dialogs/AboutDialog';
 import { PlannerCounts, ViewSwitcher } from './ViewSwitcher';
@@ -826,6 +827,15 @@ export const Ribbon: React.FC<RibbonProps> = ({
             >
               <Calendar size={18} className="text-indigo-600" />
               <span className="text-[10px] font-semibold mt-1">Task Dates</span>
+            </button>
+
+            <button
+              onClick={() => onOpenTasks?.()}
+              title="Assign Stephen Covey 4-Quadrant Urgency & Importance attributes"
+              className="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
+            >
+              <Grid2x2 size={18} className="text-teal-600" />
+              <span className="text-[10px] font-semibold mt-1">4 Quadrants</span>
             </button>
 
             <button

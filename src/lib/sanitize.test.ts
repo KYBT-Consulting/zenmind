@@ -85,4 +85,25 @@ describe('sanitizeMapData', () => {
     expect(map.data.startTime).toBe('09:30');
     expect(map.data.endTime).toBeUndefined();
   });
+
+  it('preserves and normalizes valid Covey quadrant attributes while stripping invalid ones', () => {
+    const map: any = {
+      data: {
+        text: 'Root',
+        urgent: 'yes',
+        important: 123,
+        quadrant: 9,
+      },
+      children: [
+        { data: { text: 'Q2 Item', quadrant: 2 }, children: [] },
+        { data: { text: 'Q1 Item', urgent: true, important: true }, children: [] },
+      ],
+    };
+    sanitizeMapData(map);
+    expect(map.data.urgent).toBeUndefined();
+    expect(map.data.important).toBeUndefined();
+    expect(map.data.quadrant).toBeUndefined();
+    expect(map.children[0].data).toMatchObject({ urgent: false, important: true, quadrant: 2 });
+    expect(map.children[1].data).toMatchObject({ urgent: true, important: true, quadrant: 1 });
+  });
 });

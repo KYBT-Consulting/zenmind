@@ -10,6 +10,7 @@ import { MiniMapOverlay } from './components/canvas/MiniMapOverlay';
 import { FormatInspector, InspectorTab } from './components/inspector/FormatInspector';
 import { OutlinePanel } from './components/outline/OutlinePanel';
 import { KanbanView } from './components/kanban/KanbanView';
+import { CoveyMatrixView } from './components/matrix/CoveyMatrixView';
 import { DailyPlannerView } from './components/planner/DailyPlannerView';
 import { FloatingBubbleMenu } from './components/floating/FloatingBubbleMenu';
 import { StatusBar } from './components/statusbar/StatusBar';
@@ -1073,6 +1074,27 @@ export default function App() {
           {viewMode === 'kanban' && (
             <div className="absolute inset-0 z-10">
               <KanbanView
+                engine={engine}
+                data={mindMapData}
+                activeNode={activeNode}
+                onLocateNode={(uid) => {
+                  setViewMode('mindmap');
+                  setTimeout(() => engine?.selectNodeByUid(uid, true), 50);
+                }}
+                onOpenTaskInspector={(uid) => {
+                  engine?.selectNodeByUid(uid, false);
+                  setInspectorTab('task');
+                  setInspectorTabRequest((n) => n + 1);
+                  setShowInspector(true);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Stephen Covey Four Quadrant Matrix View */}
+          {viewMode === 'matrix' && (
+            <div className="absolute inset-0 z-10">
+              <CoveyMatrixView
                 engine={engine}
                 data={mindMapData}
                 activeNode={activeNode}

@@ -4,6 +4,8 @@
  * smuggle in script-capable markup or `javascript:` links.
  */
 
+import { isValidCoveyQuadrant, resolveCoveyAttributes } from './coveyMatrix';
+
 const SAFE_LINK_SCHEMES = new Set(['http', 'https', 'mailto', 'tel']);
 
 /** True for http(s)/mailto/tel URLs and scheme-less values (relative or filesystem paths). */
@@ -63,6 +65,23 @@ function sanitizeNodeData(data: any) {
   }
   if (data.endTime !== undefined && (typeof data.endTime !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.endTime))) {
     delete data.endTime;
+  }
+  if (data.urgent !== undefined && typeof data.urgent !== 'boolean') {
+    delete data.urgent;
+  }
+  if (data.important !== undefined && typeof data.important !== 'boolean') {
+    delete data.important;
+  }
+  if (data.quadrant !== undefined && !isValidCoveyQuadrant(data.quadrant)) {
+    delete data.quadrant;
+  }
+  if (data.urgent !== undefined || data.important !== undefined || data.quadrant !== undefined) {
+    const resolved = resolveCoveyAttributes(data);
+    if (resolved.quadrant) {
+      data.urgent = resolved.urgent;
+      data.important = resolved.important;
+      data.quadrant = resolved.quadrant;
+    }
   }
   // Summary (generalization) nodes carry their own text
   const gen = data.generalization;
