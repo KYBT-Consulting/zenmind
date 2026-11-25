@@ -25,6 +25,7 @@ interface AboutDialogProps {
 }
 
 const RELEASE_HIGHLIGHTS = [
+  'Collapse the ribbon to just its tab names (Ctrl+F1, or double-click a tab) and click a tab to show its commands when you need them',
   'New Tags menu on the View tab: show or hide quadrant, date, custom tag, priority and progress badges on the map',
   "4 Quadrants view: sort topics by Stephen Covey's Urgent/Important matrix, drag them between quadrants, add items straight into a quadrant, and triage everything not yet sorted from a sidebar",
   'Mark any topic Urgent and/or Important, or pick Q1–Q4 directly, from the Format inspector or the right-click menu',

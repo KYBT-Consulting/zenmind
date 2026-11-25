@@ -49,6 +49,8 @@ import {
   UnfoldVertical,
   FoldVertical,
   Calendar,
+  ChevronUp,
+  Pin,
 } from 'lucide-react';
 import { APP_VERSION } from '../dialogs/AboutDialog';
 import { PlannerCounts, ViewSwitcher } from './ViewSwitcher';
@@ -127,6 +129,8 @@ const TAG_KIND_OPTIONS: { key: keyof TagVisibility; label: string; hint: string 
 const setAllTagKinds = (visible: boolean): TagVisibility =>
   Object.fromEntries(TAG_KIND_OPTIONS.map((opt) => [opt.key, visible])) as unknown as TagVisibility;
 
+const RIBBON_COLLAPSED_STORAGE_KEY = 'zenmind_ribbon_collapsed';
+
 export const Ribbon: React.FC<RibbonProps> = ({
   engine,
   activeNode,
@@ -169,6 +173,17 @@ export const Ribbon: React.FC<RibbonProps> = ({
   onExported,
 }) => {
   const [activeTab, setActiveTab] = useState<RibbonTab>('home');
+  // Office-style collapsed ribbon: only the tab names show; clicking one shows its
+  // commands over the canvas until a command runs or you click elsewhere.
+  const [ribbonCollapsed, setRibbonCollapsed] = useState<boolean>(() => {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(RIBBON_COLLAPSED_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [ribbonPeek, setRibbonPeek] = useState(false);
+  const ribbonRef = useRef<HTMLDivElement>(null);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
@@ -198,6 +213,86 @@ export const Ribbon: React.FC<RibbonProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const setCollapsed = (collapsed: boolean) => {
+    setRibbonCollapsed(collapsed);
+    setRibbonPeek(false);
+    try {
+      localStorage.setItem(RIBBON_COLLAPSED_STORAGE_KEY, String(collapsed));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const closePeek = () => {
+    setRibbonPeek(false);
+    setShowLayoutMenu(false);
+    setShowThemeMenu(false);
+    setShowShapeMenu(false);
+    setShowTagsMenu(false);
+  };
+
+  // Ctrl+F1 toggles the collapsed ribbon, as in Office
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setRibbonCollapsed((prev) => {
+          const next = !prev;
+          try {
+            localStorage.setItem(RIBBON_COLLAPSED_STORAGE_KEY, String(next));
+          } catch {
+            // ignore storage errors
+          }
+          return next;
+        });
+        setRibbonPeek(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // While peeking, a click outside the ribbon or Escape hides the commands again
+  useEffect(() => {
+    if (!ribbonCollapsed || !ribbonPeek) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (ribbonRef.current && !ribbonRef.current.contains(e.target as Node)) closePeek();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePeek();
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [ribbonCollapsed, ribbonPeek]);
+
+  const handleTabClick = (id: RibbonTab) => {
+    if (!ribbonCollapsed) {
+      setActiveTab(id);
+      return;
+    }
+    // Collapsed: clicking the open tab again hides it, any other tab shows its commands
+    if (ribbonPeek && activeTab === id) {
+      closePeek();
+    } else {
+      setActiveTab(id);
+      setRibbonPeek(true);
+    }
+  };
+
+  /** In the peeked ribbon, running a command hides it again (dropdown triggers and menus stay open). */
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ribbonCollapsed || !ribbonPeek) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-ribbon-keep-open]')) return;
+    if (target.closest('button, a, [role="menuitem"]')) closePeek();
+  };
+
+  const showRibbonContent = !ribbonCollapsed || ribbonPeek;
 
   /** Quick-export buttons: report failures the same way the Export dialog does. */
   const runExport = async (format: 'png' | 'svg' | 'pdf' | 'md' | 'json') => {
@@ -244,7 +339,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const currentThemeId = engine?.getThemeId() || 'ocean-breeze';
 
   return (
-    <div className="w-full bg-white border-b border-slate-200 select-none shadow-sm z-30 flex flex-col">
+    <div ref={ribbonRef} className="relative w-full bg-white border-b border-slate-200 select-none shadow-sm z-50 flex flex-col">
       {/* Top Brand & Quick Access Bar */}
       <div className="h-10 px-4 flex items-center justify-between border-b border-slate-100 bg-slate-50/70">
         <div className="flex items-center gap-3 min-w-0 overflow-hidden">
@@ -407,25 +502,58 @@ export const Ribbon: React.FC<RibbonProps> = ({
       </div>
 
       {/* Ribbon Navigation Tabs */}
-      <div className="flex px-4 border-b border-slate-200 bg-white">
-        {tabs.map((tab) => (
+      <div
+        className={cn('flex items-center px-4 bg-white', !ribbonCollapsed && 'border-b border-slate-200')}
+        role="tablist"
+        aria-label="Ribbon"
+      >
+        {tabs.map((tab) => {
+          const selected = activeTab === tab.id && showRibbonContent;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={selected}
+              onClick={() => handleTabClick(tab.id)}
+              onDoubleClick={() => setCollapsed(!ribbonCollapsed)}
+              title={ribbonCollapsed ? 'Click to show commands, double-click to pin the ribbon' : 'Double-click to collapse the ribbon'}
+              className={cn(
+                'px-4 py-2 text-xs font-semibold tracking-wide transition-all border-b-2',
+                selected
+                  ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
+                  : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+
+        {/* Collapse / pin the ribbon (Ctrl+F1) */}
+        {(!ribbonCollapsed || ribbonPeek) && (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'px-4 py-2 text-xs font-semibold tracking-wide transition-all border-b-2',
-              activeTab === tab.id
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            )}
+            type="button"
+            onClick={() => setCollapsed(!ribbonCollapsed)}
+            aria-label={ribbonCollapsed ? 'Pin the ribbon (Ctrl+F1)' : 'Collapse the ribbon (Ctrl+F1)'}
+            title={ribbonCollapsed ? 'Pin the ribbon (Ctrl+F1)' : 'Collapse the ribbon (Ctrl+F1)'}
+            className="ml-auto p-1.5 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100"
           >
-            {tab.label}
+            {ribbonCollapsed ? <Pin size={14} /> : <ChevronUp size={14} />}
           </button>
-        ))}
+        )}
       </div>
 
-      {/* Ribbon Toolbar Content Area */}
-      <div className="h-16 px-4 py-2 flex items-center gap-6 overflow-visible bg-slate-50/50">
+      {/* Ribbon Toolbar Content Area: inline when pinned, floating over the canvas when peeked */}
+      {showRibbonContent && (
+      <div
+        onClick={handleContentClick}
+        className={cn(
+          'h-16 px-4 py-2 flex items-center gap-6 overflow-visible',
+          ribbonCollapsed
+            ? 'absolute left-0 right-0 top-full z-40 bg-slate-50 border-y border-slate-200 shadow-lg'
+            : 'bg-slate-50/50'
+        )}
+      >
         {/* --- FILE TAB --- */}
         {activeTab === 'file' && (
           <>
@@ -547,6 +675,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Structure & Layout Dropdown */}
             <div ref={layoutMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
+                data-ribbon-keep-open
                 onClick={toggleLayoutMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
@@ -600,6 +729,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Themes Dropdown */}
             <div ref={themeMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
+                data-ribbon-keep-open
                 onClick={toggleThemeMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
@@ -699,6 +829,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             {/* Quick Shape Selector */}
             <div ref={shapeMenuRef} className="relative pr-4 border-r border-slate-200">
               <button
+                data-ribbon-keep-open
                 onClick={toggleShapeMenu}
                 className="flex flex-col items-center justify-center px-3 py-1 rounded-lg hover:bg-white hover:shadow-xs border border-transparent hover:border-slate-200 text-slate-700 transition-all"
               >
@@ -963,6 +1094,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
               <button
                 aria-label="Choose which tags to show on topics"
                 aria-expanded={showTagsMenu}
+                data-ribbon-keep-open
                 onClick={() => setShowTagsMenu((prev) => !prev)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors shadow-xs',
@@ -982,7 +1114,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
                 <ChevronDown size={12} className="text-slate-400" />
               </button>
               {showTagsMenu && (
-                <div className="absolute top-10 left-0 w-60 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div data-ribbon-keep-open className="absolute top-10 left-0 w-60 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 py-1">
                     Show on topics
                   </div>
@@ -1192,6 +1324,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
