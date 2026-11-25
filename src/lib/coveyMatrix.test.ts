@@ -53,6 +53,31 @@ describe('Covey Four Quadrant attribute resolution', () => {
     });
   });
 
+  it('fills a missing axis from the stored quadrant instead of defaulting to false', () => {
+    expect(resolveCoveyAttributes({ quadrant: 1, urgent: true })).toEqual({
+      urgent: true,
+      important: true,
+      quadrant: 1,
+    });
+    expect(resolveCoveyAttributes({ quadrant: 1, important: true })).toEqual({
+      urgent: true,
+      important: true,
+      quadrant: 1,
+    });
+    // An explicit axis still overrides a conflicting quadrant
+    expect(resolveCoveyAttributes({ quadrant: 1, urgent: false })).toEqual({
+      urgent: false,
+      important: true,
+      quadrant: 2,
+    });
+    // Both axes present: quadrant is ignored
+    expect(resolveCoveyAttributes({ quadrant: 4, urgent: true, important: true })).toEqual({
+      urgent: true,
+      important: true,
+      quadrant: 1,
+    });
+  });
+
   it('computes synchronized patches when updating quadrant or individual axes', () => {
     // Direct quadrant selection
     expect(computeCoveyDataPatch({}, { quadrant: 2 })).toEqual({

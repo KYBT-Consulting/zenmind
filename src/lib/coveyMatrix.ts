@@ -135,8 +135,10 @@ export function resolveCoveyAttributes(
   const hasImportant = typeof data.important === 'boolean';
 
   if (hasUrgent || hasImportant) {
-    const urgent = hasUrgent ? (data.urgent as boolean) : false;
-    const important = hasImportant ? (data.important as boolean) : false;
+    // Explicit axes win; a missing axis falls back to the stored quadrant, then to false.
+    const fallback = isValidCoveyQuadrant(data.quadrant) ? getCoveyQuadrantMeta(data.quadrant) : null;
+    const urgent = hasUrgent ? (data.urgent as boolean) : (fallback?.urgent ?? false);
+    const important = hasImportant ? (data.important as boolean) : (fallback?.important ?? false);
     return {
       urgent,
       important,

@@ -97,6 +97,7 @@ describe('sanitizeMapData', () => {
       children: [
         { data: { text: 'Q2 Item', quadrant: 2 }, children: [] },
         { data: { text: 'Q1 Item', urgent: true, important: true }, children: [] },
+        { data: { text: 'Partial Q1', quadrant: 1, urgent: true }, children: [] },
       ],
     };
     sanitizeMapData(map);
@@ -105,5 +106,6 @@ describe('sanitizeMapData', () => {
     expect(map.data.quadrant).toBeUndefined();
     expect(map.children[0].data).toMatchObject({ urgent: false, important: true, quadrant: 2 });
     expect(map.children[1].data).toMatchObject({ urgent: true, important: true, quadrant: 1 });
+    expect(map.children[2].data).toMatchObject({ urgent: true, important: true, quadrant: 1 });
   });
 });
